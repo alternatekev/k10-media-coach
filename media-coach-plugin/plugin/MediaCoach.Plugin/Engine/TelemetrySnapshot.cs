@@ -74,8 +74,18 @@ namespace MediaCoach.Plugin.Engine
         public bool[]  CarIdxOnPitRoad    { get; set; } = new bool[0];
         public int     PlayerCarIdx       { get; set; }
 
+        // ── Nearest opponents (populated from Opponents list) ────────────────
+        public string NearestAheadName   { get; set; } = "";
+        public int    NearestAheadRating { get; set; }
+        public string NearestBehindName  { get; set; } = "";
+        public int    NearestBehindRating { get; set; }
+
         // ── iRacing flag bitmasks ────────────────────────────────────────────
-        public const int FLAG_YELLOW = 0x0008 | 0x4000 | 0x8000;
-        public const int FLAG_BLACK  = 0x00010000;
+        public const int FLAG_YELLOW  = 0x0008 | 0x4000 | 0x8000;
+        public const int FLAG_BLACK   = 0x00010000;
+        public const int FLAG_DEBRIS  = 0x0040;
+
+        // ── Derived flags ────────────────────────────────────────────────────
+        public bool IsDebrisFlag => (SessionFlags & FLAG_DEBRIS) != 0;
     }
 }

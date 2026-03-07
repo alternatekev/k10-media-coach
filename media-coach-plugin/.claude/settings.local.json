@@ -11,7 +11,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:www.simhubdash.com)",
       "WebFetch(domain:forum.reizastudios.com)",
-      "WebFetch(domain:sajax.github.io)"
+      "WebFetch(domain:sajax.github.io)",
+      "WebFetch(domain:www.alternate.org)"
     ]
   }
 }

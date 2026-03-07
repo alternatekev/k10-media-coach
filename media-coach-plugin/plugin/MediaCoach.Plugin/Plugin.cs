@@ -72,8 +72,21 @@ namespace MediaCoach.Plugin
             // Boolean: whether the panel should be visible
             this.AttachDelegate("CommentaryVisible", () => _engine.IsVisible ? 1 : 0);
 
-            // Category (hardware / game_feel / car_response / racing_experience)
-            this.AttachDelegate("CommentaryCategory", () => _engine.CurrentCategory);
+            // Category with sentiment label, e.g. "car_response — Technical / Analytical"
+            this.AttachDelegate("CommentaryCategory", () =>
+            {
+                string cat = _engine.CurrentCategory;
+                string label = _engine.CurrentSentimentLabel;
+                return string.IsNullOrEmpty(label) ? cat : cat + " — " + label;
+            });
+
+            // Track position: sector + lap distance percentage
+            this.AttachDelegate("CommentaryTrackPosition", () =>
+            {
+                if (!_current.GameRunning) return "";
+                int pct = (int)Math.Round(_current.TrackPositionPct * 100);
+                return $"Lap {_current.CurrentLap} · {pct}%";
+            });
 
             // Short topic title
             this.AttachDelegate("CommentaryTopicTitle", () => _engine.CurrentTitle);

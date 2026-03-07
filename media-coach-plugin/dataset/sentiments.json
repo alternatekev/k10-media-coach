@@ -1,12 +1,12 @@
 {
-  "version": "1.0",
-  "description": "Sentiment vocabulary and phrase patterns drawn from sim racing YouTube commentary style. Used by the plugin to color commentary prompts.",
+  "version": "1.1",
+  "description": "Sentiment vocabulary and phrase patterns drawn from sim racing YouTube commentary style. Colors use 6-digit #RRGGBB format for SimHub compatibility.",
   "sentiments": [
 
     {
       "id": "excitement_positive",
       "label": "Excitement / Positive",
-      "color": "#FFF57F17",
+      "color": "#F57F17",
       "description": "Expressions of genuine excitement, satisfaction, or joy in a moment.",
       "phrases": [
         "Oh that's lovely",
@@ -29,7 +29,7 @@
     {
       "id": "frustration_negative",
       "label": "Frustration / Negative",
-      "color": "#FFB71C1C",
+      "color": "#B71C1C",
       "description": "Expressions of frustration, disappointment, or mild anger at mistakes or incidents.",
       "phrases": [
         "Oh come on!",
@@ -52,7 +52,7 @@
     {
       "id": "technical_analytical",
       "label": "Technical / Analytical",
-      "color": "#FF0D47A1",
+      "color": "#0D47A1",
       "description": "Calm, thoughtful analysis of car behavior, setup, or driving technique.",
       "phrases": [
         "So what's happening here is...",
@@ -75,10 +75,10 @@
     {
       "id": "self_deprecating",
       "label": "Self-Deprecating Humor",
-      "color": "#FF4A148C",
-      "description": "Light, relatable humor about one's own mistakes or limitations. Jimmy Broadbent style.",
+      "color": "#4A148C",
+      "description": "Light, relatable humor about one's own mistakes or limitations.",
       "phrases": [
-        "Absolutely sensational from the Pride of [wherever]",
+        "Absolutely sensational from the Pride of wherever",
         "That is world-class incompetence right there",
         "Please ignore what just happened",
         "I have no idea what I'm doing, and I've accepted that",
@@ -96,7 +96,7 @@
     {
       "id": "car_praise",
       "label": "Car Praise",
-      "color": "#FF1B5E20",
+      "color": "#1B5E20",
       "description": "Expressions of appreciation for a specific car's character or behavior.",
       "phrases": [
         "This car is an absolute weapon",
@@ -115,15 +115,15 @@
     {
       "id": "sim_comparison",
       "label": "Sim Comparison",
-      "color": "#FF006064",
+      "color": "#006064",
       "description": "Comparisons between different simulators, often in terms of realism or feel.",
       "phrases": [
         "iRacing does this better than any other sim",
         "Assetto Corsa Competizione nails this feeling",
-        "This is where [sim] falls short for me",
+        "This is where this sim falls short for me",
         "Compared to real life, this sim gets it pretty much right",
         "The tire model here is streets ahead of the competition",
-        "This is what I mean when I say [sim] is the benchmark",
+        "This is what I mean when I say this sim is the benchmark",
         "I've driven the real car and honestly this is frighteningly accurate",
         "The physics are brilliant but the sound needs work",
         "Every sim has compromises and this one is pretty minor"
@@ -133,7 +133,7 @@
     {
       "id": "neutral_narrative",
       "label": "Neutral Narrative",
-      "color": "#FF263238",
+      "color": "#37474F",
       "description": "Calm play-by-play commentary and situational narration.",
       "phrases": [
         "So we're coming up to the back straight now",
@@ -152,7 +152,7 @@
     {
       "id": "driving_advice",
       "label": "Driving Advice",
-      "color": "#FFE65100",
+      "color": "#E65100",
       "description": "Tips and technique advice aimed at the viewer.",
       "phrases": [
         "If you're learning this corner, the key is patience on the entry",

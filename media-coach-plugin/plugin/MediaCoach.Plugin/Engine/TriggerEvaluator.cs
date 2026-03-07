@@ -112,6 +112,8 @@ namespace MediaCoach.Plugin.Engine
                 case "wet":               return t.Value.Value >= 1 ? cur.WeatherWet : !cur.WeatherWet;
                 case "isinpit":           return t.Value.Value >= 1 ? cur.IsInPit : !cur.IsInPit;
                 case "isinpitlane":       return t.Value.Value >= 1 ? cur.IsInPitLane : !cur.IsInPitLane;
+                case "isdebrisflag":
+                case "debris":            return t.Value.Value >= 1 ? cur.IsDebrisFlag : !cur.IsDebrisFlag;
             }
             return Math.Abs(GetValue(cur, t.DataPoint) - t.Value.Value) < 0.001;
         }

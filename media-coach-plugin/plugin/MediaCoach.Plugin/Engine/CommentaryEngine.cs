@@ -27,6 +27,7 @@ namespace MediaCoach.Plugin.Engine
         // ── State ─────────────────────────────────────────────────────────────
         private List<CommentaryTopic> _topics = new List<CommentaryTopic>();
         private Dictionary<string, string> _sentimentColors = new Dictionary<string, string>();
+        private Dictionary<string, string> _sentimentLabels = new Dictionary<string, string>();
         private readonly Random _rng = new Random();
 
         // Per-topic last trigger time
@@ -39,7 +40,8 @@ namespace MediaCoach.Plugin.Engine
         private volatile string _currentCategory       = "";
         private volatile string _currentTitle          = "";
         private volatile string _currentTopicId        = "";
-        private volatile string _currentSentimentColor = "#FF000000";
+        private volatile string _currentSentimentLabel = "";
+        private volatile string _currentSentimentColor = "#000000";
         private DateTime _promptDisplayedAt             = DateTime.MinValue;
 
         // ── Settings (set by plugin from Settings object) ─────────────────────
@@ -57,6 +59,7 @@ namespace MediaCoach.Plugin.Engine
         public string CurrentCategory       => _currentCategory;
         public string CurrentTitle          => _currentTitle;
         public string CurrentTopicId        => _currentTopicId;
+        public string CurrentSentimentLabel => _currentSentimentLabel;
         public string CurrentSentimentColor => _currentSentimentColor;
         public bool   IsVisible       => _currentText.Length > 0
                                          && (DateTime.UtcNow - _promptDisplayedAt).TotalSeconds < DisplaySeconds;
@@ -80,7 +83,7 @@ namespace MediaCoach.Plugin.Engine
             _currentText           = "Media Coach is active. Prompts will appear here when telemetry events fire during your session.";
             _currentCategory       = "hardware";
             _currentTitle          = "Media Coach Ready";
-            _currentSentimentColor = "#FF263238"; // neutral dark slate
+            _currentSentimentColor = "#37474F"; // neutral dark slate
             _promptDisplayedAt     = DateTime.UtcNow;
         }
 
@@ -126,9 +129,13 @@ namespace MediaCoach.Plugin.Engine
                 if (file?.Sentiments != null)
                 {
                     _sentimentColors.Clear();
+                    _sentimentLabels.Clear();
                     foreach (var s in file.Sentiments)
-                        if (!string.IsNullOrEmpty(s.Id) && !string.IsNullOrEmpty(s.Color))
-                            _sentimentColors[s.Id] = s.Color;
+                    {
+                        if (string.IsNullOrEmpty(s.Id)) continue;
+                        if (!string.IsNullOrEmpty(s.Color)) _sentimentColors[s.Id] = s.Color;
+                        if (!string.IsNullOrEmpty(s.Label)) _sentimentLabels[s.Id] = s.Label;
+                    }
                 }
                 SimHub.Logging.Current.Info($"[MediaCoach] Loaded {_sentimentColors.Count} sentiment colors");
             }
@@ -203,7 +210,7 @@ namespace MediaCoach.Plugin.Engine
                 if (!IsTopicCooledDown(topic)) continue;
                 if (!AnyTriggerFires(topic, current, previous)) continue;
 
-                ShowPrompt(topic);
+                ShowPrompt(topic, current);
                 return; // one suggestion at a time
             }
         }
@@ -214,7 +221,8 @@ namespace MediaCoach.Plugin.Engine
             _currentCategory       = "";
             _currentTitle          = "";
             _currentTopicId        = "";
-            _currentSentimentColor = "#FF000000";
+            _currentSentimentLabel = "";
+            _currentSentimentColor = "#000000";
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -260,26 +268,38 @@ namespace MediaCoach.Plugin.Engine
         private string PickSentimentColor(string category)
         {
             if (!CategorySentiments.TryGetValue(category ?? "", out var ids) || ids.Length == 0)
-                return "#FF000000";
+                return "#000000";
             string id = ids[_rng.Next(ids.Length)];
-            return _sentimentColors.TryGetValue(id, out var color) ? color : "#FF000000";
+            return _sentimentColors.TryGetValue(id, out var color) ? color : "#000000";
         }
 
-        private void ShowPrompt(CommentaryTopic topic)
+        private void ShowPrompt(CommentaryTopic topic, TelemetrySnapshot context)
         {
             if (topic.CommentaryPrompts == null || topic.CommentaryPrompts.Count == 0) return;
 
             string prompt = topic.CommentaryPrompts[_rng.Next(topic.CommentaryPrompts.Count)];
 
-            // Use topic's explicit sentiment if set, otherwise fall back to category mapping
-            string sentimentColor = !string.IsNullOrEmpty(topic.Sentiment)
-                ? (_sentimentColors.TryGetValue(topic.Sentiment, out var c) ? c : "#FF000000")
+            // Substitute driver-name placeholders if opponent data is available
+            if (context != null)
+            {
+                prompt = prompt.Replace("{ahead}",  FormatDriver(context.NearestAheadName,  context.NearestAheadRating));
+                prompt = prompt.Replace("{behind}", FormatDriver(context.NearestBehindName, context.NearestBehindRating));
+            }
+
+            // Resolve sentiment
+            string sentiment = !string.IsNullOrEmpty(topic.Sentiment) ? topic.Sentiment : "";
+            string sentimentColor = !string.IsNullOrEmpty(sentiment)
+                ? (_sentimentColors.TryGetValue(sentiment, out var c) ? c : "#000000")
                 : PickSentimentColor(topic.Category);
+            string sentimentLabel = !string.IsNullOrEmpty(sentiment)
+                ? (_sentimentLabels.TryGetValue(sentiment, out var l) ? l : "")
+                : "";
 
             _currentText           = prompt;
             _currentCategory       = topic.Category;
             _currentTitle          = topic.Title;
             _currentTopicId        = topic.Id;
+            _currentSentimentLabel = sentimentLabel;
             _currentSentimentColor = sentimentColor;
             _promptDisplayedAt     = DateTime.UtcNow;
 
@@ -287,6 +307,12 @@ namespace MediaCoach.Plugin.Engine
             _lastPromptFireTime = DateTime.UtcNow;
 
             SimHub.Logging.Current.Info($"[MediaCoach] Prompt shown: [{topic.Title}] {prompt}");
+        }
+
+        private static string FormatDriver(string name, int rating)
+        {
+            if (string.IsNullOrEmpty(name)) return "the car";
+            return rating > 0 ? $"{name} ({rating:N0} iR)" : name;
         }
     }
 }

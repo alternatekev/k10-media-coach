@@ -5,7 +5,7 @@ namespace MediaCoach.Plugin
     public class Settings
     {
         /// <summary>How long (seconds) each prompt stays on screen before auto-clearing.</summary>
-        public double PromptDisplaySeconds { get; set; } = 30.0;
+        public double PromptDisplaySeconds { get; set; } = 15.0;
 
         /// <summary>
         /// Categories to include. Empty list = all categories enabled.

@@ -44,3 +44,14 @@ this is the biggest lift of the update. we need a much more interesting and opin
 
 1. build a testing system such that we can take recorded race data, and generate transcripts of when a message would occur during a data stream
 2. build a learning system such that we can take feedback to these testing results to fine-tune the eventing system, sentiments, and prompt text
+
+## Alpha Testing Results
+
+1. colors still don't show up in the sentiment box. does simhub support hex8, the color format you're using? it doesn't seem to, or the values don't come through correctly. don't update the dashboard here, just the plugin.
+2. i'd like a lot more attention paid to catastrophic events, like crashes into walls, going off tracks, and being passed.
+3. another enhancement i'd like to see is including the names of the corner or straight i'm currently on (if more than simply T1, etc) as an extra displayable data point. bonus points if you can make the prompts include these circuit position names.
+4. let's tune the events a little bit, their data thresholds are too low. you're telling me that i slipped or that the wheel had a large spike in feedback when it didn't really happen that strongly.
+5. some positive notes to keep up/enhance: the timing at 15 seconds was much better this time; the wording of the prompts, while true to the source material could use some voicing, particularly from my own website at http://www.alternate.org
+6. let's also include the sentiment text within the variable that displays the category name - no new variable to display, just additional text in the displayed value, if possible.
+7. include more track incidents in the event system: unsafe conditions (gravel on the road, etc), accidents ahead and behind.
+8. if i'm being passed or passing someone, tell me their name and rating in the prompt text. include context on whether they're passing or i am.

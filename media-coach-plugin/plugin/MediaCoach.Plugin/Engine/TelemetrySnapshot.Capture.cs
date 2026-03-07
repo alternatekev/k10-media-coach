@@ -71,6 +71,30 @@ namespace MediaCoach.Plugin.Engine
             s.LapDeltaToBest    = Coalesce(GetRaw<float>(pm, "LapDeltaToBestLap"),  GetNorm<float>(d, "DeltaToSessionBestLap"));
             s.SessionTimeRemain = Coalesce(GetRaw<double>(pm, "SessionTimeRemain"), GetNorm<double>(d, "SessionTimeLeft"));
 
+            // ── Nearest opponents (by race position) ─────────────────────────
+            try
+            {
+                var oppsProp = d.GetType().GetProperty("Opponents",
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                var opps = oppsProp?.GetValue(d) as System.Collections.IEnumerable;
+                if (opps != null)
+                {
+                    foreach (var opp in opps)
+                    {
+                        var t = opp.GetType();
+                        int   pos    = Convert.ToInt32(t.GetProperty("Position")?.GetValue(opp) ?? 0);
+                        string name  = t.GetProperty("Name")?.GetValue(opp) as string ?? "";
+                        int   irating = 0;
+                        var irProp = t.GetProperty("IRating") ?? t.GetProperty("Irating");
+                        if (irProp != null) { var v = irProp.GetValue(opp); if (v != null) irating = Convert.ToInt32(v); }
+
+                        if (pos == s.Position - 1) { s.NearestAheadName = name;  s.NearestAheadRating  = irating; }
+                        if (pos == s.Position + 1) { s.NearestBehindName = name; s.NearestBehindRating = irating; }
+                    }
+                }
+            }
+            catch { }
+
             // ── iRacing-only ─────────────────────────────────────────────────
             s.SteeringWheelTorque = GetRaw<float>(pm, "SteeringWheelTorque");
             s.SessionFlags        = GetRaw<int>(pm, "SessionFlags");

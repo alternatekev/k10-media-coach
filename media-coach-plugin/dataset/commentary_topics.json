@@ -1,30 +1,55 @@
 {
-  "version": "2.0",
-  "description": "Commentary topics for Media Coach SimHub Plugin. Prompts are opinionated reactions to specific telemetry events.",
+  "version": "3.0",
+  "description": "Commentary topics for Media Coach. Prompts use Kevin's direct, technically-grounded voice. Thresholds tuned to avoid false positives. Driver name placeholders: {ahead}, {behind}.",
   "categories": ["hardware", "game_feel", "car_response", "racing_experience"],
   "topics": [
 
     {
       "id": "spin_catch",
       "category": "car_response",
-      "title": "Spin / Big Save",
+      "title": "Big Save",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Extreme yaw rate — car nearly spun or driver caught a snap oversteer moment.",
+      "description": "Extreme yaw event — genuine snap oversteer or spin attempt.",
       "triggers": [
         {
           "dataPoint": "YawRate",
           "condition": "extreme",
-          "absValue": 1.4,
-          "context": "High yaw rate indicates the car is rotating well beyond driver intent"
+          "absValue": 2.5,
+          "context": "True snap oversteer — yaw rate well beyond normal cornering"
         }
       ],
       "commentaryPrompts": [
-        "That was a genuine save — the rear came fully around and somehow came back. The wheel just fought back against everything.",
-        "Nearly lost it right there. Full counter-steer at that speed is terrifying — you can feel the yaw rate through the entire car.",
-        "The rear stepped out hard on exit and that's the knife edge between a fast lap and a big shunt.",
-        "Caught that one but it took absolutely everything. One more degree of yaw and it's off into the barrier.",
-        "The car snapped and somehow the hands went the right way. That's pure instinct, not planning."
+        "The rear came all the way round. That's the car communicating exactly what happens when you push past the limit — feel that in real time.",
+        "Massive snap right there. The difference between catching it and not is all in how much the wheel is actually talking to you.",
+        "That's the yaw limit of this car in real conditions. Talk the viewer through what you felt and what saved it.",
+        "Full rotation. That's not a controlled slide — that's the car telling you it's done with the corner.",
+        "Caught it, barely. The physics of that save are worth explaining — left foot, hands, instinct."
+      ],
+      "cooldownMinutes": 4
+    },
+
+    {
+      "id": "wall_contact",
+      "category": "racing_experience",
+      "title": "Wall / Barrier Contact",
+      "sentiment": "frustration_negative",
+      "sessionTypes": [],
+      "description": "Heavy impact — car hit a barrier or another vehicle at significant speed.",
+      "triggers": [
+        {
+          "dataPoint": "VertAccel",
+          "condition": "spike",
+          "thresholdDelta": 14.0,
+          "context": "Very large vertical spike — hard contact with barrier, wall, or another car"
+        }
+      ],
+      "commentaryPrompts": [
+        "That's the wall. The race just changed in that impact — real damage to time, maybe to the car.",
+        "Contact with the barrier. That's a moment that resets everything — talk about what it costs you from here.",
+        "Hard impact. You feel that through the entire car. This is where the session either continues or it doesn't.",
+        "Into the barrier. It happened fast and the consequences are going to be felt for the rest of this stint.",
+        "That's a real hit. The sim is telling you exactly what that does to a car — let the viewer hear your reaction."
       ],
       "cooldownMinutes": 3
     },
@@ -35,7 +60,7 @@
       "title": "Off Track",
       "sentiment": "self_deprecating",
       "sessionTypes": [],
-      "description": "Car went off-track, detected via large vertical acceleration spike.",
+      "description": "Car left the track surface — run-off, gravel, grass.",
       "triggers": [
         {
           "dataPoint": "any",
@@ -44,113 +69,109 @@
         }
       ],
       "commentaryPrompts": [
-        "And that's a trip through the grass. Completely self-inflicted — brain said commit, feet said absolutely not.",
-        "Into the run-off. That's a tenth I'll never get back and probably several more besides.",
-        "Off track and the car just bounced through it. That's a combination of too much confidence and not enough car.",
-        "Went wide there and the gravel made the point better than I could. That corner keeps punishing me.",
-        "That's embarrassing. Absolutely embarrassing. Moving on."
+        "Off track, and that's entirely on me. The car went exactly where I pointed it.",
+        "Into the run-off. That's lap time I'm not getting back and honestly I deserve that.",
+        "Off the circuit. What's interesting is what the car does out here — totally different surface, totally different feedback.",
+        "Gone wide and off. That's what happens when confidence outruns grip.",
+        "Out of bounds. Self-inflicted. Moving on with the appropriate amount of embarrassment."
       ],
       "cooldownMinutes": 3
     },
 
     {
-      "id": "hard_contact",
-      "category": "racing_experience",
-      "title": "Hard Contact / Curb Impact",
-      "sentiment": "frustration_negative",
+      "id": "kerb_hit",
+      "category": "car_response",
+      "title": "Kerb / Curb Hit",
+      "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Large vertical g-spike from hitting a curb hard, barrier tap, or contact.",
+      "description": "Moderate vertical spike from hitting a kerb hard.",
       "triggers": [
         {
           "dataPoint": "VertAccel",
           "condition": "spike",
-          "thresholdDelta": 6.0,
-          "context": "Sudden vertical spike — curb, kerb, or contact"
+          "thresholdDelta": 7.0,
+          "context": "Solid kerb hit or bump — meaningful impact but not a crash"
         }
       ],
       "commentaryPrompts": [
-        "Big hit. That's going to have done something to the car — you can feel it immediately through the wheel.",
-        "That was a proper impact and I felt it everywhere. Something just went wrong there.",
-        "Contact — and not the good kind. The car reacted and I just held on and hoped.",
-        "That kerb absolutely bit back. Took it too aggressively and the car launched.",
-        "Felt that one in my spine. That's not supposed to happen and yet here we are."
+        "Hit that kerb hard. You can feel it trying to unsettle the car — whether to use the kerbs here is a real setup decision.",
+        "Big impact over the apex kerb. The car reacted to that and you can feel why that's a risk in the sim.",
+        "That kerb grabbed the car. There's a reason some of these are controversial — they punish you for getting it slightly wrong.",
+        "Rode over that kerb and felt it everywhere. That's the sim doing its job — communicating what happens when you take that risk."
       ],
-      "cooldownMinutes": 2
+      "cooldownMinutes": 3
     },
 
     {
       "id": "abs_activation",
       "category": "car_response",
-      "title": "ABS Firing",
+      "title": "ABS Activation",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "ABS system activated — brakes locked before the system intervened.",
+      "description": "ABS system fired — brakes locked before the system intervened.",
       "triggers": [
         {
           "dataPoint": "absactive",
           "condition": "==",
           "value": 1,
-          "context": "ABS activated"
+          "context": "ABS system activated"
         }
       ],
       "commentaryPrompts": [
-        "The ABS is working right now — you can feel it pulsing back through the pedal. Braked way too late for that approach.",
-        "ABS firing on that corner. The front is locking before the system catches it and I'm losing trail braking feel.",
-        "The brakes locked before the ABS intervened — either the tyres are past peak or I massively overshot the braking point.",
-        "ABS on. That's either impressive braking confidence or a complete misjudgement and I'm not sure which.",
-        "System took over under braking there. The threshold is right at the limit and I just went over it."
+        "The ABS fired there. You can feel it working — the difference between that and locking up is what separates a controlled stop from a slide.",
+        "ABS active on that braking zone. Whether you rely on it or fight against it says a lot about how you're driving this car.",
+        "The system intervened under braking. That's the threshold — braked slightly past it and the electronics took over.",
+        "ABS on. In real life that pulse through the pedal is constant information. In the sim it's the same principle."
       ],
-      "cooldownMinutes": 5
+      "cooldownMinutes": 10
     },
 
     {
       "id": "tc_intervention",
       "category": "car_response",
-      "title": "Traction Control Cutting In",
+      "title": "Traction Control Cut",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Traction control activated on corner exit — rear sliding under power.",
+      "description": "TC cut power on corner exit — rear sliding under throttle.",
       "triggers": [
         {
           "dataPoint": "tcactive",
           "condition": "==",
           "value": 1,
-          "context": "TC activated"
+          "context": "TC activated on exit"
         }
       ],
       "commentaryPrompts": [
-        "TC cutting in hard on exit — the rear wants to go and the computer is firmly saying no.",
-        "Traction control working overtime here. Too much throttle, too early, not enough tyre under the car.",
-        "That TC cut is costing me exit speed. Need to be smoother on the throttle or drop the setting.",
-        "The TC is on it — without intervention the wheelspin there would have been spectacular.",
-        "Traction control firing means I'm at the absolute edge of what this car can do on exit."
+        "TC cutting in on exit. The system is working and it's costing me a small amount of traction — it's a tradeoff I made in the setup.",
+        "Traction control fired. The rear wants to go and the computer says not yet — this is the balance between driver and electronics.",
+        "TC intervention on exit. You can feel it choking the throttle application — the question is whether the setting is right for this corner.",
+        "The system stepped in there. Running TC means you're trading raw exit speed for consistency — depends entirely on the circuit."
       ],
-      "cooldownMinutes": 5
+      "cooldownMinutes": 10
     },
 
     {
       "id": "close_battle",
       "category": "racing_experience",
-      "title": "Close Battle / Wheel-to-Wheel",
+      "title": "Close Racing",
       "sentiment": "excitement_positive",
       "sessionTypes": ["race"],
-      "description": "Another car is within close proximity on track.",
+      "description": "Running wheel-to-wheel or within close proximity of another car.",
       "triggers": [
         {
           "dataPoint": "CarIdxLapDistPct",
           "condition": "close_proximity",
-          "proximityThreshold": 0.015,
-          "context": "Another car within 1.5% of track distance"
+          "proximityThreshold": 0.01,
+          "context": "Another car within 1% of track distance — genuinely close"
         }
       ],
       "commentaryPrompts": [
-        "There's a car right on my gearbox and the pressure is immense. This is where you keep it absolutely clean.",
-        "Door to door at this speed — the margins are tiny and one mistake ends both our races.",
-        "Running wheel to wheel and this is exactly why sim racing is brilliant. Pure competition.",
-        "That close racing is intense — every braking point is a negotiation and the other driver knows it too.",
-        "The gap is nothing right now. I can see their braking references and they can see mine."
+        "There's a car right there. Every input matters more when you're this close — one mistake and it's both of you in the barrier.",
+        "Door to door. This is the real test — how precise can you be when someone's watching every move you make?",
+        "Running this close in a race is genuinely intense. The margins in the sim match what this would feel like in real life.",
+        "That gap is nothing. Real wheel-to-wheel racing — the kind of moment that's worth being on stream for."
       ],
-      "cooldownMinutes": 3
+      "cooldownMinutes": 4
     },
 
     {
@@ -159,20 +180,19 @@
       "title": "Position Gained",
       "sentiment": "excitement_positive",
       "sessionTypes": ["race"],
-      "description": "Player overtook another car and moved up in the running order.",
+      "description": "Player moved up a position — made a clean pass.",
       "triggers": [
         {
           "dataPoint": "Position",
           "condition": "player_gain_position",
-          "context": "Player moved up a position"
+          "context": "Player moved up a race position"
         }
       ],
       "commentaryPrompts": [
-        "Got them! Clean move, fair fight, job done. Now it's about holding what we've just taken.",
-        "Past them! That's a position gained and it means everything for where we finish today.",
-        "Beautiful pass — read the corner, committed to it, made it stick. Exactly as planned.",
-        "Took that position and it felt absolutely right. The timing was perfect and the door was there.",
-        "That's how you do it — patient, clean, and decisive when the gap opened up."
+        "Past {ahead}. That's a position gained and every one counts in this race.",
+        "Made the move on {ahead}. Clean pass, well-timed — that's real on-track progress.",
+        "Got past {ahead} and now it's about not making a mistake in the next few corners.",
+        "Position gained on {ahead}. The gap ahead is what matters now — build the margin."
       ],
       "cooldownMinutes": 2
     },
@@ -183,20 +203,19 @@
       "title": "Position Lost",
       "sentiment": "frustration_negative",
       "sessionTypes": ["race"],
-      "description": "Player was overtaken and dropped a position.",
+      "description": "Player dropped a position — was overtaken.",
       "triggers": [
         {
           "dataPoint": "Position",
           "condition": "player_lost_position",
-          "context": "Player dropped a position"
+          "context": "Player dropped a race position"
         }
       ],
       "commentaryPrompts": [
-        "And I've been passed. That's a position I'm not getting back without an actual fight.",
-        "They got me — went too wide and they were alongside before I could even react.",
-        "Lost that one and it stings. Clean pass on me — I have to give them credit but it hurts.",
-        "Position gone. That's on me — I gave them the opportunity and they took it immediately.",
-        "I've been passed and now I need to respond. Not spiralling, not panicking, just driving."
+        "{behind} got me. That's a position gone and I need to respond — not panic, respond.",
+        "Lost that position to {behind}. Credit to them — clean move. Now I need to close that gap down.",
+        "{behind} found a way through. It stings but it's part of racing — figure out where I gave them the opportunity.",
+        "Dropped a place to {behind}. This is where the race either falls apart or I dig in and fix it."
       ],
       "cooldownMinutes": 2
     },
@@ -207,22 +226,45 @@
       "title": "Yellow Flag",
       "sentiment": "neutral_narrative",
       "sessionTypes": [],
-      "description": "Yellow flag has gone out on track.",
+      "description": "Yellow flag went active on track.",
       "triggers": [
         {
           "dataPoint": "SessionFlags",
           "condition": "yellow_flag",
-          "context": "Yellow flag went active"
+          "context": "Yellow flag just went active"
         }
       ],
       "commentaryPrompts": [
-        "Yellow flag — something's happened ahead and the race just changed completely in those few seconds.",
-        "Caution out. Depending on the timing this either saves the strategy or destroys everything we've built.",
-        "Yellows are out and the field is bunching up. The restart is going to be critical.",
-        "Yellow flag and the race is paused. Use this time to reset, not to panic.",
-        "Caution — and now it's a waiting game. The safety car period is a lottery for strategy."
+        "Yellow flag out. Something happened and the race has paused itself — this changes the calculation completely.",
+        "Caution. The field bunches up and everything we built in terms of gap just resets. That's racing.",
+        "Yellow. Depending on where this falls in the stint it either saves us or costs us the strategy.",
+        "Flag is out. This is a moment where patience matters more than pace — get through the caution cleanly."
       ],
       "cooldownMinutes": 4
+    },
+
+    {
+      "id": "debris_on_track",
+      "category": "racing_experience",
+      "title": "Debris on Track",
+      "sentiment": "neutral_narrative",
+      "sessionTypes": [],
+      "description": "Debris flag shown — hazardous material on the circuit.",
+      "triggers": [
+        {
+          "dataPoint": "debris",
+          "condition": "==",
+          "value": 1,
+          "context": "iRacing debris flag is active"
+        }
+      ],
+      "commentaryPrompts": [
+        "Debris flag. Something's on the circuit and you're running blind to it — this is where caution is actually the fast option.",
+        "Debris on track. In a real car this is one of the most dangerous moments — the sim captures that uncertainty.",
+        "Debris flag showing. This is exactly the kind of situation where incident points get handed out for no reason — stay clean.",
+        "Something on the circuit. Debris changes the risk calculation on every lap until it's cleared."
+      ],
+      "cooldownMinutes": 5
     },
 
     {
@@ -231,7 +273,7 @@
       "title": "Race Start",
       "sentiment": "excitement_positive",
       "sessionTypes": ["race"],
-      "description": "Race session has started — lights out.",
+      "description": "Race session has just started.",
       "triggers": [
         {
           "dataPoint": "any",
@@ -240,11 +282,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Lights out! Everything on the line right now — stay clean through the first corner and race from there.",
-        "And we're racing! The start is everything — survive the first lap chaos and the rest is about execution.",
-        "Green flag! Months of laps in practice and it all comes down to the next ninety seconds of this opening lap.",
-        "Race is on. The launch was clean — now it's about the first corner and not throwing it away in the excitement.",
-        "Here we go! All that preparation, all that qualifying, and it's all about what happens in the next five seconds."
+        "We're racing. The work that went into this session — setup, qualifying, pace — gets tested right now.",
+        "Lights out. Every bit of preparation comes down to the next ninety seconds of first lap chaos.",
+        "Race start. The goal is simple: survive lap one, then race from there. Nothing clever, just clean.",
+        "Here we go. First corner is make or break — stay out of trouble and build from whatever we come out of it with."
       ],
       "cooldownMinutes": 60
     },
@@ -255,20 +296,19 @@
       "title": "Personal Best Lap",
       "sentiment": "excitement_positive",
       "sessionTypes": [],
-      "description": "Driver just set a new personal best lap time.",
+      "description": "New personal best lap time just set.",
       "triggers": [
         {
           "dataPoint": "LapLastLapTime",
           "condition": "personal_best",
-          "context": "New personal best lap just completed"
+          "context": "New personal best lap"
         }
       ],
       "commentaryPrompts": [
-        "That's a personal best! The car is working, the lap clicked, absolutely everything came together in that one.",
-        "PB! Every sector contributed to that — that's the best lap I've done at this circuit full stop.",
-        "New personal best and it felt like one from sector one. The lap was clean the entire way through.",
-        "That's a PB and the margin is real. The confidence is up and there's more time in the car if I can find it.",
-        "Personal best. The setup is right, the tyres are in the window, and the driving was clean. Perfect lap."
+        "That's a personal best. The lap did what it needed to do — clean, committed, no mistakes where it mattered.",
+        "PB. That's the car working and the driving matching it — every sector contributed.",
+        "New personal best. That's the result of getting the setup right and then actually executing on it.",
+        "Personal best lap and it felt like one. The confidence is there — now build on it."
       ],
       "cooldownMinutes": 5
     },
@@ -276,10 +316,10 @@
     {
       "id": "pit_entry",
       "category": "racing_experience",
-      "title": "Entering Pit Lane",
+      "title": "Pit Lane Entry",
       "sentiment": "neutral_narrative",
       "sessionTypes": ["race"],
-      "description": "Player has entered the pit lane.",
+      "description": "Player entered pit lane.",
       "triggers": [
         {
           "dataPoint": "any",
@@ -288,11 +328,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Into the pits and this stop needs to be clean — the race can be won or lost in pit lane at this point.",
-        "Pitting now. The call has been made and the strategy is committed. Let's see if it pays off.",
-        "Coming in for service and everything rests on the lap time we rejoin on and whether the gap is enough.",
-        "Pit entry and the tyres have absolutely given everything. Fresh rubber and we go again.",
-        "The pit stop window is open and we're in. This is the moment where the strategy either works or it doesn't."
+        "Into the pits. This call has been made — now it's about coming out in the right window.",
+        "Pitting. The tyre situation made this decision and now the race reshapes around where we emerge.",
+        "Pit lane. A good stop is part of the lap time — everything has to go right in these few seconds.",
+        "Coming in for service. This is where the strategy either worked or it didn't. We'll find out in thirty seconds."
       ],
       "cooldownMinutes": 5
     },
@@ -303,23 +342,22 @@
       "title": "Maximum Cornering Load",
       "sentiment": "car_praise",
       "sessionTypes": [],
-      "description": "Car is pulling high lateral g-force — at the grip limit through a fast corner.",
+      "description": "Very high lateral g sustained through a fast corner.",
       "triggers": [
         {
           "dataPoint": "LatAccel",
           "condition": ">",
-          "value": 3.2,
-          "context": "High lateral acceleration — near the grip limit in a fast corner"
+          "value": 4.0,
+          "context": "Extreme lateral load — near the absolute grip limit in a fast corner"
         }
       ],
       "commentaryPrompts": [
-        "That's serious lateral load through that corner — the grip level in this car is genuinely extraordinary.",
-        "Maximum cornering right there. The car just refuses to let go and the confidence that gives you is everything.",
-        "The G-forces through that corner are immense. You can feel every bit of it through the seat and the wheel.",
-        "The car is absolutely planted through there. The engineering that allows that at this speed is remarkable.",
-        "That's what this car was built for — maximum lateral load through a high-speed corner and it just eats it up."
+        "Maximum lateral load through that corner. The grip level in this car is something you have to experience to understand.",
+        "The car is absolutely planted. That's the engineering talking — the grip at this speed is extraordinary.",
+        "Full cornering load. The force through the seat and the wheel in a corner like that is why this car exists.",
+        "That's what the car was built for. Peak lateral G and it just takes it — totally committed."
       ],
-      "cooldownMinutes": 5
+      "cooldownMinutes": 6
     },
 
     {
@@ -328,23 +366,22 @@
       "title": "FFB Torque Spike",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Large sudden torque spike through the steering wheel — curb hit or snap load.",
+      "description": "Large sudden torque spike through the steering — major kerb or snap load.",
       "triggers": [
         {
           "dataPoint": "SteeringWheelTorque",
           "condition": "spike",
-          "thresholdDelta": 8.0,
-          "context": "Sudden torque spike — curb hit, snap oversteer, or front loading up suddenly"
+          "thresholdDelta": 18.0,
+          "context": "Very large torque spike — hard kerb hit or sudden front load"
         }
       ],
       "commentaryPrompts": [
-        "Massive kick through the wheel just then — hit something on the apex or caught a bump I absolutely wasn't ready for.",
-        "The wheel fought back hard right there. That torque spike tells me the front loaded up in a way the FFB is communicating perfectly.",
-        "Big FFB spike and you felt that one. The car just reacted to something I wasn't expecting and the wheel told me immediately.",
-        "That torque spike through the steering — either a kerb, a bump, or the front just stepped out and snapped back.",
-        "The force feedback is communicating everything that's happening at the contact patch. That spike was the car telling me something important."
+        "The wheel just kicked back hard. That's the FFB telling you exactly what the front tyre just experienced.",
+        "Massive torque spike through the steering there. That's direct communication from the car — the wheel is doing its job.",
+        "That snap through the wheel was significant. That's the value of good FFB — you feel it before you see the car move.",
+        "The wheel fought back on that. Everything that went through the contact patch just came straight to your hands."
       ],
-      "cooldownMinutes": 4
+      "cooldownMinutes": 5
     },
 
     {
@@ -353,21 +390,20 @@
       "title": "Low Fuel",
       "sentiment": "neutral_narrative",
       "sessionTypes": ["race"],
-      "description": "Fuel level is critically low — approaching the end of the stint.",
+      "description": "Fuel level critically low — approaching the end of the stint.",
       "triggers": [
         {
           "dataPoint": "FuelPercent",
           "condition": "<",
-          "value": 0.15,
-          "context": "Fuel at 15% or below — pit stop or fuel saving becoming critical"
+          "value": 0.12,
+          "context": "Fuel at 12% or below"
         }
       ],
       "commentaryPrompts": [
-        "Fuel is getting critical and the pressure is building. Every lap from here is a calculation.",
-        "Running low on fuel and the strategy has to be absolutely right. One miscalculation and we're walking.",
-        "The fuel light is on in my head right now. Depending on this stint I might be nursing it to the flag.",
-        "Low fuel means the car is lighter but the clock is ticking louder than ever. Very tight window.",
-        "Fuel critical — this is where experience matters. Lift, coast, manage consumption without losing the position."
+        "Fuel is getting critical. Every lap from here is a calculation — how much can I push before the tank says no.",
+        "Running low. The car gets lighter but the risk gets higher — this is where the fuel strategy either holds or it doesn't.",
+        "Low fuel and the math is tight. Lift, coast, manage — the pace suffers but finishing matters more than lap times right now.",
+        "The tank is running out. This is the honest part of long-distance racing — you plan for it but it still feels close."
       ],
       "cooldownMinutes": 5
     },
@@ -375,10 +411,10 @@
     {
       "id": "wet_track",
       "category": "racing_experience",
-      "title": "Wet Track Conditions",
+      "title": "Wet Conditions",
       "sentiment": "neutral_narrative",
       "sessionTypes": [],
-      "description": "Track conditions are declared wet or rain intensity is significant.",
+      "description": "Track conditions declared wet or rain detected.",
       "triggers": [
         {
           "dataPoint": "wet",
@@ -388,11 +424,10 @@
         }
       ],
       "commentaryPrompts": [
-        "The track is wet and everything has changed — completely different references, completely different feel through the wheel.",
-        "Wet conditions and the car is on edge in a way that no dry lap ever captures. Every input matters twice as much.",
-        "Rain changes everything. The grip level has dropped off a cliff and the braking points are completely different.",
-        "Wet track and the challenge is enormous. Reading the surface and finding the grip is everything right now.",
-        "The conditions are treacherous and I love it. This is where driving skill separates people more than anything else."
+        "It's wet. Every reference point changes, every threshold drops, and the car becomes a completely different puzzle.",
+        "Wet track. This is where the real driving skill separates people — smooth inputs, read the surface, find the grip where it exists.",
+        "Rain conditions. The sim handles this seriously — tyre temp, water distribution, grip levels all in play at once.",
+        "Wet. The braking points move, the apexes move, the whole circuit gets rewritten by water."
       ],
       "cooldownMinutes": 8
     },
@@ -403,33 +438,32 @@
       "title": "High Tyre Wear",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Tyre wear has reached a high level — car behavior degrading.",
+      "description": "Significant tyre wear — car behavior degrading.",
       "triggers": [
         {
           "dataPoint": "TyreWearFL",
           "condition": ">",
           "value": 0.65,
-          "context": "Front left tyre at 65%+ wear"
+          "context": "Front left at 65%+ wear"
         },
         {
           "dataPoint": "TyreWearFR",
           "condition": ">",
           "value": 0.65,
-          "context": "Front right tyre at 65%+ wear"
+          "context": "Front right at 65%+ wear"
         },
         {
           "dataPoint": "TyreWearRL",
           "condition": ">",
           "value": 0.65,
-          "context": "Rear left tyre at 65%+ wear"
+          "context": "Rear left at 65%+ wear"
         }
       ],
       "commentaryPrompts": [
-        "The tyres are going off and you can feel it in every corner — the front end is getting looser on entry.",
-        "Tyre wear is critical now. The rubber has given everything and the car is telling me in no uncertain terms.",
-        "Degradation is setting in hard. The laps are getting slower and there's genuinely nothing I can do about it.",
-        "The tyres have done their job but the job is almost done. Trying to manage what's left to the stop.",
-        "Worn tyres change the whole character of the car. Everything that was planted and predictable is now sliding and vague."
+        "The tyres are going. You can feel it in every corner — the grip is leaving and the car is telling you clearly.",
+        "High tyre wear and the car's character is changing. The setup that worked at the start of the stint doesn't work the same way now.",
+        "Degradation is real. Every lap the window shifts and you have to adapt the driving style to what the rubber can still do.",
+        "The tyres have given a lot this stint. Managing what's left to the stop is the whole job right now."
       ],
       "cooldownMinutes": 6
     },
@@ -440,27 +474,26 @@
       "title": "Overheating Tyres",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Tyre temperatures have gone significantly over optimal operating range.",
+      "description": "Tyre temperatures significantly over optimal range.",
       "triggers": [
         {
           "dataPoint": "TyreTempFL",
           "condition": ">",
-          "value": 110,
+          "value": 115,
           "context": "Front left tyre temperature critically high"
         },
         {
           "dataPoint": "TyreTempFR",
           "condition": ">",
-          "value": 110,
+          "value": 115,
           "context": "Front right tyre temperature critically high"
         }
       ],
       "commentaryPrompts": [
-        "Tyre temperatures are through the roof — past the peak operating window and into the overheating zone.",
-        "The tyres are overheating and the grip has simply gone. I'm sliding around and it's pure thermal degradation.",
-        "Temperatures too high and the rubber is greasing over. This is what kills a promising stint in real racing.",
-        "Hot tyres and I'm losing the car on every corner. Need to cool them down or just accept the consequences.",
-        "The thermal management battle is being lost right now. Too hot and the compound stops working entirely."
+        "Tyres are overheating. The grip is going away and there's a physical reason — the compound can't handle this temperature.",
+        "Too hot on the fronts. This is what thermal degradation actually means — the rubber is greasing and the car knows it.",
+        "Temperatures are past the window. Managing this is a real skill — back off, build it back, or accept the pace hit.",
+        "The tyre temps are through the roof and the car is sliding everywhere. This is the sim communicating real physics."
       ],
       "cooldownMinutes": 5
     },
@@ -468,7 +501,7 @@
     {
       "id": "heavy_braking",
       "category": "car_response",
-      "title": "Heavy Braking Zone",
+      "title": "Major Braking Zone",
       "sentiment": "excitement_positive",
       "sessionTypes": [],
       "description": "Extreme longitudinal deceleration — very heavy braking event.",
@@ -476,41 +509,39 @@
         {
           "dataPoint": "LongAccel",
           "condition": "<",
-          "value": -25.0,
-          "context": "Very heavy deceleration — major braking zone"
+          "value": -32.0,
+          "context": "Extreme deceleration — significant braking zone"
         }
       ],
       "commentaryPrompts": [
-        "That is a brutal braking zone — maximum deceleration from that speed is absolutely eye-watering.",
-        "The braking performance of this car is just insane. From that speed to nothing in an impossibly short distance.",
-        "Heavy braking and the car is dancing right on the limit. One mistake here and it's a spin or the barrier.",
-        "The G-forces under braking there are like nothing else on the lap. The nose just dips and it stops.",
-        "That's a big one — the carbon brakes biting and the whole car pitching forward under that deceleration."
+        "That is a serious braking zone. The deceleration forces in a corner like that are eye-watering in any car.",
+        "Maximum braking right there. From that speed to nothing in that distance — the engineering that makes that possible is remarkable.",
+        "Big braking event. The car is right on the limit of what's physically possible and you can feel every bit of it.",
+        "That stop was aggressive. The balance under braking tells you everything about where this car is set up."
       ],
-      "cooldownMinutes": 4
+      "cooldownMinutes": 5
     },
 
     {
       "id": "qualifying_push",
       "category": "racing_experience",
-      "title": "Qualifying Hot Lap",
+      "title": "Hot Qualifying Lap",
       "sentiment": "excitement_positive",
       "sessionTypes": ["qual"],
-      "description": "Running significantly ahead of personal best in qualifying — hot lap in progress.",
+      "description": "Running significantly ahead of personal best in qualifying.",
       "triggers": [
         {
           "dataPoint": "LapDeltaToBest",
           "condition": "<",
           "value": -0.4,
-          "context": "Running 0.4s ahead of personal best — very fast lap in progress"
+          "context": "Running 0.4s ahead of PB — very fast lap in progress"
         }
       ],
       "commentaryPrompts": [
-        "This lap is coming together — every sector is cleaner than anything I've done today. Don't overthink it.",
-        "Hot lap in qualifying and the car feels absolutely on rails. Stay calm, nail the last sector.",
-        "The delta is positive across the whole lap. This could be a new pole time if I don't mess up the last chicane.",
-        "Lap of my life potentially coming up. The conditions are perfect, the car is dialled in, just execute.",
-        "Every corner so far has been right on the money. This is the lap — don't brake early, don't run wide."
+        "This lap is coming together. The delta is positive everywhere — just don't overthink it in the final sector.",
+        "Hot lap in qualifying and the car feels locked in. This is the result of getting every setup decision right.",
+        "The delta says this is the lap. Stay with it, don't brake early, don't run wide — this is what qualifying is for.",
+        "Every sector is contributing to this. The lap is clean — if it holds, this is a result worth having."
       ],
       "cooldownMinutes": 3
     },
@@ -521,20 +552,19 @@
       "title": "iRacing Incident Points",
       "sentiment": "frustration_negative",
       "sessionTypes": [],
-      "description": "iRacing incident count increased — contact or track limits violation registered.",
+      "description": "iRacing incident count just increased.",
       "triggers": [
         {
           "dataPoint": "PlayercarmyIncidentCount",
           "condition": "increase",
-          "context": "iRacing incident points just increased"
+          "context": "iRacing incident points increased"
         }
       ],
       "commentaryPrompts": [
-        "That's incident points on the iRacing record. The system saw that and I completely deserved it.",
-        "Incident count goes up. iRacing doesn't forget anything and that contact just cost me Safety Rating.",
-        "Another incident point — the car and the stewards both saw it. My SR is going to take a proper hit.",
-        "Incidents are mounting and the iRating consequences are real. I need to drive significantly cleaner.",
-        "That's been flagged. In iRacing you can't hide from your mistakes and that one is now on my record."
+        "Incident points. iRacing saw that and the Safety Rating is going to reflect it — deserved.",
+        "The incident counter went up. In iRacing that's permanent — every contact is recorded and it matters for your rating.",
+        "That's on the record now. The iRating system doesn't care about context — it logs the incident and moves on.",
+        "Another incident point. The SR implications are real and they don't go away quickly. Need to drive cleaner."
       ],
       "cooldownMinutes": 3
     },
@@ -545,21 +575,20 @@
       "title": "ERS Battery Low",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "ERS battery is nearly depleted — losing hybrid power advantage.",
+      "description": "ERS battery nearly depleted — losing hybrid power.",
       "triggers": [
         {
           "dataPoint": "EnergyERSBattery",
           "condition": "<",
           "value": 0.15,
-          "context": "ERS battery at 15% or below"
+          "context": "ERS at 15% or below"
         }
       ],
       "commentaryPrompts": [
-        "ERS is almost depleted — no more free speed until the battery regenerates through the next braking zone.",
-        "The hybrid is empty. From here to the next regen zone I'm running on pure internal combustion.",
-        "Battery gone and the performance delta is immediately noticeable — like losing a full gear of acceleration.",
-        "ERS depleted and now every straight is a negotiation. The car feels completely different without the electric motor.",
-        "The hybrid system is the difference between competitive and not. Without it right now I'm vulnerable."
+        "ERS is almost gone. The performance difference without the hybrid is immediately noticeable on every straight.",
+        "Battery depleted. From here to the next regen zone, everything comes from the internal combustion engine alone.",
+        "The hybrid is out. Managing these depletion windows is a core skill in these cars — it changes the car completely.",
+        "ERS empty and the car feels slower in a very specific way. That's the delta between hybrid and non-hybrid performance."
       ],
       "cooldownMinutes": 5
     },
@@ -570,21 +599,20 @@
       "title": "High Track Temperature",
       "sentiment": "technical_analytical",
       "sessionTypes": [],
-      "description": "Track temperature is very high — affects tyre operating range and degradation.",
+      "description": "Track temperature very high — affects degradation and grip window.",
       "triggers": [
         {
           "dataPoint": "TrackTemp",
           "condition": ">",
           "value": 46,
-          "context": "Track temperature is very high — tyres will reach peak temp faster"
+          "context": "Track surface very hot"
         }
       ],
       "commentaryPrompts": [
-        "Track temperature is baking out there. The rubber goes down fast in these conditions and the grip comes and goes.",
-        "Hot track means the tyres peak early and fall off hard. It's a brutal tyre management exercise.",
-        "The tarmac is forty-something degrees — you can feel the compound struggling to maintain consistent grip.",
-        "Track temps like this means thermal management becomes the whole race. Pace without preservation is pointless.",
-        "In this heat the track surface is slippery in a very particular way — not cold, just over the limit of what the tyre wants."
+        "Track temperature is high and the tyres are working in a brutal environment. Degradation is accelerated in these conditions.",
+        "Hot track surface. The rubber goes down fast and the grip window is narrow — this is a proper tyre management challenge.",
+        "Temperatures like this change the whole race. The compounds peak early and fall off hard — every lap is a tradeoff.",
+        "The tarmac is baking. The grip is there early in the stint and then it goes away faster than you'd like."
       ],
       "cooldownMinutes": 8
     },
@@ -595,48 +623,46 @@
       "title": "DRS Open",
       "sentiment": "excitement_positive",
       "sessionTypes": [],
-      "description": "DRS rear wing is open and active — experiencing the straight-line speed boost.",
+      "description": "DRS rear wing is open — straight-line speed advantage active.",
       "triggers": [
         {
           "dataPoint": "DrsStatus",
           "condition": ">",
           "value": 1,
-          "context": "DRS is active and the rear wing is open"
+          "context": "DRS is open and active"
         }
       ],
       "commentaryPrompts": [
-        "DRS is open and the straight-line advantage is genuinely real — you feel the drag drop away and the car just surges.",
-        "Rear wing open and the top speed delta is significant. Whether that's enough to make the pass is the question.",
-        "DRS zone and I'm flat out. The aerodynamic difference is immediately obvious at this speed.",
-        "The rear wing is open and this is the decision point — commit to the outside line or go defensive.",
-        "DRS active and the car leaps forward in a way that completely changes the overtaking calculation."
+        "DRS is open. You feel the drag drop away and the car just accelerates differently — it's a real performance delta.",
+        "Rear wing open. The straight-line advantage is genuine and it changes the overtaking calculation on this circuit.",
+        "DRS zone active. Whether that's enough to make the move is the question — the physics are working in your favor right now.",
+        "The wing is open. That speed delta is real and the car knows it — this is where the pass either happens or it doesn't."
       ],
       "cooldownMinutes": 4
     },
 
     {
-      "id": "car_balance_corner",
+      "id": "car_balance_sustained",
       "category": "car_response",
-      "title": "Car Balance — Sustained Load",
+      "title": "Car On The Limit",
       "sentiment": "car_praise",
       "sessionTypes": [],
-      "description": "Car is carrying high lateral and yaw load simultaneously — well-balanced through a complex corner.",
+      "description": "Sustained high lateral load — car working perfectly through a complex corner.",
       "triggers": [
         {
           "dataPoint": "LatAccel",
           "condition": ">",
-          "value": 2.8,
-          "context": "High lateral load with significant yaw — car rotating well through a corner"
+          "value": 3.5,
+          "context": "Sustained high lateral load — car is right at the grip limit"
         }
       ],
       "commentaryPrompts": [
-        "The balance of this car right now is something else — rotating exactly where you want it, completely on command.",
-        "Perfect oversteer on demand and the front is doing precisely what I'm asking. This is the car working with you.",
-        "The car is talking to me through this section — completely planted, completely communicative, completely alive.",
-        "When the setup is right you feel it in a corner like that. Absolutely hooked up and entirely in control.",
-        "That's what a well-sorted car feels like — load it up, rotate it, and it does exactly what you asked."
+        "The car is right at the limit through that section. When it's working this well, you stop thinking and start feeling.",
+        "That's a well-sorted car doing its job. The balance is exactly where you need it — rotation on demand, grip when you ask for it.",
+        "The setup is translating into lap time right there. That kind of trust in the car makes you drive differently.",
+        "Completely hooked up. The car is communicating everything and responding to everything — that's the feeling you're building the session around."
       ],
-      "cooldownMinutes": 6
+      "cooldownMinutes": 7
     }
 
   ]
