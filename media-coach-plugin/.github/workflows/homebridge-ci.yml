@@ -1,0 +1,41 @@
+name: Homebridge CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "homebridge-plugin/**"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "homebridge-plugin/**"
+
+jobs:
+
+  # ---------------------------------------------------------------
+  # Homebridge TypeScript: build + Jest tests
+  # ---------------------------------------------------------------
+  homebridge-tests:
+    name: Homebridge Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: homebridge-plugin/package.json
+
+      - name: Install dependencies
+        working-directory: homebridge-plugin
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: homebridge-plugin
+        run: npm run build
+
+      - name: Run Jest tests (133 tests)
+        working-directory: homebridge-plugin
+        run: npm test
