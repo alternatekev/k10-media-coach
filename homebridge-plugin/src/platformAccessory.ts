@@ -30,7 +30,14 @@ export class MediaCoachLightAccessory {
       .getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Media Coach')
       .setCharacteristic(this.platform.Characteristic.Model, 'SimHub Light Control')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, 'MC-' + this.accessory.UUID);
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, 'MC-' + this.accessory.UUID)
+      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, '1.0.0');
+
+    // Name characteristic on the Lightbulb service (required by HAP spec)
+    this.service.setCharacteristic(
+      this.platform.Characteristic.Name,
+      this.accessory.displayName,
+    );
 
     // Register handlers for HomeKit get/set
     this.service

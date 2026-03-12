@@ -95,7 +95,11 @@ export class MediaCoachLightsPlatform implements DynamicPlatformPlugin {
 
       if (!accessory) {
         // Create new accessory
-        accessory = new this.api.platformAccessory(lightConfig.name, uuid);
+        accessory = new this.api.platformAccessory(
+          lightConfig.name,
+          uuid,
+          this.api.hap.Categories.LIGHTBULB,
+        );
         accessory.context = { lightConfig } as PlatformAccessoryContext;
         this.accessories.push(accessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
@@ -118,7 +122,7 @@ export class MediaCoachLightsPlatform implements DynamicPlatformPlugin {
    */
   configureAccessory(accessory: PlatformAccessory): void {
     this.log.debug(`Configuring accessory: ${accessory.displayName}`);
-    // Implementation handled in discoverAccessories
+    this.accessories.push(accessory);
   }
 
   /**
