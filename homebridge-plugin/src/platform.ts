@@ -142,6 +142,14 @@ export class MediaCoachLightsPlatform implements DynamicPlatformPlugin {
         );
         this.vocolincClients.set(uuid, vocolinc);
         this.log.info(`VOCOlinc HAP control enabled for ${lightConfig.name} (${lightConfig.hapIp})`);
+
+        // Auto-pair on first run if PIN is provided and no credentials are stored yet
+        if (!vocolinc.isPaired && lightConfig.hapPin) {
+          this.log.info(`[VOCOlinc ${lightConfig.hapIp}] No pairing data found — pairing now with PIN ${lightConfig.hapPin}`);
+          vocolinc.pair(lightConfig.hapPin).catch((err: Error) => {
+            this.log.error(`[VOCOlinc ${lightConfig.hapIp}] Pairing failed: ${err.message}`);
+          });
+        }
       }
     }
 
