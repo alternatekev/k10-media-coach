@@ -24,6 +24,7 @@ namespace K10MediaCoach.Plugin
         // Engine
         private readonly CommentaryEngine  _engine   = new CommentaryEngine();
         private readonly TelemetryRecorder _recorder = new TelemetryRecorder();
+        private readonly TrackMapProvider  _trackMap = new TrackMapProvider();
         private FeedbackEngine _feedback;
 
         // Telemetry frames (current + previous for delta calculations)
@@ -34,6 +35,9 @@ namespace K10MediaCoach.Plugin
         // at 60fps, every 6 frames = ~100ms evaluation cadence
         private int _frameCount = 0;
         private const int EvalEveryNFrames = 6;
+
+        // Track change detection — triggers map reload
+        private string _lastTrackId = "";
 
         // HTTP state server — exposes plugin state on port 8889 for Homebridge
         private HttpListener _httpListener;
@@ -74,6 +78,12 @@ namespace K10MediaCoach.Plugin
             // Load commentary fragments (for sentence composition)
             string fragmentsPath = ResolveDatasetFile("commentary_fragments.json");
             _engine.LoadFragments(fragmentsPath);
+
+            // Initialise track map provider
+            // Detect SimHub install dir from our own assembly location (we're in SimHub\Plugins\)
+            string pluginDir = Path.GetDirectoryName(typeof(Plugin).Assembly.Location) ?? "";
+            string simhubDir = Path.GetDirectoryName(pluginDir) ?? "";
+            _trackMap.SetSimHubDirectory(simhubDir);
 
             // ── Register dashboard properties ─────────────────────────────────
 
@@ -174,6 +184,14 @@ namespace K10MediaCoach.Plugin
             this.AttachDelegate("Demo.IRAhead",    () => dt.IRAhead);
             this.AttachDelegate("Demo.IRBehind",   () => dt.IRBehind);
 
+            // ── Track map properties — SVG path + car positions ────────────────
+            this.AttachDelegate("TrackMap.Ready",      () => _trackMap.IsReady ? 1 : 0);
+            this.AttachDelegate("TrackMap.SvgPath",    () => _trackMap.SvgPath);
+            this.AttachDelegate("TrackMap.PlayerX",    () => _trackMap.PlayerX);
+            this.AttachDelegate("TrackMap.PlayerY",    () => _trackMap.PlayerY);
+            this.AttachDelegate("TrackMap.Opponents",  () => _trackMap.OpponentData);
+            this.AttachDelegate("TrackMap.OpponentCount", () => _trackMap.OpponentCount);
+
             // Nearest car distance fraction for proximity-based lighting
             this.AttachDelegate("NearestCarDistance", () =>
             {
@@ -247,10 +265,38 @@ namespace K10MediaCoach.Plugin
             _previous = _current;
             _current  = TelemetrySnapshot.Capture(pluginManager, ref data);
 
+            // Detect track changes — reload map when track ID changes
+            if (_current.GameRunning)
+            {
+                string trackId = GetTrackId(pluginManager);
+                if (!string.IsNullOrEmpty(trackId) && trackId != _lastTrackId)
+                {
+                    _lastTrackId = trackId;
+                    _trackMap.OnTrackChanged(trackId);
+                }
+
+                // Feed velocity + car positions to the track map provider every frame
+                // (recording needs high sample rate; interpolation is cheap)
+                _trackMap.Update(
+                    _current.VelocityX, _current.VelocityZ,
+                    _current.TrackPositionPct,
+                    _current.CarIdxLapDistPct,
+                    _current.CarIdxOnPitRoad,
+                    _current.PlayerCarIdx,
+                    _current.Position);
+            }
+
             // Only run commentary evaluation every N frames
             _frameCount++;
             if (_frameCount < EvalEveryNFrames) return;
             _frameCount = 0;
+
+            // Update demo track map if in demo mode
+            if (Settings.DemoMode)
+            {
+                var dt = _engine.DemoTelemetry;
+                _trackMap.UpdateDemo(dt.TrackPosition, 19, dt.Elapsed); // 19 opponents = 20 car field
+            }
 
             bool wasVisible = _engine.IsVisible;
             _engine.Update(_current, _previous);
@@ -279,6 +325,7 @@ namespace K10MediaCoach.Plugin
             _engine.DisplaySeconds    = Settings.PromptDisplaySeconds;
             _engine.EventOnlyMode     = Settings.EventOnlyMode;
             _engine.DemoMode          = Settings.DemoMode;
+            _trackMap.SetDemoMode(Settings.DemoMode);
             _engine.EnabledCategories = Settings.EnabledCategories?.Count > 0
                 ? new System.Collections.Generic.HashSet<string>(Settings.EnabledCategories)
                 : null;
@@ -314,6 +361,23 @@ namespace K10MediaCoach.Plugin
             return _engine.CurrentText;
         }
 
+        private string GetTrackId(PluginManager pm)
+        {
+            try
+            {
+                // iRacing: SessionInfo contains track name
+                var val = pm.GetPropertyValue("DataCorePlugin.GameData.TrackName")
+                       ?? pm.GetPropertyValue("DataCorePlugin.GameData.TrackId");
+                if (val != null)
+                {
+                    string id = val.ToString().Trim();
+                    if (!string.IsNullOrEmpty(id)) return id;
+                }
+            }
+            catch { }
+            return _current.GameName ?? "";
+        }
+
         private void StartHttpServer()
         {
             try
@@ -338,6 +402,8 @@ namespace K10MediaCoach.Plugin
 
         private void HttpServerLoop()
         {
+            var ic = System.Globalization.CultureInfo.InvariantCulture;
+
             while (_httpListener != null && _httpListener.IsListening)
             {
                 HttpListenerContext ctx;
@@ -346,29 +412,47 @@ namespace K10MediaCoach.Plugin
 
                 try
                 {
-                    string flagState = "none";
-                    if (_current.GameRunning)
+                    // Handle CORS preflight
+                    if (ctx.Request.HttpMethod == "OPTIONS")
                     {
-                        int f = _current.SessionFlags;
-                        if ((f & TelemetrySnapshot.FLAG_RED)       != 0) flagState = "red";
-                        else if ((f & TelemetrySnapshot.FLAG_BLACK) != 0) flagState = "black";
-                        else if ((f & TelemetrySnapshot.FLAG_YELLOW) != 0) flagState = "yellow";
-                        else if ((f & TelemetrySnapshot.FLAG_BLUE)   != 0) flagState = "blue";
-                        else if ((f & TelemetrySnapshot.FLAG_DEBRIS) != 0) flagState = "debris";
-                        else if ((f & TelemetrySnapshot.FLAG_WHITE)  != 0) flagState = "white";
-                        else if ((f & TelemetrySnapshot.FLAG_CHECKERED) != 0) flagState = "checkered";
-                        else if ((f & TelemetrySnapshot.FLAG_GREEN)  != 0) flagState = "green";
+                        ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                        ctx.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                        ctx.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
+                        ctx.Response.StatusCode = 204;
+                        ctx.Response.OutputStream.Close();
+                        continue;
                     }
 
-                    double nearestDist = 1.0;
-                    if (_current.GameRunning && _current.CarIdxLapDistPct != null && _current.CarIdxLapDistPct.Length > 0)
+                    // ── Build complete state snapshot ────────────────────────
+                    var s = _current; // snapshot reference (safe — replaced atomically in DataUpdate)
+                    var dt = _engine.DemoTelemetry;
+                    bool demo = Settings.DemoMode;
+
+                    // Flag state
+                    string flagState = "none";
+                    if (s.GameRunning)
                     {
-                        double playerPos = _current.TrackPositionPct;
-                        int playerIdx   = _current.PlayerCarIdx;
-                        for (int i = 0; i < _current.CarIdxLapDistPct.Length; i++)
+                        int f = s.SessionFlags;
+                        if      ((f & TelemetrySnapshot.FLAG_RED)       != 0) flagState = "red";
+                        else if ((f & TelemetrySnapshot.FLAG_BLACK)     != 0) flagState = "black";
+                        else if ((f & TelemetrySnapshot.FLAG_YELLOW)    != 0) flagState = "yellow";
+                        else if ((f & TelemetrySnapshot.FLAG_BLUE)      != 0) flagState = "blue";
+                        else if ((f & TelemetrySnapshot.FLAG_DEBRIS)    != 0) flagState = "debris";
+                        else if ((f & TelemetrySnapshot.FLAG_WHITE)     != 0) flagState = "white";
+                        else if ((f & TelemetrySnapshot.FLAG_CHECKERED) != 0) flagState = "checkered";
+                        else if ((f & TelemetrySnapshot.FLAG_GREEN)     != 0) flagState = "green";
+                    }
+
+                    // Nearest car distance
+                    double nearestDist = 1.0;
+                    if (s.GameRunning && s.CarIdxLapDistPct != null && s.CarIdxLapDistPct.Length > 0)
+                    {
+                        double playerPos = s.TrackPositionPct;
+                        int playerIdx = s.PlayerCarIdx;
+                        for (int i = 0; i < s.CarIdxLapDistPct.Length; i++)
                         {
                             if (i == playerIdx) continue;
-                            double other = _current.CarIdxLapDistPct[i];
+                            double other = s.CarIdxLapDistPct[i];
                             if (other <= 0) continue;
                             double d = Math.Abs(playerPos - other);
                             d = Math.Min(d, 1.0 - d);
@@ -376,21 +460,114 @@ namespace K10MediaCoach.Plugin
                         }
                     }
 
-                    string cat   = _engine.CurrentCategory ?? "";
+                    // Commentary state
+                    string cat = _engine.CurrentCategory ?? "";
                     string label = _engine.CurrentSentimentLabel ?? "";
                     string category = string.IsNullOrEmpty(label) ? cat : cat + " \u2014 " + label;
 
-                    string json = $@"{{
-  ""commentarySeverity"": {(_engine.IsVisible ? _engine.CurrentSeverity : 0)},
-  ""commentaryVisible"": {(_engine.IsVisible ? "true" : "false")},
-  ""commentarySentimentColor"": ""{_engine.CurrentSentimentColor ?? "#FF000000"}"",
-  ""commentaryCategory"": ""{Escape(category)}"",
-  ""currentFlagState"": ""{flagState}"",
-  ""nearestCarDistance"": {nearestDist.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)},
-  ""gameRunning"": {(_current.GameRunning ? "true" : "false")}
-}}";
+                    // Build JSON — flat key-value map matching PROP_KEYS the dashboard expects
+                    var sb = new StringBuilder(2048);
+                    sb.Append("{\n");
 
-                    byte[] buf = Encoding.UTF8.GetBytes(json);
+                    // ── Game data (live telemetry from snapshot) ──
+                    Jp(sb, "DataCorePlugin.GameRunning", s.GameRunning ? 1 : 0);
+                    Jp(sb, "DataCorePlugin.GameData.Gear", Escape(s.Gear ?? "N"));
+                    Jp(sb, "DataCorePlugin.GameData.Rpms", s.Rpms, ic);
+                    Jp(sb, "DataCorePlugin.GameData.CarSettings_MaxRPM", 8000.0, ic); // fallback; snapshot doesn't carry maxRPM
+                    Jp(sb, "DataCorePlugin.GameData.SpeedMph", s.SpeedKmh * 0.621371, ic);
+                    Jp(sb, "DataCorePlugin.GameData.Throttle", s.Throttle * 100, ic);
+                    Jp(sb, "DataCorePlugin.GameData.Brake", s.Brake * 100, ic);
+                    Jp(sb, "DataCorePlugin.GameData.Clutch", 0.0, ic); // not in snapshot currently
+                    Jp(sb, "DataCorePlugin.GameData.Fuel", s.FuelLevel, ic);
+                    Jp(sb, "DataCorePlugin.GameData.MaxFuel", s.FuelLevel > 0 ? s.FuelLevel / Math.Max(s.FuelPercent, 0.01) : 0, ic);
+                    Jp(sb, "DataCorePlugin.Computed.Fuel_LitersPerLap", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameData.RemainingLaps", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreTempFrontLeft", s.TyreTempFL, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreTempFrontRight", s.TyreTempFR, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreTempRearLeft", s.TyreTempRL, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreTempRearRight", s.TyreTempRR, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreWearFrontLeft", s.TyreWearFL, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreWearFrontRight", s.TyreWearFR, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreWearRearLeft", s.TyreWearRL, ic);
+                    Jp(sb, "DataCorePlugin.GameData.TyreWearRearRight", s.TyreWearRR, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcBrakeBias", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcTractionControl", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcABS", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameData.Position", s.Position);
+                    Jp(sb, "DataCorePlugin.GameData.CurrentLap", s.CurrentLap);
+                    Jp(sb, "DataCorePlugin.GameData.BestLapTime", s.LapBestTime, ic);
+                    Jp(sb, "DataCorePlugin.GameData.CarModel", Escape(""));
+                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_IRating", 0);
+                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating", 0.0, ic);
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Gap", 0.0, ic);
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_Gap", 0.0, ic);
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Name", Escape(s.NearestAheadName ?? ""));
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_Name", Escape(s.NearestBehindName ?? ""));
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_IRating", s.NearestAheadRating);
+                    Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_IRating", s.NearestBehindRating);
+
+                    // ── Commentary ──
+                    Jp(sb, "K10MediaCoach.Plugin.CommentaryVisible", _engine.IsVisible ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.CommentaryText", Escape(_engine.CurrentText ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.CommentaryTopicTitle", Escape(_engine.CurrentTitle ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.CommentaryCategory", Escape(category));
+                    Jp(sb, "K10MediaCoach.Plugin.CommentarySentimentColor", Escape(_engine.CurrentSentimentColor ?? "#FF000000"));
+                    Jp(sb, "K10MediaCoach.Plugin.CommentarySeverity", _engine.IsVisible ? _engine.CurrentSeverity : 0);
+
+                    // ── Demo mode ──
+                    Jp(sb, "K10MediaCoach.Plugin.DemoMode", demo ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Gear", Escape(dt.Gear ?? "N"));
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Rpm", dt.Rpm, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.MaxRpm", dt.MaxRpm, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.SpeedMph", dt.SpeedMph, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Throttle", dt.Throttle * 100, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Brake", dt.Brake * 100, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Clutch", dt.Clutch * 100, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Fuel", dt.Fuel, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.MaxFuel", dt.MaxFuel, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.FuelPerLap", dt.FuelPerLap, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.RemainingLaps", dt.RemainingLaps, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreTempFL", dt.TyreTempFL, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreTempFR", dt.TyreTempFR, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreTempRL", dt.TyreTempRL, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreTempRR", dt.TyreTempRR, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreWearFL", dt.TyreWearFL, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreWearFR", dt.TyreWearFR, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreWearRL", dt.TyreWearRL, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TyreWearRR", dt.TyreWearRR, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.BrakeBias", dt.BrakeBias, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.TC", dt.TC, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.ABS", dt.ABS, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.Position", dt.Position);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.CurrentLap", dt.CurrentLap);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.BestLapTime", dt.BestLapTime, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.CarModel", Escape(dt.CarModel ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.IRating", dt.IRating);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.SafetyRating", dt.SafetyRating, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.GapAhead", dt.GapAhead, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.GapBehind", dt.GapBehind, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DriverAhead", Escape(dt.DriverAhead ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DriverBehind", Escape(dt.DriverBehind ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.IRAhead", dt.IRAhead);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.IRBehind", dt.IRBehind);
+
+                    // ── Track map ──
+                    Jp(sb, "K10MediaCoach.Plugin.TrackMap.Ready", _trackMap.IsReady ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.TrackMap.SvgPath", Escape(_trackMap.SvgPath ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.TrackMap.PlayerX", _trackMap.PlayerX, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.TrackMap.PlayerY", _trackMap.PlayerY, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.TrackMap.Opponents", Escape(_trackMap.OpponentData ?? ""));
+
+                    // ── Extra (homebridge / legacy) ──
+                    Jp(sb, "currentFlagState", Escape(flagState));
+                    Jp(sb, "nearestCarDistance", nearestDist, ic);
+
+                    // Remove trailing comma and close
+                    if (sb.Length > 2 && sb[sb.Length - 2] == ',')
+                        sb.Remove(sb.Length - 2, 1); // remove last comma
+                    sb.Append("}");
+
+                    byte[] buf = Encoding.UTF8.GetBytes(sb.ToString());
                     ctx.Response.ContentType     = "application/json";
                     ctx.Response.ContentLength64 = buf.Length;
                     ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
@@ -406,6 +583,14 @@ namespace K10MediaCoach.Plugin
                 }
             }
         }
+
+        // JSON property helpers — avoid pulling in Newtonsoft for a simple flat map
+        private static void Jp(StringBuilder sb, string key, int val)
+            => sb.Append($"  \"{key}\": {val},\n");
+        private static void Jp(StringBuilder sb, string key, double val, System.Globalization.CultureInfo ic)
+            => sb.Append($"  \"{key}\": {val.ToString("G", ic)},\n");
+        private static void Jp(StringBuilder sb, string key, string val)
+            => sb.Append($"  \"{key}\": \"{val}\",\n");
 
         private static string Escape(string s) =>
             s?.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "") ?? "";

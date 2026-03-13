@@ -63,6 +63,12 @@ namespace K10MediaCoach.Plugin.Engine
         public double LapBestTime       { get; set; }
         public double SessionTimeRemain { get; set; }
 
+        // ── World-space velocity (for track map dead reckoning) ──────────────
+        // Available: iRacing (VelocityX/Z), integrated each frame to build
+        // a track outline from scratch — no Lat/Lon needed.
+        public double VelocityX { get; set; }
+        public double VelocityZ { get; set; }
+
         // ── iRacing-only ─────────────────────────────────────────────────────
         public double SteeringWheelTorque { get; set; } // torque (Nm), not angle
         public int    SessionFlags        { get; set; } // yellow/black/etc. bitmask

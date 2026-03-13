@@ -20,6 +20,16 @@ The prompts are written in first person, present tense, technically grounded —
 
 The companion plugin reads the same telemetry properties via SimHub's HTTP API and translates them into HomeKit light colors: flags as colored lights, severity as brightness, proximity as red/orange warning indicators. Multiple lights can run different modes independently, so one light can show flags while another responds to the full telemetry stream.
 
+### K10 Media Broadcast — Stream Overlay Dashboard
+
+![Dashboard](simhub-plugin/docs/dashboard-screenshot.png)
+
+A standalone Electron overlay that renders the full telemetry HUD as a transparent window on top of the sim. The dashboard shows gear, speed, and RPM with a color-coded tachometer; pedal input traces; fuel level with per-lap consumption and pit stop estimates; four-corner tyre temperatures with heat-map coloring; brake bias, traction control, and ABS settings; race position with gap times to the cars ahead and behind; iRating and Safety Rating; and the commentary engine's live prompts. The commentary panel slides in from the left when events fire, tinted to match the event's sentiment color.
+
+The overlay runs at ~30fps, polling the plugin's HTTP API on port 8889. It supports native transparency on x64 and green-screen chroma keying on ARM. The same dashboard HTML also works as a SimHub dashboard template or directly in a browser.
+
+Full setup and configuration: **[simhub-plugin/K10 Media Broadcast/README.md](simhub-plugin/K10%20Media%20Broadcast/README.md)**
+
 ## Repository Structure
 
 ```
@@ -41,6 +51,7 @@ The companion plugin reads the same telemetry properties via SimHub's HTTP API a
 │   ├── tools/
 │   │   ├── replay_telemetry.py           Offline telemetry replay and scenario generation
 │   │   └── generate_fragments.py         Haiku-powered fragment generation script
+│   ├── K10 Media Broadcast/              Electron overlay app (dashboard HUD)
 │   ├── DashTemplates/                    SimHub dashboard templates
 │   └── docs/                             In-depth documentation
 ├── homebridge-plugin/                    Homebridge platform plugin (TypeScript)
@@ -124,6 +135,8 @@ Full setup walkthrough with multi-light configuration, automation scripts, and t
 | **Homebridge Plugin** | |
 | [homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md](homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md) | Platform architecture, color mapping, polling loop, per-light overrides |
 | [homebridge-plugin/docs/HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md) | Apple HomeKit setup instructions, light modes, multi-light configuration, troubleshooting |
+| **Dashboard Overlay** | |
+| [simhub-plugin/K10 Media Broadcast/README.md](simhub-plugin/K10%20Media%20Broadcast/README.md) | Electron overlay setup, panel reference, architecture, ARM compatibility, OBS integration |
 | **Shared** | |
 | [simhub-plugin/docs/DATASETS.md](simhub-plugin/docs/DATASETS.md) | Topic schema, trigger conditions, fragment format, sentiment reference, how to add new topics |
 | [simhub-plugin/docs/TESTING.md](simhub-plugin/docs/TESTING.md) | All four test suites, synthetic scenarios, CI integration, telemetry recording/replay |

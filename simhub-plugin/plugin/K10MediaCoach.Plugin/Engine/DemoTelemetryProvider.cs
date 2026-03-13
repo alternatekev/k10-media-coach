@@ -26,6 +26,12 @@ namespace K10MediaCoach.Plugin.Engine
         private double _trackPos = 0;
         private double _prevSpeed = 120;
 
+        /// <summary>Current track position (0–1 fraction) for map animation.</summary>
+        public double TrackPosition => _trackPos;
+
+        /// <summary>Total elapsed demo time in seconds.</summary>
+        public double Elapsed => _elapsed;
+
         // ── Exposed state (read by Plugin.cs via properties) ────────────────
         public string Gear     { get; private set; } = "3";
         public double Rpm      { get; private set; } = 4200;

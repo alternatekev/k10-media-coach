@@ -95,6 +95,10 @@ namespace K10MediaCoach.Plugin.Engine
             }
             catch { }
 
+            // ── World velocity (for track map dead reckoning) ─────────────────
+            s.VelocityX = GetRaw<float>(pm, "VelocityX");
+            s.VelocityZ = GetRaw<float>(pm, "VelocityZ");
+
             // ── iRacing-only ─────────────────────────────────────────────────
             s.SteeringWheelTorque = GetRaw<float>(pm, "SteeringWheelTorque");
             s.SessionFlags        = GetRaw<int>(pm, "SessionFlags");

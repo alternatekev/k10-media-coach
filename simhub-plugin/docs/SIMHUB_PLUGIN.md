@@ -90,6 +90,34 @@ The `TelemetrySnapshot` is split into two files to keep the data model testable 
 
 The reflection-based capture uses a `Coalesce<T>()` helper that handles NaN values, null references, and type conversion failures gracefully — the plugin never crashes on missing data, it just gets default values and the affected triggers don't fire.
 
+## HTTP API (Port 8889)
+
+The plugin runs its own lightweight HTTP server using `System.Net.HttpListener`, independent of SimHub's built-in web server. This serves the K10 Media Broadcast dashboard overlay and can be consumed by any HTTP client.
+
+**Endpoint:** `GET http://localhost:8889/k10mediacoach/`
+
+**Response:** A flat JSON object containing 77+ key-value pairs covering all game telemetry, commentary state, demo mode data, and track map information. Property keys match SimHub's naming convention (e.g., `DataCorePlugin.GameData.Rpms`, `K10MediaCoach.Plugin.CommentaryText`).
+
+The server includes CORS headers (`Access-Control-Allow-Origin: *`) so the dashboard can be loaded from `file://` URLs or different origins. OPTIONS preflight requests are handled automatically.
+
+### Why a Separate Server
+
+SimHub's built-in web server (port 8888) does not expose plugin properties via REST in version 9.x. The undocumented `GET /api/GetGamedata` endpoint exists but returns only core game data, not plugin-specific properties. By running a dedicated listener on port 8889, the plugin has full control over what data is served and can include commentary state, demo telemetry, and track map SVG paths that SimHub wouldn't expose.
+
+### Demo Mode Properties
+
+When demo mode is active (`K10MediaCoach.Plugin.DemoMode = 1`), the server serves simulated telemetry under the `K10MediaCoach.Plugin.Demo.*` namespace. The dashboard automatically switches data sources — reading from `Demo.Gear` instead of `DataCorePlugin.GameData.Gear`, for example. This allows the full dashboard to run without a live sim session.
+
+## Dashboard Integration
+
+The plugin's telemetry is consumed by three dashboard implementations, all using the same `dashboard.html` source file:
+
+**K10 Media Broadcast (Electron overlay):** A standalone always-on-top transparent window that polls the HTTP API at ~30fps. Designed for stream overlays and broadcast production. See [K10 Media Broadcast/README.md](../K10%20Media%20Broadcast/README.md) for full documentation.
+
+**SimHub Dashboard Template:** Installed to SimHub's `DashTemplates/` directory. When loaded inside SimHub's dashboard viewer, it uses SimHub's `$prop()` JavaScript API for data access instead of HTTP polling — lower latency since the data is already in-process.
+
+**Browser Access:** Opening `dashboard.html` directly in a browser auto-detects that SimHub's `$prop()` function isn't available and falls back to HTTP polling mode. Useful for testing layout changes without launching the full Electron app.
+
 ## For More Detail
 
 The commentary engine's trigger evaluation, prompt selection, severity-based interruption, and color system are documented in [COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md). The dataset format and how to extend it are documented in [DATASETS.md](DATASETS.md).

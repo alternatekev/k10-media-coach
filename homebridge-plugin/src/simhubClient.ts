@@ -25,11 +25,13 @@ export class SimHubClient {
   async getState(): Promise<SimHubState> {
     try {
       const raw = await this.fetchJson(this.stateUrl);
+      // The plugin now serves full property keys — map them back to our state shape.
+      // Legacy short keys (currentFlagState, nearestCarDistance) are also included.
       const state: SimHubState = {
-        commentarySeverity: this.num(raw.commentarySeverity, 0),
-        commentaryVisible: raw.commentaryVisible === true,
-        commentarySentimentColor: this.color(raw.commentarySentimentColor),
-        commentaryCategory: this.str(raw.commentaryCategory, ''),
+        commentarySeverity: this.num(raw['K10MediaCoach.Plugin.CommentarySeverity'] ?? raw.commentarySeverity, 0),
+        commentaryVisible: (this.num(raw['K10MediaCoach.Plugin.CommentaryVisible'] ?? 0, 0) === 1) || raw.commentaryVisible === true,
+        commentarySentimentColor: this.color(raw['K10MediaCoach.Plugin.CommentarySentimentColor'] ?? raw.commentarySentimentColor),
+        commentaryCategory: this.str(raw['K10MediaCoach.Plugin.CommentaryCategory'] ?? raw.commentaryCategory, ''),
         currentFlagState: this.str(raw.currentFlagState, 'none'),
         nearestCarDistance: this.num(raw.nearestCarDistance, 1.0),
         isConnected: true,

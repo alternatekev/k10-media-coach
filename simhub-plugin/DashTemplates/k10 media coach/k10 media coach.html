@@ -895,24 +895,21 @@
       </div>
     </div>
 
-    <!-- COL: Maps stacked -->
+    <!-- COL: Maps stacked — rendered dynamically from TrackMapProvider -->
     <div class="maps-col">
       <div class="panel map-panel">
-        <svg class="map-svg" viewBox="0 0 100 100">
-          <path class="map-track" d="M 20,80 C 10,80 5,65 10,50 C 15,30 30,15 50,12 C 70,9 85,20 90,40 C 95,60 85,75 70,80 C 60,83 45,82 35,78 Z" />
-          <circle class="map-opponent" cx="15" cy="55" r="2.5" />
-          <circle class="map-opponent close" cx="30" cy="76" r="3" />
-          <circle class="map-opponent" cx="55" cy="13" r="2.5" />
-          <circle class="map-opponent" cx="88" cy="45" r="2.5" />
-          <circle class="map-player" cx="25" cy="78" r="4" />
+        <svg class="map-svg" id="fullMapSvg" viewBox="0 0 100 100">
+          <path class="map-track" id="fullMapTrack" d="" />
+          <g id="fullMapOpponents"></g>
+          <circle class="map-player" id="fullMapPlayer" cx="50" cy="50" r="4" />
         </svg>
         <div class="map-zoom-label">Full</div>
       </div>
       <div class="panel map-zoom-panel">
         <svg class="map-zoom-svg" id="zoomMapSvg" viewBox="0 0 100 100">
-          <path class="map-track" d="M 20,80 C 10,80 5,65 10,50 C 15,30 30,15 50,12 C 70,9 85,20 90,40 C 95,60 85,75 70,80 C 60,83 45,82 35,78 Z" style="stroke-width:1.5;" />
-          <circle class="map-opponent close" cx="30" cy="76" r="1.5" />
-          <circle class="map-player" cx="25" cy="78" r="2" />
+          <path class="map-track" id="zoomMapTrack" d="" style="stroke-width:1.5;" />
+          <g id="zoomMapOpponents"></g>
+          <circle class="map-player" id="zoomMapPlayer" cx="50" cy="50" r="2" />
         </svg>
         <div class="map-zoom-label">Local</div>
       </div>
@@ -1015,11 +1012,7 @@
     <!-- COL: Logo (two stacked squares) -->
     <div class="logo-col">
       <div class="logo-square" id="k10LogoSquare">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" style="width:70%;height:70%;opacity:0.88;">
-          <text x="40" y="34" text-anchor="middle" fill="white" font-family="Corbel,Segoe UI,sans-serif" font-size="22" font-weight="900" letter-spacing="-0.5">K10</text>
-          <line x1="14" y1="43" x2="66" y2="43" stroke="hsla(0,0%,100%,0.25)" stroke-width="1"/>
-          <text x="40" y="58" text-anchor="middle" fill="hsla(0,0%,100%,0.5)" font-family="Corbel,Segoe UI,sans-serif" font-size="8" font-weight="600" letter-spacing="2.5">MEDIA COACH</text>
-        </svg>
+        <img src="logomark.png" alt="K10 Media Coach" style="width:75%;height:auto;opacity:0.92;">
       </div>
       <div class="logo-square" id="carLogoSquare">
         <!-- BMW logo (default — switchable via JS) -->
@@ -1350,6 +1343,78 @@
     }
   }
 
+  // ═══ TRACK MAP ═══
+  let _mapLastPath = '';
+  const _SVG_NS = 'http://www.w3.org/2000/svg';
+  const _MAP_MAX_OPPONENTS = 63;
+
+  function updateTrackMap(svgPath, playerX, playerY, opponentStr) {
+    if (svgPath && svgPath !== _mapLastPath) {
+      _mapLastPath = svgPath;
+      const fullTrack = document.getElementById('fullMapTrack');
+      const zoomTrack = document.getElementById('zoomMapTrack');
+      if (fullTrack) fullTrack.setAttribute('d', svgPath);
+      if (zoomTrack) zoomTrack.setAttribute('d', svgPath);
+    }
+    const fullPlayer = document.getElementById('fullMapPlayer');
+    const zoomPlayer = document.getElementById('zoomMapPlayer');
+    if (fullPlayer) {
+      fullPlayer.setAttribute('cx', playerX.toFixed(1));
+      fullPlayer.setAttribute('cy', playerY.toFixed(1));
+    }
+    if (zoomPlayer) {
+      zoomPlayer.setAttribute('cx', playerX.toFixed(1));
+      zoomPlayer.setAttribute('cy', playerY.toFixed(1));
+    }
+    const zoomSvg = document.getElementById('zoomMapSvg');
+    if (zoomSvg) {
+      const zr = 15;
+      const vx = Math.max(0, Math.min(100 - zr * 2, playerX - zr));
+      const vy = Math.max(0, Math.min(100 - zr * 2, playerY - zr));
+      zoomSvg.setAttribute('viewBox', vx.toFixed(1) + ' ' + vy.toFixed(1) + ' ' + (zr * 2) + ' ' + (zr * 2));
+    }
+    const fullG = document.getElementById('fullMapOpponents');
+    const zoomG = document.getElementById('zoomMapOpponents');
+    if (!fullG || !zoomG) return;
+    const parts = opponentStr ? opponentStr.split(';') : [];
+    const count = Math.min(parts.length, _MAP_MAX_OPPONENTS);
+    _ensureOpponentDots(fullG, count, 2.5);
+    _ensureOpponentDots(zoomG, count, 1.5);
+    const fullDots = fullG.children;
+    const zoomDots = zoomG.children;
+    for (let i = 0; i < count; i++) {
+      const seg = parts[i].split(',');
+      if (seg.length < 2) continue;
+      const ox = seg[0], oy = seg[1];
+      const inPit = seg[2] === '1';
+      fullDots[i].setAttribute('cx', ox);
+      fullDots[i].setAttribute('cy', oy);
+      fullDots[i].style.display = inPit ? 'none' : '';
+      fullDots[i].classList.toggle('close', _isClose(playerX, playerY, +ox, +oy));
+      zoomDots[i].setAttribute('cx', ox);
+      zoomDots[i].setAttribute('cy', oy);
+      zoomDots[i].style.display = inPit ? 'none' : '';
+      zoomDots[i].classList.toggle('close', _isClose(playerX, playerY, +ox, +oy));
+    }
+  }
+
+  function _ensureOpponentDots(parent, count, radius) {
+    while (parent.children.length < count) {
+      const c = document.createElementNS(_SVG_NS, 'circle');
+      c.classList.add('map-opponent');
+      c.setAttribute('r', radius);
+      parent.appendChild(c);
+    }
+    while (parent.children.length > count) {
+      parent.removeChild(parent.lastChild);
+    }
+  }
+
+  function _isClose(px, py, ox, oy) {
+    const dx = px - ox, dy = py - oy;
+    return (dx * dx + dy * dy) < 64;
+  }
+
   // ═══ EXPOSE ALL FUNCTIONS TO WINDOW ═══
   // Required for SimHub JavascriptExtensions to call via root.defaultView
   window.updateTacho = updateTacho;
@@ -1366,6 +1431,7 @@
   window.getTyreTempClass = getTyreTempClass;
   window.updateTyreCell = updateTyreCell;
   window.updateFuelBar = updateFuelBar;
+  window.updateTrackMap = updateTrackMap;
 
   // ═══════════════════════════════════════════════════════════════
   // SIMHUB HTTP API POLLING ENGINE
@@ -1373,9 +1439,9 @@
   // Works as standalone browser overlay or OBS Browser Source.
   // The JavascriptExtensions file is unused in this mode.
   //
-  // Config: set SIMHUB_URL below (default: http://localhost:8888)
+  // Config: K10 Media Coach plugin HTTP server (port 8889)
   // ═══════════════════════════════════════════════════════════════
-  const SIMHUB_URL = 'http://localhost:8888';
+  const SIMHUB_URL = 'http://localhost:8889/k10mediacoach';
   const POLL_MS = 33; // ~30fps
 
   // All properties we need, batched into a single request
@@ -1420,7 +1486,13 @@
     'K10MediaCoach.Plugin.CommentaryTopicTitle',
     'K10MediaCoach.Plugin.CommentaryCategory',
     'K10MediaCoach.Plugin.CommentarySentimentColor',
-    'K10MediaCoach.Plugin.CommentarySeverity'
+    'K10MediaCoach.Plugin.CommentarySeverity',
+    // Track map
+    'K10MediaCoach.Plugin.TrackMap.Ready',
+    'K10MediaCoach.Plugin.TrackMap.SvgPath',
+    'K10MediaCoach.Plugin.TrackMap.PlayerX',
+    'K10MediaCoach.Plugin.TrackMap.PlayerY',
+    'K10MediaCoach.Plugin.TrackMap.Opponents'
   ];
 
   // ─── State ───
@@ -1471,42 +1543,24 @@
     h = Math.round(h * 60); if (h < 0) h += 360; return h;
   }
 
-  // ─── Fetch properties from SimHub HTTP API ───
+  // ─── Fetch properties from K10 plugin HTTP server ───
+  let _connFails = 0, _backoffUntil = 0;
   async function fetchProps() {
+    if (_backoffUntil > Date.now()) return null;
+
     try {
-      // SimHub API: POST to /api/pluginproperty with property names
-      // Fallback: fetch each individually (slower but more compatible)
-      const results = {};
-      const resp = await fetch(SIMHUB_URL + '/api/pluginproperty', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(PROP_KEYS)
-      });
+      const resp = await fetch(SIMHUB_URL);
       if (resp.ok) {
         const data = await resp.json();
-        // Batch response: array of values in same order
-        if (Array.isArray(data)) {
-          for (let i = 0; i < PROP_KEYS.length; i++) results[PROP_KEYS[i]] = data[i];
-        } else {
-          // Object response keyed by property name
-          Object.assign(results, data);
-        }
-        return results;
+        _connFails = 0;
+        return data;
       }
-    } catch (e) { /* network error — SimHub not running */ }
+    } catch (e) { /* unreachable */ }
 
-    // Fallback: individual GET requests (SimHub v9.x API)
-    try {
-      const promises = PROP_KEYS.map(k =>
-        fetch(SIMHUB_URL + '/api/pluginproperty/' + encodeURIComponent(k))
-          .then(r => r.ok ? r.json() : null)
-          .catch(() => null)
-      );
-      const values = await Promise.all(promises);
-      const results = {};
-      for (let i = 0; i < PROP_KEYS.length; i++) results[PROP_KEYS[i]] = values[i];
-      return results;
-    } catch (e) { return null; }
+    _connFails++;
+    _backoffUntil = Date.now() + Math.min(1000 * Math.pow(2, _connFails - 1), 10000);
+    if (_connFails <= 3) console.warn(`[K10 Media Coach] Plugin server unreachable at ${SIMHUB_URL} — fail #${_connFails}`);
+    return null;
   }
 
   // ─── Main update loop ───
@@ -1662,6 +1716,16 @@
       hideCommentary();
     }
     _commentaryWasVisible = !!cmVis;
+
+    // ─── Track map ───
+    const mapReady = +v('K10MediaCoach.Plugin.TrackMap.Ready') || 0;
+    if (mapReady) {
+      const mapPath = vs('K10MediaCoach.Plugin.TrackMap.SvgPath') || '';
+      const mapPX   = +v('K10MediaCoach.Plugin.TrackMap.PlayerX') || 50;
+      const mapPY   = +v('K10MediaCoach.Plugin.TrackMap.PlayerY') || 50;
+      const mapOpp  = vs('K10MediaCoach.Plugin.TrackMap.Opponents') || '';
+      updateTrackMap(mapPath, mapPX, mapPY, mapOpp);
+    }
 
     // ─── Cycling timer ───
     if (_cycleFrameCount >= _cycleIntervalFrames) { _cycleFrameCount = 0; cycleRatingPos(); }

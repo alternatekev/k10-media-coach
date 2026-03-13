@@ -342,6 +342,16 @@ function k10mediacoach() {
   _lastDriverAhead = driverAhead;
   _lastDriverBehind = driverBehind;
 
+  // ─── TRACK MAP ───
+  var mapReady = $prop('K10MediaCoach.Plugin.TrackMap.Ready') || 0;
+  if (mapReady && typeof win.updateTrackMap === 'function') {
+    var svgPath    = $prop('K10MediaCoach.Plugin.TrackMap.SvgPath') || '';
+    var playerX    = $prop('K10MediaCoach.Plugin.TrackMap.PlayerX') || 50;
+    var playerY    = $prop('K10MediaCoach.Plugin.TrackMap.PlayerY') || 50;
+    var opponents  = $prop('K10MediaCoach.Plugin.TrackMap.Opponents') || '';
+    win.updateTrackMap(svgPath, playerX, playerY, opponents);
+  }
+
   // ─── K10 MEDIA COACH COMMENTARY ───
   var commentaryVisible = $prop('K10MediaCoach.Plugin.CommentaryVisible') || 0;
   var commentaryText = $prop('K10MediaCoach.Plugin.CommentaryText') || '';
