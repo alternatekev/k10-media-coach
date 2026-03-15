@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src/images/logomark.png" alt="K10 Media Coach" width="200">
+  <img src="src/images/logomark.png" alt="K10 Media Broadcaster" width="200">
 </p>
 
-# K10 Media Coach
+# K10 Media Broadcaster
 
 ![Dashboard](simhub-plugin/docs/dashboard-screenshot.png)
 
@@ -22,19 +22,19 @@ The prompts are written in first person, present tense, technically grounded —
 
 The companion plugin reads the same telemetry properties via SimHub's HTTP API and translates them into HomeKit light colors: flags as colored lights, severity as brightness, proximity as red/orange warning indicators. Multiple lights can run different modes independently, so one light can show flags while another responds to the full telemetry stream.
 
-### K10 Media Broadcast — Stream Overlay Dashboard
+### K10 Media Broadcaster — Stream Overlay Dashboard
 
 A standalone Electron overlay that renders the full telemetry HUD as a transparent window on top of the sim. The dashboard shows gear, speed, and RPM with a color-coded tachometer; pedal input traces; fuel level with per-lap consumption and pit stop estimates; four-corner tyre temperatures with heat-map coloring; brake bias, traction control, and ABS settings; race position with gap times to the cars ahead and behind; iRating and Safety Rating; and the commentary engine's live prompts. The commentary panel slides in from the left when events fire, tinted to match the event's sentiment color.
 
 The overlay runs at ~30fps, polling the plugin's HTTP API on port 8889. It supports native transparency on x64 and green-screen chroma keying on ARM. The same dashboard HTML also works as a SimHub dashboard template or directly in a browser.
 
-Full setup and configuration: **[simhub-plugin/K10 Media Broadcast/README.md](simhub-plugin/K10%20Media%20Broadcast/README.md)**
+Full setup and configuration: **[k10-media-broadcaster/K10 Media Broadcaster/README.md](k10-media-broadcaster/K10%20Media%20Broadcast/README.md)**
 
 ## Repository Structure
 
 ```
 ├── simhub-plugin/                        SimHub plugin and data
-│   ├── plugin/K10MediaCoach.Plugin/      C# plugin (NET Framework 4.8, WPF)
+│   ├── plugin/K10MediaBroadcaster.Plugin/      C# plugin (NET Framework 4.8, WPF)
 │   │   ├── Engine/                       Commentary engine, trigger evaluator, fragments
 │   │   ├── Models/                       Data models (topics, sentiments)
 │   │   └── Properties/                   Assembly metadata
@@ -45,15 +45,16 @@ Full setup and configuration: **[simhub-plugin/K10 Media Broadcast/README.md](si
 │   │   ├── channel_notes.json            Voice-matching style profiles
 │   │   └── commentary_sources.json       Alternative transcript source index
 │   ├── tests/
-│   │   ├── K10MediaCoach.Tests/          C# unit tests (NUnit, 200+ tests)
+│   │   ├── K10MediaBroadcaster.Tests/          C# unit tests (NUnit, 200+ tests)
 │   │   ├── validate_datasets.py          Python dataset validation (28 tests)
 │   │   └── recordings/                   Synthetic telemetry transcripts
 │   ├── tools/
 │   │   ├── replay_telemetry.py           Offline telemetry replay and scenario generation
 │   │   └── generate_fragments.py         Haiku-powered fragment generation script
-│   ├── K10 Media Broadcast/              Electron overlay app (dashboard HUD)
 │   ├── DashTemplates/                    SimHub dashboard templates
 │   └── docs/                             In-depth documentation
+├── k10-media-broadcaster/                  Standalone broadcast overlay (Electron)
+│   └── K10 Media Broadcaster/              Electron overlay app (dashboard HUD)
 ├── homebridge-plugin/                    Homebridge platform plugin (TypeScript)
 │   ├── src/__tests__/                    Jest test suite (133 tests)
 │   └── docs/                             Homebridge-specific documentation
@@ -75,11 +76,11 @@ Prerequisites: [SimHub](https://www.simhubdash.com/) installed on Windows.
 After installation:
 
 1. Launch SimHub
-2. Enable "K10 Media Coach" in the plugin list
-3. Open the "k10 media coach" dashboard template
+2. Enable "K10 Media Broadcaster" in the plugin list
+3. Open the "k10 media broadcaster" dashboard template
 4. Configure display timing, category filters, and event-only mode in the plugin settings panel
 
-The plugin exposes all its data as SimHub properties (prefixed `K10MediaCoach.Plugin.*`), so you can build your own dashboard layout or integrate the properties into an existing one.
+The plugin exposes all its data as SimHub properties (prefixed `K10MediaBroadcaster.Plugin.*`), so you can build your own dashboard layout or integrate the properties into an existing one.
 
 To build from source instead: **[simhub-plugin/docs/DEVELOPMENT.md](simhub-plugin/docs/DEVELOPMENT.md)**
 
@@ -94,16 +95,16 @@ cd homebridge-plugin
 npm install && npm run build && npm link
 ```
 
-Add the `K10MediaCoachLights` platform to your Homebridge `config.json`:
+Add the `K10MediaBroadcasterLights` platform to your Homebridge `config.json`:
 
 ```json
 {
-  "platform": "K10MediaCoachLights",
-  "name": "K10 Media Coach Lights",
+  "platform": "K10MediaBroadcasterLights",
+  "name": "K10 Media Broadcaster Lights",
   "simhubUrl": "http://localhost:8888",
   "mode": "all_colors",
   "enableBlink": true,
-  "lights": [{ "name": "Sim Rig Light", "uniqueId": "k10-media-coach-light-1" }]
+  "lights": [{ "name": "Sim Rig Light", "uniqueId": "k10-media-broadcaster-light-1" }]
 }
 ```
 
@@ -136,7 +137,7 @@ Full setup walkthrough with multi-light configuration, automation scripts, and t
 | [homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md](homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md)     | Platform architecture, color mapping, polling loop, per-light overrides                        |
 | [homebridge-plugin/docs/HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md)                         | Apple HomeKit setup instructions, light modes, multi-light configuration, troubleshooting      |
 | **Dashboard Overlay**                                                                          |                                                                                                |
-| [simhub-plugin/K10 Media Broadcast/README.md](simhub-plugin/K10%20Media%20Broadcast/README.md) | Electron overlay setup, panel reference, architecture, ARM compatibility, OBS integration      |
+| [k10-media-broadcaster/K10 Media Broadcaster/README.md](k10-media-broadcaster/K10%20Media%20Broadcast/README.md) | Electron overlay setup, panel reference, architecture, ARM compatibility, OBS integration      |
 | **Shared**                                                                                     |                                                                                                |
 | [simhub-plugin/docs/DATASETS.md](simhub-plugin/docs/DATASETS.md)                               | Topic schema, trigger conditions, fragment format, sentiment reference, how to add new topics  |
 | [simhub-plugin/docs/TESTING.md](simhub-plugin/docs/TESTING.md)                                 | All four test suites, synthetic scenarios, CI integration, telemetry recording/replay          |
@@ -148,7 +149,7 @@ Four test suites run without SimHub, iRacing, or any external service:
 
 ```bash
 # C# unit tests (200+ tests, NUnit)
-cd simhub-plugin/tests/K10MediaCoach.Tests && dotnet test
+cd simhub-plugin/tests/K10MediaBroadcaster.Tests && dotnet test
 
 # Python dataset validation (28 tests)
 python3 simhub-plugin/tests/validate_datasets.py

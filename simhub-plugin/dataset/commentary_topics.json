@@ -1,6 +1,6 @@
 {
   "version": "6.0",
-  "description": "Commentary topics for Media Coach. 3rd-person broadcast commentary style — talks ABOUT the driver using {driver} placeholder (randomly resolved to first or last name). Each topic includes severity (1-5) for priority-based interruption and eventExposition for event-only display mode. Driver name placeholders: {driver}, {ahead}, {behind}. Event exposition uses {value} for the primary trigger's current telemetry value.",
+  "description": "Commentary topics for Media Broadcaster. 3rd-person broadcast commentary style — talks ABOUT the driver using {driver} placeholder (randomly resolved to first or last name). Each topic includes severity (1-5) for priority-based interruption and eventExposition for event-only display mode. Driver name placeholders: {driver}, {ahead}, {behind}. Event exposition uses {value} for the primary trigger's current telemetry value.",
   "categories": ["hardware", "game_feel", "car_response", "racing_experience"],
   "topics": [
 

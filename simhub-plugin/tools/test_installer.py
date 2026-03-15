@@ -40,8 +40,8 @@ EXPORT_BAT = os.path.join(ACTUAL_REPO_ROOT, "export.bat")
 
 # Files the installer is expected to copy TO SimHub
 INSTALL_MANIFEST = {
-    "dll": "MediaCoach.Plugin.dll",
-    "pdb": "MediaCoach.Plugin.pdb",  # optional
+    "dll": "MediaBroadcaster.Plugin.dll",
+    "pdb": "MediaBroadcaster.Plugin.pdb",  # optional
     "dataset_files": [
         "dataset/commentary_topics.json",
         "dataset/commentary_fragments.json",
@@ -50,21 +50,21 @@ INSTALL_MANIFEST = {
         "dataset/commentary_sources.json",
     ],
     "dashboard_files": [
-        "DashTemplates/media coach/media coach.djson",
-        "DashTemplates/media coach/media coach.djson.png",
-        "DashTemplates/media coach/media coach.djson.00.png",
-        "DashTemplates/media coach/media coach.djson.metadata",
-        "DashTemplates/media coach/JavascriptExtensions/sample.js",
-        "DashTemplates/media coach/_SHFonts/DymoFontInvers.ttf",
-        "DashTemplates/media coach/_SHFonts/eurostyle-normal.ttf",
+        "DashTemplates/media broadcaster/media broadcaster.djson",
+        "DashTemplates/media broadcaster/media broadcaster.djson.png",
+        "DashTemplates/media broadcaster/media broadcaster.djson.00.png",
+        "DashTemplates/media broadcaster/media broadcaster.djson.metadata",
+        "DashTemplates/media broadcaster/JavascriptExtensions/sample.js",
+        "DashTemplates/media broadcaster/_SHFonts/DymoFontInvers.ttf",
+        "DashTemplates/media broadcaster/_SHFonts/eurostyle-normal.ttf",
     ],
 }
 
 # Files the export tool copies FROM SimHub back to the repo
 EXPORT_MANIFEST = {
-    "dll": "MediaCoach.Plugin.dll",
-    "pdb": "MediaCoach.Plugin.pdb",
-    "dashboard_root": "DashTemplates/media coach",
+    "dll": "MediaBroadcaster.Plugin.dll",
+    "pdb": "MediaBroadcaster.Plugin.pdb",
+    "dashboard_root": "DashTemplates/media broadcaster",
 }
 
 
@@ -108,21 +108,21 @@ def create_fake_simhub_with_built_files(tmpdir):
     simhub = create_fake_simhub(tmpdir)
 
     # DLL + PDB (write recognizable content so we can verify the copy)
-    with open(os.path.join(simhub, "MediaCoach.Plugin.dll"), "wb") as f:
+    with open(os.path.join(simhub, "MediaBroadcaster.Plugin.dll"), "wb") as f:
         f.write(b"BUILT_DLL_CONTENT_12345")
-    with open(os.path.join(simhub, "MediaCoach.Plugin.pdb"), "wb") as f:
+    with open(os.path.join(simhub, "MediaBroadcaster.Plugin.pdb"), "wb") as f:
         f.write(b"BUILT_PDB_CONTENT_12345")
 
     # Dashboard files (simulating SimHub having modified them)
-    dash_dir = os.path.join(simhub, "DashTemplates", "media coach")
+    dash_dir = os.path.join(simhub, "DashTemplates", "media broadcaster")
     os.makedirs(dash_dir, exist_ok=True)
-    with open(os.path.join(dash_dir, "media coach.djson"), "w") as f:
+    with open(os.path.join(dash_dir, "media broadcaster.djson"), "w") as f:
         f.write('{"modified_in_simhub": true}')
-    with open(os.path.join(dash_dir, "media coach.djson.png"), "wb") as f:
+    with open(os.path.join(dash_dir, "media broadcaster.djson.png"), "wb") as f:
         f.write(b"PNG_UPDATED")
-    with open(os.path.join(dash_dir, "media coach.djson.00.png"), "wb") as f:
+    with open(os.path.join(dash_dir, "media broadcaster.djson.00.png"), "wb") as f:
         f.write(b"PNG_THUMB_UPDATED")
-    with open(os.path.join(dash_dir, "media coach.djson.metadata"), "w") as f:
+    with open(os.path.join(dash_dir, "media broadcaster.djson.metadata"), "w") as f:
         f.write('{"metadata": "updated"}')
 
     js_dir = os.path.join(dash_dir, "JavascriptExtensions")
@@ -140,7 +140,7 @@ def create_fake_simhub_with_built_files(tmpdir):
     # Backups directory (should NOT be exported)
     backups_dir = os.path.join(dash_dir, "_Backups")
     os.makedirs(backups_dir, exist_ok=True)
-    with open(os.path.join(backups_dir, "media coach_b1.djson"), "w") as f:
+    with open(os.path.join(backups_dir, "media broadcaster_b1.djson"), "w") as f:
         f.write("backup content - should not be copied")
 
     return simhub
@@ -165,7 +165,7 @@ class TestInstallerStructure(unittest.TestCase):
     def test_install_bat_references_correct_dll(self):
         with open(INSTALL_BAT, "r") as f:
             content = f.read()
-        self.assertIn("MediaCoach.Plugin.dll", content)
+        self.assertIn("MediaBroadcaster.Plugin.dll", content)
 
     def test_install_bat_references_dataset(self):
         with open(INSTALL_BAT, "r") as f:
@@ -222,12 +222,12 @@ class TestExportStructure(unittest.TestCase):
     def test_export_bat_references_dll(self):
         with open(EXPORT_BAT, "r") as f:
             content = f.read()
-        self.assertIn("MediaCoach.Plugin.dll", content)
+        self.assertIn("MediaBroadcaster.Plugin.dll", content)
 
     def test_export_bat_references_pdb(self):
         with open(EXPORT_BAT, "r") as f:
             content = f.read()
-        self.assertIn("MediaCoach.Plugin.pdb", content)
+        self.assertIn("MediaBroadcaster.Plugin.pdb", content)
 
     def test_export_bat_references_dashtemplates(self):
         with open(EXPORT_BAT, "r") as f:
@@ -297,7 +297,7 @@ class TestSimulatedInstall(unittest.TestCase):
     """
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="mediacoach_test_")
+        self.tmpdir = tempfile.mkdtemp(prefix="mediabroadcaster_test_")
         self.simhub = create_fake_simhub(self.tmpdir)
 
     def tearDown(self):
@@ -306,8 +306,8 @@ class TestSimulatedInstall(unittest.TestCase):
     def _simulate_install(self):
         """Replicate what install.bat does using Python file operations."""
         # Step 1: Copy DLL (build artifact — may not exist in CI)
-        src = os.path.join(REPO_ROOT, "MediaCoach.Plugin.dll")
-        dst = os.path.join(self.simhub, "MediaCoach.Plugin.dll")
+        src = os.path.join(REPO_ROOT, "MediaBroadcaster.Plugin.dll")
+        dst = os.path.join(self.simhub, "MediaBroadcaster.Plugin.dll")
         if os.path.exists(src):
             shutil.copy2(src, dst)
         else:
@@ -316,11 +316,11 @@ class TestSimulatedInstall(unittest.TestCase):
                 f.write(b"STUB_DLL_FOR_TESTING")
 
         # Step 1b: Copy PDB if present (build artifact — optional)
-        pdb_src = os.path.join(REPO_ROOT, "MediaCoach.Plugin.pdb")
+        pdb_src = os.path.join(REPO_ROOT, "MediaBroadcaster.Plugin.pdb")
         if os.path.exists(pdb_src):
-            shutil.copy2(pdb_src, os.path.join(self.simhub, "MediaCoach.Plugin.pdb"))
+            shutil.copy2(pdb_src, os.path.join(self.simhub, "MediaBroadcaster.Plugin.pdb"))
         else:
-            with open(os.path.join(self.simhub, "MediaCoach.Plugin.pdb"), "wb") as f:
+            with open(os.path.join(self.simhub, "MediaBroadcaster.Plugin.pdb"), "wb") as f:
                 f.write(b"STUB_PDB_FOR_TESTING")
 
         # Step 2: Copy dataset
@@ -335,10 +335,10 @@ class TestSimulatedInstall(unittest.TestCase):
 
     def test_dll_installed(self):
         self._simulate_install()
-        dll = os.path.join(self.simhub, "MediaCoach.Plugin.dll")
+        dll = os.path.join(self.simhub, "MediaBroadcaster.Plugin.dll")
         self.assertTrue(os.path.isfile(dll))
         # Verify content matches repo (only when the real DLL exists)
-        repo_dll = os.path.join(REPO_ROOT, "MediaCoach.Plugin.dll")
+        repo_dll = os.path.join(REPO_ROOT, "MediaBroadcaster.Plugin.dll")
         if os.path.isfile(repo_dll):
             with open(repo_dll, "rb") as f:
                 repo_content = f.read()
@@ -349,7 +349,7 @@ class TestSimulatedInstall(unittest.TestCase):
 
     def test_pdb_installed(self):
         self._simulate_install()
-        pdb = os.path.join(self.simhub, "MediaCoach.Plugin.pdb")
+        pdb = os.path.join(self.simhub, "MediaBroadcaster.Plugin.pdb")
         self.assertTrue(os.path.isfile(pdb))
 
     def test_all_dataset_files_installed(self):
@@ -392,7 +392,7 @@ class TestSimulatedInstall(unittest.TestCase):
         self._simulate_install()  # second run
 
         # All files should still be present
-        dll = os.path.join(self.simhub, "MediaCoach.Plugin.dll")
+        dll = os.path.join(self.simhub, "MediaBroadcaster.Plugin.dll")
         self.assertTrue(os.path.isfile(dll))
         for relpath in INSTALL_MANIFEST["dataset_files"]:
             self.assertTrue(os.path.isfile(os.path.join(self.simhub, relpath)))
@@ -409,7 +409,7 @@ class TestSimulatedExport(unittest.TestCase):
     """
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="mediacoach_export_test_")
+        self.tmpdir = tempfile.mkdtemp(prefix="mediabroadcaster_export_test_")
         self.simhub = create_fake_simhub_with_built_files(self.tmpdir)
 
         # Create a fake repo directory to export into
@@ -423,37 +423,37 @@ class TestSimulatedExport(unittest.TestCase):
     def _simulate_export(self):
         """Replicate what export.bat does using Python file operations."""
         # Copy DLL + PDB from SimHub to repo root
-        for fname in ["MediaCoach.Plugin.dll", "MediaCoach.Plugin.pdb"]:
+        for fname in ["MediaBroadcaster.Plugin.dll", "MediaBroadcaster.Plugin.pdb"]:
             src = os.path.join(self.simhub, fname)
             dst = os.path.join(self.fake_repo, fname)
             if os.path.exists(src):
                 shutil.copy2(src, dst)
 
         # Copy DashTemplates (excluding _Backups)
-        dash_src = os.path.join(self.simhub, "DashTemplates", "media coach")
-        dash_dst = os.path.join(self.fake_repo, "DashTemplates", "media coach")
+        dash_src = os.path.join(self.simhub, "DashTemplates", "media broadcaster")
+        dash_dst = os.path.join(self.fake_repo, "DashTemplates", "media broadcaster")
         if os.path.isdir(dash_src):
             shutil.copytree(dash_src, dash_dst, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("_Backups"))
 
     def test_dll_exported(self):
         self._simulate_export()
-        dll = os.path.join(self.fake_repo, "MediaCoach.Plugin.dll")
+        dll = os.path.join(self.fake_repo, "MediaBroadcaster.Plugin.dll")
         self.assertTrue(os.path.isfile(dll))
         with open(dll, "rb") as f:
             self.assertEqual(f.read(), b"BUILT_DLL_CONTENT_12345")
 
     def test_pdb_exported(self):
         self._simulate_export()
-        pdb = os.path.join(self.fake_repo, "MediaCoach.Plugin.pdb")
+        pdb = os.path.join(self.fake_repo, "MediaBroadcaster.Plugin.pdb")
         self.assertTrue(os.path.isfile(pdb))
         with open(pdb, "rb") as f:
             self.assertEqual(f.read(), b"BUILT_PDB_CONTENT_12345")
 
     def test_dashboard_exported(self):
         self._simulate_export()
-        djson = os.path.join(self.fake_repo, "DashTemplates", "media coach",
-                             "media coach.djson")
+        djson = os.path.join(self.fake_repo, "DashTemplates", "media broadcaster",
+                             "media broadcaster.djson")
         self.assertTrue(os.path.isfile(djson))
         with open(djson, "r") as f:
             data = json.load(f)
@@ -462,16 +462,16 @@ class TestSimulatedExport(unittest.TestCase):
     def test_dashboard_assets_exported(self):
         self._simulate_export()
         assets = [
-            "media coach.djson.png",
-            "media coach.djson.00.png",
-            "media coach.djson.metadata",
+            "media broadcaster.djson.png",
+            "media broadcaster.djson.00.png",
+            "media broadcaster.djson.metadata",
             "JavascriptExtensions/sample.js",
             "_SHFonts/DymoFontInvers.ttf",
             "_SHFonts/eurostyle-normal.ttf",
         ]
         for asset in assets:
             fullpath = os.path.join(self.fake_repo, "DashTemplates",
-                                    "media coach", asset)
+                                    "media broadcaster", asset)
             self.assertTrue(os.path.isfile(fullpath),
                             f"Expected {asset} to be exported")
 
@@ -479,7 +479,7 @@ class TestSimulatedExport(unittest.TestCase):
         """_Backups directory should NOT be copied to the repo."""
         self._simulate_export()
         backups = os.path.join(self.fake_repo, "DashTemplates",
-                               "media coach", "_Backups")
+                               "media broadcaster", "_Backups")
         self.assertFalse(os.path.isdir(backups),
                          "_Backups directory should not be exported to repo")
 
@@ -510,7 +510,7 @@ class TestLiveInstall(unittest.TestCase):
             raise unittest.SkipTest("Live tests require --live flag")
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="mediacoach_live_")
+        self.tmpdir = tempfile.mkdtemp(prefix="mediabroadcaster_live_")
         self.simhub = create_fake_simhub(self.tmpdir)
 
     def tearDown(self):
@@ -537,7 +537,7 @@ class TestLiveInstall(unittest.TestCase):
 
         # Verify files landed
         self.assertTrue(os.path.isfile(
-            os.path.join(self.simhub, "MediaCoach.Plugin.dll")))
+            os.path.join(self.simhub, "MediaBroadcaster.Plugin.dll")))
         self.assertTrue(os.path.isdir(
             os.path.join(self.simhub, "dataset")))
 
@@ -547,7 +547,7 @@ class TestLiveInstall(unittest.TestCase):
         env["SIMHUB_PATH"] = self.simhub
 
         # Rename the DLL temporarily
-        dll = os.path.join(REPO_ROOT, "MediaCoach.Plugin.dll")
+        dll = os.path.join(REPO_ROOT, "MediaBroadcaster.Plugin.dll")
         dll_backup = dll + ".testbackup"
         os.rename(dll, dll_backup)
         try:

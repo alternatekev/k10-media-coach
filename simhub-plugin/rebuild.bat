@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: ════════════════════════════════════════════════════════════════
-::  K10 Media Coach — SimHub Plugin Rebuild & Restart
+::  K10 Media Broadcaster — SimHub Plugin Rebuild & Restart
 :: ════════════════════════════════════════════════════════════════
 ::
 ::  Usage:  rebuild.bat              (uses defaults)
@@ -27,11 +27,11 @@ if defined SIMHUB_PATH (
 if "!SH:~-1!"=="\" set "SH=!SH:~0,-1!"
 
 set "SH_EXE=!SH!\SimHubWPF.exe"
-set "PROJ=%~dp0plugin\K10MediaCoach.Plugin\K10MediaCoach.Plugin.csproj"
+set "PROJ=%~dp0plugin\K10MediaBroadcaster.Plugin\K10MediaBroadcaster.Plugin.csproj"
 
 echo.
 echo  ╔══════════════════════════════════════════════╗
-echo  ║   K10 Media Coach — Rebuild ^& Restart       ║
+echo  ║   K10 Media Broadcaster — Rebuild ^& Restart       ║
 echo  ╚══════════════════════════════════════════════╝
 echo.
 echo  Config:     %CONFIG%

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate commentary fragments for the Media Coach plugin using Claude Haiku.
+Generate commentary fragments for the Media Broadcaster plugin using Claude Haiku.
 
 This script uses the Anthropic Messages API (claude-haiku-4-5 model) to generate
 rich, diverse commentary fragments that can be composed at runtime to produce
@@ -154,7 +154,7 @@ from typing import Optional, Dict, List, Any
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate commentary fragments for Media Coach using Claude Haiku"
+        description="Generate commentary fragments for Media Broadcaster using Claude Haiku"
     )
     parser.add_argument(
         "--output",

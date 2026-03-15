@@ -1,19 +1,19 @@
 # Dashboard Data Points — Validated SimHub Properties
 
-All properties below are confirmed available through SimHub's DataCorePlugin, the K10 Media Coach plugin's AttachDelegate properties, or iRacing Extra Properties plugin.
+All properties below are confirmed available through SimHub's DataCorePlugin, the K10 Media Broadcaster plugin's AttachDelegate properties, or iRacing Extra Properties plugin.
 
-## K10 Media Coach Plugin Properties (Custom)
+## K10 Media Broadcaster Plugin Properties (Custom)
 | Property | Type | Source |
 |---|---|---|
-| `K10MediaCoach.Plugin.CommentaryText` | string | Full commentary prompt |
-| `K10MediaCoach.Plugin.CommentaryVisible` | int (0/1) | Show/hide banner |
-| `K10MediaCoach.Plugin.CommentaryTopicTitle` | string | Event name ("Close Battle") |
-| `K10MediaCoach.Plugin.CommentaryCategory` | string | Category + sentiment label |
-| `K10MediaCoach.Plugin.CommentarySentimentColor` | string | #AARRGGBB overlay color |
-| `K10MediaCoach.Plugin.CommentaryTextColor` | string | #AARRGGBB text color |
-| `K10MediaCoach.Plugin.CommentarySeverity` | int (0-5) | Severity level |
-| `K10MediaCoach.Plugin.CurrentFlagState` | string | "green", "yellow", "red", etc. |
-| `K10MediaCoach.Plugin.NearestCarDistance` | double (0-1) | Proximity fraction |
+| `K10MediaBroadcaster.Plugin.CommentaryText` | string | Full commentary prompt |
+| `K10MediaBroadcaster.Plugin.CommentaryVisible` | int (0/1) | Show/hide banner |
+| `K10MediaBroadcaster.Plugin.CommentaryTopicTitle` | string | Event name ("Close Battle") |
+| `K10MediaBroadcaster.Plugin.CommentaryCategory` | string | Category + sentiment label |
+| `K10MediaBroadcaster.Plugin.CommentarySentimentColor` | string | #AARRGGBB overlay color |
+| `K10MediaBroadcaster.Plugin.CommentaryTextColor` | string | #AARRGGBB text color |
+| `K10MediaBroadcaster.Plugin.CommentarySeverity` | int (0-5) | Severity level |
+| `K10MediaBroadcaster.Plugin.CurrentFlagState` | string | "green", "yellow", "red", etc. |
+| `K10MediaBroadcaster.Plugin.NearestCarDistance` | double (0-1) | Proximity fraction |
 
 ## Core Telemetry (DataCorePlugin.GameData)
 | Property | Dashboard Use | Type |

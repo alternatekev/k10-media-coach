@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "description": "Index of alternative commentary transcript sources for Media Coach plugin. Organized by source type with acquisition method, content style, and relevance to each plugin category.",
+  "description": "Index of alternative commentary transcript sources for Media Broadcaster plugin. Organized by source type with acquisition method, content style, and relevance to each plugin category.",
   "note": "Sources marked 'transcript_method: auto_caption' use YouTube auto-generated captions via yt-dlp. Sources marked 'transcript_method: manual' require manual transcription or scraping. Sources marked 'transcript_method: api' have structured data available via API or download.",
 
   "existing_sources": {

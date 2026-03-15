@@ -1,11 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
 
-title K10 Media Coach Plugin Installer
+title K10 Media Broadcaster Plugin Installer
 
 echo.
 echo  ============================================
-echo   K10 Media Coach - SimHub Plugin Installer
+echo   K10 Media Broadcaster - SimHub Plugin Installer
 echo  ============================================
 echo.
 
@@ -84,23 +84,23 @@ set "PLUGIN_DIR=%REPO_DIR%\simhub-plugin"
 
 echo  [1/3] Installing plugin DLL...
 
-if exist "%PLUGIN_DIR%\K10MediaCoach.Plugin.dll" (
-    copy /Y "%PLUGIN_DIR%\K10MediaCoach.Plugin.dll" "%SIMHUB_DIR%\K10MediaCoach.Plugin.dll" >NUL
+if exist "%PLUGIN_DIR%\K10MediaBroadcaster.Plugin.dll" (
+    copy /Y "%PLUGIN_DIR%\K10MediaBroadcaster.Plugin.dll" "%SIMHUB_DIR%\K10MediaBroadcaster.Plugin.dll" >NUL
     if !ERRORLEVEL! NEQ 0 (
         echo        FAILED - could not copy DLL. Is SimHub running?
         goto :error
     )
-    echo        OK - K10MediaCoach.Plugin.dll
+    echo        OK - K10MediaBroadcaster.Plugin.dll
 ) else (
-    echo        SKIPPED - K10MediaCoach.Plugin.dll not found.
+    echo        SKIPPED - K10MediaBroadcaster.Plugin.dll not found.
     echo        Build the plugin first, or copy the DLL to simhub-plugin\.
     echo        See simhub-plugin\docs\DEVELOPMENT.md for build instructions.
     goto :error
 )
 
 :: Copy PDB if present (optional, for debugging)
-if exist "%PLUGIN_DIR%\K10MediaCoach.Plugin.pdb" (
-    copy /Y "%PLUGIN_DIR%\K10MediaCoach.Plugin.pdb" "%SIMHUB_DIR%\K10MediaCoach.Plugin.pdb" >NUL
+if exist "%PLUGIN_DIR%\K10MediaBroadcaster.Plugin.pdb" (
+    copy /Y "%PLUGIN_DIR%\K10MediaBroadcaster.Plugin.pdb" "%SIMHUB_DIR%\K10MediaBroadcaster.Plugin.pdb" >NUL
 )
 
 :: -------------------------------------------------------------------
@@ -133,8 +133,8 @@ if exist "%PLUGIN_DIR%\DashTemplates" (
         echo        FAILED - could not copy dashboard templates.
         goto :error
     )
-    echo        OK - DashTemplates\k10 media coach\
-    echo        OK - DashTemplates\k10 media broadcast\
+    echo        OK - DashTemplates\k10 media broadcaster\
+    echo        OK - DashTemplates\k10 media broadcaster\
 ) else (
     echo        SKIPPED - DashTemplates folder not found.
 )
@@ -150,8 +150,8 @@ echo  ============================================
 echo.
 echo  Next steps:
 echo    1. Launch SimHub
-echo    2. Go to the plugin list and enable K10 Media Coach
-echo    3. Open the "k10 media coach" or "k10 media broadcast" dashboard
+echo    2. Go to the plugin list and enable K10 Media Broadcaster
+echo    3. Open the "k10 media broadcaster" or "k10 media broadcaster" dashboard
 echo.
 pause
 exit /b 0

@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "K10MediaCoachLights",
+  "pluginAlias": "K10MediaBroadcasterLights",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,7 @@
         "title": "Platform Name",
         "type": "string",
         "required": true,
-        "default": "K10 Media Coach Lights"
+        "default": "K10 Media Broadcaster Lights"
       },
       "simhubUrl": {
         "title": "SimHub HTTP API URL",
@@ -82,8 +82,8 @@
         "required": false,
         "default": [
           {
-            "name": "K10 Media Coach",
-            "uniqueId": "k10-media-coach-light-1"
+            "name": "K10 Media Broadcaster",
+            "uniqueId": "k10-media-broadcaster-light-1"
           }
         ],
         "items": {

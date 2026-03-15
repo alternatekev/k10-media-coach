@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dataset validation tests for Media Coach plugin.
+Dataset validation tests for Media Broadcaster plugin.
 
 Validates structural integrity, cross-references, and known regression points
 across commentary_topics.json, commentary_fragments.json, and sentiments.json.

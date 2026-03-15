@@ -125,7 +125,7 @@ If the API key is empty, the network is unavailable, or the call exceeds a 1.5s 
 - `Control.xaml` / `Control.xaml.cs` — API key input + AI toggle
 - `Engine/CommentaryGenerator.cs` — new file, async Anthropic API wrapper
 - `Engine/CommentaryEngine.cs` — `ShowPrompt()` calls `CommentaryGenerator` when AI is enabled, handles callback
-- `K10MediaCoach.Plugin.csproj` — add `System.Net.Http` reference if not already present
+- `K10MediaBroadcaster.Plugin.csproj` — add `System.Net.Http` reference if not already present
 
 ---
 
@@ -250,25 +250,25 @@ SimHub dashboard properties expect colors in `#AARRGGBB` format (8-digit with al
 
 ## Homebridge Light Control Plugin
 
-A companion Homebridge plugin that maps SimHub telemetry state to Apple HomeKit-connected smart lights. The plugin reads K10 Media Coach properties from SimHub's built-in HTTP API and drives Lightbulb accessories with color changes based on race flags, driver proximity, and event severity.
+A companion Homebridge plugin that maps SimHub telemetry state to Apple HomeKit-connected smart lights. The plugin reads K10 Media Broadcaster properties from SimHub's built-in HTTP API and drives Lightbulb accessories with color changes based on race flags, driver proximity, and event severity.
 
 ### Architecture
 
 **Plugin type:** Dynamic Platform Plugin (TypeScript, from official homebridge-plugin-template)
 
-**Package name:** `homebridge-k10-media-coach-lights`
+**Package name:** `homebridge-k10-media-broadcaster-lights`
 
 **Source location:** `homebridge-plugin/` directory at the monorepo root
 
 **Communication flow:**
 ```
-SimHub (K10 Media Coach properties) → SimHub HTTP API → Homebridge Plugin → HomeKit → Apple Home lights
+SimHub (K10 Media Broadcaster properties) → SimHub HTTP API → Homebridge Plugin → HomeKit → Apple Home lights
 ```
 
 SimHub exposes all plugin properties via its built-in HTTP API at `http://localhost:8888/api/`. The Homebridge plugin polls this endpoint at a configurable interval (default: 500ms) to read:
-- `K10MediaCoach.Plugin.CommentarySeverity` — current event severity (0-5)
-- `K10MediaCoach.Plugin.CommentarySentimentColor` — the AARRGGBB color string
-- `K10MediaCoach.Plugin.CommentaryVisible` — whether a prompt is active (1/0)
+- `K10MediaBroadcaster.Plugin.CommentarySeverity` — current event severity (0-5)
+- `K10MediaBroadcaster.Plugin.CommentarySentimentColor` — the AARRGGBB color string
+- `K10MediaBroadcaster.Plugin.CommentaryVisible` — whether a prompt is active (1/0)
 - Standard SimHub properties for flag state: `DataCorePlugin.GameRawData.Telemetry.SessionFlags`
 - Opponent proximity data (for close-racing detection)
 
@@ -301,7 +301,7 @@ Updates lights based on proximity and track state, ignoring flags:
 Combines flags + events + severity coloring:
 - Flag state takes priority when active
 - When no flag, falls back to event-based coloring
-- Severity colors from the K10 Media Coach plugin map to light colors:
+- Severity colors from the K10 Media Broadcaster plugin map to light colors:
   - Severity 1 (Info): Dim slate/grey
   - Severity 2 (Notable): Blue
   - Severity 3 (Significant): Orange
@@ -335,7 +335,7 @@ Optionally, if the user has multiple lights, the plugin can expose multiple acce
 
 ```json
 {
-  "pluginAlias": "K10MediaCoachLights",
+  "pluginAlias": "K10MediaBroadcasterLights",
   "pluginType": "platform",
   "schema": {
     "type": "object",
@@ -356,7 +356,7 @@ Optionally, if the user has multiple lights, the plugin can expose multiple acce
 SimHub's HTTP API is available when "SimHub Web Dashboard Server" is enabled in SimHub settings. Properties are read via:
 
 ```
-GET http://localhost:8888/api/pluginproperty/K10MediaCoach.Plugin.CommentarySeverity
+GET http://localhost:8888/api/pluginproperty/K10MediaBroadcaster.Plugin.CommentarySeverity
 ```
 
 The plugin uses a simple HTTP polling loop (Node.js `http` module or `node-fetch`) on a `setInterval` at the configured poll rate. Each tick:
@@ -414,8 +414,8 @@ this.AttachDelegate("CurrentFlagState", () =>
 1. `cd homebridge-plugin && npm install`
 2. `npm run build` (compiles TypeScript → `dist/`)
 3. `npm link` (registers with local Homebridge for development)
-4. In Homebridge UI: configure the `K10MediaCoachLights` platform with your SimHub URL
-5. Ensure SimHub's web server is enabled and the K10 Media Coach plugin is active
+4. In Homebridge UI: configure the `K10MediaBroadcasterLights` platform with your SimHub URL
+5. Ensure SimHub's web server is enabled and the K10 Media Broadcaster plugin is active
 
 ---
 

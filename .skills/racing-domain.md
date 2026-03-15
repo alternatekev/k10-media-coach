@@ -1,4 +1,4 @@
-# K10 Media Coach — Racing Domain Knowledge
+# K10 Media Broadcaster — Racing Domain Knowledge
 
 ## Driver Priorities (Information Hierarchy)
 

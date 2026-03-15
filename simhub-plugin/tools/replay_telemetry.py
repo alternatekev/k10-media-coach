@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Telemetry Replay & Transcript Generator for Media Coach plugin.
+Telemetry Replay & Transcript Generator for Media Broadcaster plugin.
 
 Replays a recorded telemetry JSONL file through the topic trigger system
 and produces a timestamped transcript of what prompts would have fired.

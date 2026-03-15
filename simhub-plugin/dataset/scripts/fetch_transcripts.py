@@ -243,7 +243,7 @@ def aggregate_phrases(output_dir: Path):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch YouTube transcripts for Media Coach dataset")
+    parser = argparse.ArgumentParser(description="Fetch YouTube transcripts for Media Broadcaster dataset")
     parser.add_argument("--channel", help="Process only this channel ID (e.g. jimmy_broadbent)")
     parser.add_argument("--max-videos", type=int, default=50, help="Max videos per channel (default: 50)")
     args = parser.parse_args()

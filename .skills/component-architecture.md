@@ -1,4 +1,4 @@
-# K10 Media Coach — Component Architecture (React/TS Migration Reference)
+# K10 Media Broadcaster — Component Architecture (React/TS Migration Reference)
 
 ## Component Tree
 ```
