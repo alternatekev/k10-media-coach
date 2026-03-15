@@ -1,4 +1,4 @@
-<UserControl x:Class="K10MediaCoach.Plugin.SettingsControl"
+<UserControl x:Class="K10MediaBroadcaster.Plugin.SettingsControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,7 +10,7 @@
     <StackPanel Margin="20">
 
         <!-- Header -->
-        <TextBlock Text="K10 Media Coach" FontSize="22" FontWeight="Bold"
+        <TextBlock Text="K10 Media Broadcaster" FontSize="22" FontWeight="Bold"
                    Foreground="White" Margin="0,0,0,4"/>
         <TextBlock Text="Real-time commentary prompts for sim racing streams."
                    FontSize="12" Foreground="#999" Margin="0,0,0,24"/>
@@ -96,7 +96,7 @@
                   Foreground="White" FontSize="13" Margin="0,0,0,4"
                   Checked="RecordModeCheck_Changed" Unchecked="RecordModeCheck_Changed"/>
         <TextBlock x:Name="RecordingStatusLabel"
-                   Text="Recordings saved to: %ProgramData%\SimHub\PluginsData\K10MediaCoach\recordings\"
+                   Text="Recordings saved to: %ProgramData%\SimHub\PluginsData\K10MediaBroadcaster\recordings\"
                    FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,4"/>
         <TextBlock Text="Use ThumbsUp / ThumbsDown actions in Control Mapper to rate prompts."
                    FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>
