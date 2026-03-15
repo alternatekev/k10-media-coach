@@ -66,7 +66,7 @@ test.describe('Page structure', () => {
   test('K10 logo image is present', async ({ page }) => {
     await loadDashboard(page);
     const logo = page.locator('#k10LogoSquare img');
-    await expect(logo).toHaveAttribute('src', 'logomark.png');
+    await expect(logo).toHaveAttribute('src', 'images/branding/logomark.png');
   });
 
   test('settings gear icon exists', async ({ page }) => {
