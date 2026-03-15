@@ -145,8 +145,14 @@ namespace K10MediaCoach.Plugin.Engine
         }
 
         /// <summary>
+        /// Optional hook — resolves {driver} placeholder to the driver's name.
+        /// Set by CommentaryEngine from Settings. Default: "the driver".
+        /// </summary>
+        public Func<string> ResolveDriverName { get; set; } = () => "the driver";
+
+        /// <summary>
         /// Performs placeholder substitution on the assembled sentence.
-        /// Supports: {ahead}, {behind}, {value}, {rating_context}, {corner_name}
+        /// Supports: {ahead}, {behind}, {driver}, {value}, {rating_context}, {corner_name}
         /// </summary>
         private string PerformSubstitution(string text, TelemetrySnapshot context)
         {
@@ -157,8 +163,8 @@ namespace K10MediaCoach.Plugin.Engine
             text = text.Replace("{ahead}", FormatDriver(context.NearestAheadName, context.NearestAheadRating));
             text = text.Replace("{behind}", FormatDriver(context.NearestBehindName, context.NearestBehindRating));
 
-            // Additional placeholders could be added here in the future:
-            // {value}, {rating_context}, {corner_name} etc.
+            // Substitute {driver} with the configured driver name (randomly first or last)
+            text = text.Replace("{driver}", ResolveDriverName());
 
             return text;
         }

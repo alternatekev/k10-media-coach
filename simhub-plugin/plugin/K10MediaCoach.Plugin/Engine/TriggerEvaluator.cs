@@ -94,6 +94,16 @@ namespace K10MediaCoach.Plugin.Engine
                 case "tyretempfr":            return s.TyreTempFR;
                 case "tyretemprl":            return s.TyreTempRL;
                 case "tyretemprr":            return s.TyreTempRR;
+                case "brakebias":
+                case "dcbrakebias":           return s.BrakeBias;
+                case "tractioncontrolsetting":
+                case "dctractioncontrol":     return s.TractionControlSetting;
+                case "abssetting":
+                case "dcabs":                 return s.AbsSetting;
+                case "arbfront":
+                case "dcantirollfront":       return s.ArbFront;
+                case "arbrear":
+                case "dcantirollrear":        return s.ArbRear;
                 default:                      return 0;
             }
         }

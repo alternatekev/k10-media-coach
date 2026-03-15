@@ -68,6 +68,8 @@ Full setup and configuration: **[simhub-plugin/K10 Media Broadcast/README.md](si
 
 Prerequisites: [SimHub](https://www.simhubdash.com/) installed on Windows.
 
+**iRacing users:** Install the **iRacing Extra Properties** plugin by RomainRob to enable iRating, Safety Rating, and licence class display on the dashboard overlay. Without it, these fields will show as empty — all other telemetry works without it. [Download iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) — copy `RSC.iRacingExtraProperties.dll` into your SimHub installation folder (e.g. `C:\Program Files (x86)\SimHub`) while SimHub is closed. On next launch, SimHub will detect the new plugin — make sure it's enabled (green tab) and press OK.
+
 **Double-click `install.bat`** (in the repository root). The installer finds your SimHub installation, copies the plugin DLL, dataset files, and dashboard template to the correct locations. It checks whether SimHub is running and warns you to close it first if so.
 
 After installation:

@@ -53,6 +53,7 @@ export const MOCK_TELEMETRY = {
   'K10MediaCoach.Plugin.CommentaryVisible': 0,
   'K10MediaCoach.Plugin.CommentaryText': '',
   'K10MediaCoach.Plugin.CommentaryTopicTitle': '',
+  'K10MediaCoach.Plugin.CommentaryTopicId': '',
   'K10MediaCoach.Plugin.CommentaryCategory': '',
   'K10MediaCoach.Plugin.CommentarySentimentColor': '',
   'K10MediaCoach.Plugin.CommentarySeverity': 0,

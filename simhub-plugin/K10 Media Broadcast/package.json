@@ -32,7 +32,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "darkModeSupport": true
@@ -44,13 +47,24 @@
     "dmg": {
       "title": "K10 Media Broadcast",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

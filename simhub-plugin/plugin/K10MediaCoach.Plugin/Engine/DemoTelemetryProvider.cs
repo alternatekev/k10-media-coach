@@ -61,7 +61,7 @@ namespace K10MediaCoach.Plugin.Engine
         public double TC        { get; private set; } = 4;
         public double ABS       { get; private set; } = 3;
 
-        public int    Position       { get; private set; } = 6;
+        public int    Position       { get; private set; } = 4;
         public int    CurrentLap     { get; private set; } = 1;
         public double BestLapTime    { get; private set; } = 92.410;
         public string CarModel       { get; private set; } = "BMW M4 GT3";
@@ -91,6 +91,17 @@ namespace K10MediaCoach.Plugin.Engine
         public int    IRAhead        { get; private set; } = 2847;
         public int    IRBehind       { get; private set; } = 3214;
 
+        // ── Datastream (advanced physics) ──
+        public double LatG           { get; private set; } = 0;
+        public double LongG          { get; private set; } = 0;
+        public double YawRate        { get; private set; } = 0;
+        public double SteerTorque    { get; private set; } = 0;
+        public double TrackTemp      { get; private set; } = 34.2;
+        public int    IncidentCount  { get; private set; } = 0;
+        public bool   AbsActive      { get; private set; } = false;
+        public bool   TcActive       { get; private set; } = false;
+        public double LapDelta       { get; private set; } = 0;
+
         /// <summary>
         /// Advance simulation by dt seconds (~0.1s at 6-frame eval cadence at 60fps).
         /// </summary>
@@ -116,6 +127,46 @@ namespace K10MediaCoach.Plugin.Engine
                     CarModel = _demoCarModels[_demoCarIdx];
                 }
                 RemainingLaps = Math.Max(0, RemainingLaps - 1);
+
+                // Simulate position: P4→P1 (climb), hold P1, drop to P4, repeat
+                // One position change per lap, always ±1, never jumps.
+                // Laps  0-2:  climb  P4→P3→P2
+                // Lap   3:    arrive P1  (gold animation fires here)
+                // Laps  4-5:  hold   P1
+                // Laps  6-8:  drop   P2→P3→P4
+                // Lap   9:    hold   P4  (brief pause before climbing again)
+                int cycle = (CurrentLap - 1) % 10;
+                if (cycle < 3)
+                    Position = 4 - cycle;               // 4,3,2
+                else if (cycle == 3)
+                    Position = 1;                        // arrive at P1
+                else if (cycle <= 5)
+                    Position = 1;                        // hold P1
+                else if (cycle <= 8)
+                    Position = 1 + (cycle - 5);          // 2,3,4
+                else
+                    Position = 4;                        // hold P4
+
+                // Simulate in-car adjustment changes at specific laps
+                // (triggers commentary topics for brake_bias_change, tc_setting_change, abs_setting_change)
+                if (cycle == 1)
+                    BrakeBias = 57.0;   // shift bias forward mid-climb
+                else if (cycle == 4)
+                    TC = 3;             // reduce TC while leading
+                else if (cycle == 5)
+                    ABS = 2;            // reduce ABS at P1 — more feel
+                else if (cycle == 7)
+                {
+                    BrakeBias = 55.5;   // shift bias rearward as tyres degrade
+                    TC = 5;             // increase TC on worn tyres
+                }
+                else if (cycle == 9)
+                {
+                    // Reset for next cycle
+                    BrakeBias = 56.2;
+                    TC = 4;
+                    ABS = 3;
+                }
 
                 // Wear degrades slightly each lap
                 TyreWearFL = Math.Max(0.10, TyreWearFL - 0.018 - _rng.NextDouble() * 0.006);
@@ -177,6 +228,43 @@ namespace K10MediaCoach.Plugin.Engine
             TyreTempRL = 170 + cornerFactor * 40 + heatNoise + (1 - TyreWearRL) * 10;
             TyreTempRR = 172 + cornerFactor * 42 + heatNoise + (1 - TyreWearRR) * 10;
 
+            // ── Datastream physics simulation ──
+            // Lateral G: higher in corners (when speed is lower), sign alternates with track section
+            double cornerIntensity = Math.Max(0, 1.0 - SpeedMph / 180.0);
+            double latSign = Math.Sin(_trackPos * Math.PI * 8); // alternating L/R turns
+            LatG = cornerIntensity * 2.2 * latSign + (_rng.NextDouble() - 0.5) * 0.15;
+
+            // Longitudinal G: positive under braking, negative under accel
+            LongG = speedDelta < -1.5
+                ? Math.Abs(speedDelta) * 0.12 + (_rng.NextDouble() - 0.5) * 0.08   // braking
+                : speedDelta > 1.0
+                    ? -speedDelta * 0.06 + (_rng.NextDouble() - 0.5) * 0.05         // accel
+                    : (_rng.NextDouble() - 0.5) * 0.05;                              // coast
+
+            // Yaw rate: derivative of lateral, spikes in transitions
+            YawRate = LatG * 0.35 + (_rng.NextDouble() - 0.5) * 0.08;
+
+            // Steering torque: correlates with lat G and speed
+            SteerTorque = Math.Abs(LatG) * 12.0 + SpeedMph * 0.06 + (_rng.NextDouble() - 0.5) * 2.0;
+
+            // Track temp drifts slowly over session
+            if (_rng.NextDouble() < 0.01)
+                TrackTemp += (_rng.NextDouble() - 0.48) * 0.3;
+            TrackTemp = Math.Max(20, Math.Min(55, TrackTemp));
+
+            // ABS/TC active: fire during heavy braking/accel respectively
+            AbsActive = Brake > 0.7 && (_rng.NextDouble() < 0.4);
+            TcActive  = Throttle > 0.85 && cornerIntensity > 0.3 && (_rng.NextDouble() < 0.3);
+
+            // Lap delta: oscillates around zero, trends negative when gaining, positive when losing
+            LapDelta += (_rng.NextDouble() - 0.502) * 0.04;
+            LapDelta = Math.Max(-2.5, Math.Min(2.5, LapDelta));
+            if (_trackPos < 0.02) LapDelta = 0; // reset at lap start
+
+            // Incident count: occasionally increments (simulates 1x from off-tracks)
+            if (_rng.NextDouble() < 0.0002)
+                IncidentCount = Math.Min(17, IncidentCount + 1);
+
             // Gaps drift slightly
             if (_rng.NextDouble() < 0.05)
             {
@@ -210,6 +298,10 @@ namespace K10MediaCoach.Plugin.Engine
             {
                 Fuel = snap.FuelPercent * MaxFuel;
             }
+            if (snap.IncidentCount > IncidentCount)
+            {
+                IncidentCount = snap.IncidentCount;
+            }
             if (snap.IsInPitLane)
             {
                 SpeedMph = 45;
@@ -229,7 +321,7 @@ namespace K10MediaCoach.Plugin.Engine
             _trackPos  = 0;
             _prevSpeed = 120;
             CurrentLap = 1;
-            Position   = 6;
+            Position   = 4;
             Fuel       = 38.0;
             SessionTime   = 0;
             RemainingTime = 1820;

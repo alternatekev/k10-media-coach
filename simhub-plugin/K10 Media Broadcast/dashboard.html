@@ -15,7 +15,7 @@
     updateIRBar(iRating)          — integer iRating value, bar fills 0-5000 range
     updateSRPie(srValue)          — 0.0-4.0 safety rating value
     cycleRatingPos()              — toggle between iRating/SR page and Position page
-    showCommentary(hue, title, text, meta) — show commentary panel with sentiment color
+    showCommentary(hue, title, text, meta, topicId) — show commentary panel with sentiment color + icon
     hideCommentary()              — dismiss commentary panel
     cycleCarLogo()                — cycle through manufacturer logos
     flashElement(el, className)   — trigger value-change flash animation
@@ -39,7 +39,7 @@
 
   ════════════════════════════════════════════════════════════════
 -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Barlow+Semi+Condensed:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Barlow+Semi+Condensed:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -52,9 +52,9 @@
     --dash-h: 200px;
     --row-h: calc((var(--dash-h) - var(--gap)) / 2);
 
-    --bg: hsla(0, 0%, 14%, 0.80);
-    --bg-panel: hsla(0, 0%, 10%, 1.0);
-    --bg-logo: hsla(0, 0%, 6%, 1.0);
+    --bg: hsla(0, 0%, 8%, 0.80);
+    --bg-panel: hsla(0, 0%, 6%, 1.0);
+    --bg-logo: hsla(0, 0%, 4%, 1.0);
     --border: hsla(0, 0%, 100%, 0.07);
     --text-primary: hsla(0, 0%, 100%, 1.0);
     --text-secondary: hsla(0, 0%, 100%, 0.69);
@@ -69,6 +69,7 @@
     --purple: hsl(280,80%,70%);
 
     --ff: 'Barlow Condensed', 'Corbel', 'Segoe UI', system-ui, sans-serif;
+    --ff-mono: 'JetBrains Mono', 'Consolas', 'SF Mono', monospace;
     --fs-xl: 20px;
     --fs-lg: 13px;
     --fs-md: 11px;
@@ -110,12 +111,12 @@
     background: #00FF00;
   }
   body.opaque-mode .panel {
-    background: hsl(0, 0%, 14%) !important;
+    background: hsl(0, 0%, 8%) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
   body.opaque-mode .commentary-inner {
-    background: hsla(var(--commentary-h, 0), 50%, 14%, 1) !important;
+    background: hsla(var(--commentary-h, 0), 50%, 8%, 1) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -123,7 +124,7 @@
     filter: none !important;
   }
   body.opaque-mode .dashboard::before {
-    background: hsla(var(--sentiment-h), var(--sentiment-s), 10%, var(--sentiment-alpha)) !important;
+    background: hsla(var(--sentiment-h), var(--sentiment-s), 6%, var(--sentiment-alpha)) !important;
   }
 
   /* Settings hint text */
@@ -330,10 +331,11 @@
     opacity: 1;
   }
   .commentary-inner {
+    position: relative;
     width: 280px;
     flex: 1;
-    background: hsla(var(--commentary-h, 0), 50%, 22%, 0.48);
-    border: 1px solid hsla(var(--commentary-h, 0), 50%, 45%, 0.25);
+    background: hsla(var(--commentary-h, 0), 50%, 13%, 0.48);
+    border: 1px solid hsla(var(--commentary-h, 0), 50%, 27%, 0.25);
     border-radius: var(--corner-r);
     padding: 14px;
     backdrop-filter: blur(50px);
@@ -348,6 +350,34 @@
     font-weight: var(--fw-black);
     line-height: 1.1;
     margin-bottom: 8px;
+    padding-right: 38px;  /* room for icon */
+  }
+  .commentary-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    opacity: 0.85;
+    transition: opacity 0.4s ease;
+  }
+  .commentary-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .commentary-text-scroll {
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    /* Fade mask at bottom to hint more text below */
+    -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  }
+  .commentary-text-scroll.no-overflow {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .commentary-text {
     font-family: 'Barlow Semi Condensed', var(--ff);
@@ -355,6 +385,16 @@
     font-weight: var(--fw-medium);
     line-height: 1.4;
     color: var(--text-primary);
+  }
+  .commentary-text.scrolling {
+    animation: commentaryScroll var(--scroll-duration, 8s) linear 2s infinite;
+  }
+  @keyframes commentaryScroll {
+    0%   { transform: translateY(0); }
+    20%  { transform: translateY(0); }          /* hold at top for first 20% */
+    80%  { transform: translateY(var(--scroll-distance, 0px)); }  /* scroll to bottom */
+    95%  { transform: translateY(var(--scroll-distance, 0px)); }  /* hold at bottom */
+    100% { transform: translateY(0); }          /* snap back to top */
   }
   .commentary-meta {
     display: none;
@@ -407,6 +447,7 @@
     flex-shrink: 0;
   }
   .logo-square {
+    position: relative;
     background: var(--bg-logo);
     display: flex;
     flex-direction: column;
@@ -668,7 +709,7 @@
 
   .pos-layout {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     height: 100%;
   }
@@ -681,6 +722,19 @@
     flex-shrink: 0;
   }
   .skew-accent { transform: skewX(-6deg); display: inline-block; }
+  .pos-delta {
+    font-size: 11px;
+    font-weight: var(--fw-bold);
+    letter-spacing: 0.02em;
+    text-align: left;
+    margin-top: 2px;
+    opacity: 0;
+    transition: opacity 0.4s ease, color 0.4s ease;
+  }
+  .pos-delta.visible { opacity: 1; }
+  .pos-delta.delta-up   { color: hsl(145, 50%, 55%); }
+  .pos-delta.delta-down { color: hsl(0, 50%, 60%); }
+  .pos-delta.delta-same { color: var(--text-secondary); opacity: 0; }
   .pos-meta {
     display: flex;
     flex-direction: column;
@@ -710,7 +764,10 @@
     font-weight: var(--fw-semi);
   }
   .pos-meta-row.best-row .val {
-    font-size: 22px;
+    font-family: var(--ff-mono);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
   /* Gaps — side-by-side */
@@ -759,10 +816,12 @@
     text-overflow: ellipsis;
   }
   .gap-time {
-    font-size: 19px;
-    font-weight: var(--fw-black);
+    font-family: var(--ff-mono);
+    font-size: 17px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
+    letter-spacing: -0.02em;
   }
   .gap-time.ahead { color: var(--green); }
   .gap-time.behind { color: var(--red); }
@@ -979,26 +1038,30 @@
     padding: 6px 8px;
   }
   .race-timer-value {
-    font-size: 28px;
-    font-weight: var(--fw-black);
+    font-family: var(--ff-mono);
+    font-size: 26px;
+    font-weight: 700;
     color: #FFFFFF;
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
   .race-timer-lap {
-    font-size: 13px;
-    font-weight: var(--fw-medium);
+    font-family: var(--ff-mono);
+    font-size: 12px;
+    font-weight: 500;
     color: var(--text-dim);
-    font-style: italic;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
     margin-top: 3px;
+    letter-spacing: -0.02em;
   }
   .race-timer-lap .timer-label {
+    font-family: var(--ff);
     font-weight: var(--fw-semi);
     color: var(--text-secondary);
     margin-right: 3px;
+    letter-spacing: 0;
   }
 
   /* ═══════════════════════════════════════════════
@@ -1132,15 +1195,42 @@
   }
 
   /* Per-control bar colors */
-  #ctrlBB::before  { background: hsla(355, 75%, 55%, 0.12); }
-  #ctrlTC::before  { background: hsla(215, 75%, 55%, 0.12); }
-  #ctrlABS::before { background: hsla(48, 80%, 55%, 0.12); }
+  #ctrlBB::before  { background: hsla(355, 75%, 33%, 0.12); }
+  #ctrlTC::before  { background: hsla(215, 75%, 33%, 0.12); }
+  #ctrlABS::before { background: hsla(48, 80%, 33%, 0.12); }
   #ctrlBB .ctrl-value  { color: hsl(355, 80%, 65%); }
   #ctrlTC .ctrl-value  { color: hsl(215, 80%, 68%); }
   #ctrlABS .ctrl-value { color: hsl(48, 85%, 62%); }
   #ctrlBB .ctrl-label  { color: hsl(355, 50%, 55%); }
   #ctrlTC .ctrl-label  { color: hsl(215, 50%, 58%); }
   #ctrlABS .ctrl-label { color: hsl(48, 55%, 52%); }
+
+  /* Control bar change flash — brightens the fill bar and value */
+  .ctrl-item.ctrl-changed::before {
+    background: hsla(0, 0%, 100%, 0.14) !important;
+    transition: none !important;
+  }
+  .ctrl-item.ctrl-changed .ctrl-value {
+    filter: brightness(1.4);
+  }
+  @keyframes ctrl-bar-flash {
+    0%   { filter: brightness(1.4); }
+    100% { filter: brightness(1.0); }
+  }
+  .ctrl-item.ctrl-flash-out::before {
+    transition: background 1.2s ease !important;
+  }
+  .ctrl-item.ctrl-flash-out .ctrl-value {
+    animation: ctrl-bar-flash 1.2s ease forwards;
+  }
+
+  /* ABS/TC system activity glow — background pulse on the adjustments bar */
+  .ctrl-item.ctrl-active::after {
+    opacity: 1 !important;
+  }
+  #ctrlABS.ctrl-active { background: hsla(48, 80%, 55%, 0.23); }
+  #ctrlTC.ctrl-active  { background: hsla(215, 75%, 55%, 0.23); }
+  #ctrlBB.ctrl-active  { background: hsla(355, 75%, 55%, 0.23); }
 
   /* Hidden controls (car doesn't have TC/ABS) */
   .ctrl-item.ctrl-hidden { display: none; }
@@ -1329,19 +1419,19 @@
   .leaderboard-panel {
     position: fixed;
     z-index: 50;
-    width: 260px;
+    width: 310px;
     transition: opacity 0.4s ease;
   }
   .leaderboard-panel.section-hidden { display: none; }
   /* Vertical opposite: if dash is top → leaderboard bottom; if dash is bottom → leaderboard top */
-  .leaderboard-panel.lb-bottom { bottom: 10px; }
+  .leaderboard-panel.lb-bottom { bottom: 28px; }
   .leaderboard-panel.lb-top { top: 10px; }
   .leaderboard-panel.lb-right { right: 10px; }
   .leaderboard-panel.lb-left { left: 10px; }
   .leaderboard-panel.lb-center { left: 50%; transform: translateX(-50%); }
 
   .lb-inner {
-    background: hsla(0, 0%, 8%, 0.82);
+    background: hsla(0, 0%, 5%, 0.82);
     border: 1px solid hsla(0, 0%, 100%, 0.07);
     border-radius: 8px;
     padding: 6px 0;
@@ -1360,7 +1450,7 @@
   }
   .lb-row {
     display: grid;
-    grid-template-columns: 22px 1fr 48px 52px;
+    grid-template-columns: 22px 1fr 54px 44px 52px;
     align-items: center;
     gap: 4px;
     padding: 3px 10px;
@@ -1372,9 +1462,30 @@
   }
   .lb-row:last-child { border-bottom: none; }
   .lb-row.lb-player {
-    background: hsla(195, 80%, 50%, 0.10);
+    background: hsla(195, 80%, 30%, 0.10);
     border-left: 2px solid var(--cyan);
     padding-left: 8px;
+    transition: background 0.6s ease, border-color 0.6s ease;
+  }
+  .lb-row.lb-player.lb-p1 {
+    background: hsla(42, 70%, 27%, 0.12);
+    border-left-color: hsla(42, 80%, 55%, 1.0);
+  }
+  .lb-row.lb-player.lb-ahead {
+    background: hsla(145, 70%, 25%, 0.10);
+    border-left-color: hsla(145, 75%, 50%, 1.0);
+  }
+  .lb-row.lb-player.lb-behind {
+    background: hsla(0, 70%, 30%, 0.10);
+    border-left-color: hsla(0, 75%, 50%, 1.0);
+  }
+  .lb-row.lb-player.lb-same {
+    background: hsla(210, 70%, 30%, 0.10);
+    border-left-color: hsla(210, 75%, 55%, 1.0);
+  }
+  .lb-row.lb-start-pos {
+    background: hsla(0, 0%, 100%, 0.025);
+    border-left-color: hsla(0, 0%, 100%, 0.10);
   }
   .lb-row.lb-pit { opacity: 0.45; }
   .lb-pos {
@@ -1384,6 +1495,10 @@
     font-size: 12px;
   }
   .lb-row.lb-player .lb-pos { color: var(--cyan); }
+  .lb-row.lb-player.lb-p1 .lb-pos { color: hsla(42, 80%, 60%, 1.0); }
+  .lb-row.lb-player.lb-ahead .lb-pos { color: hsla(145, 75%, 55%, 1.0); }
+  .lb-row.lb-player.lb-behind .lb-pos { color: hsla(0, 75%, 55%, 1.0); }
+  .lb-row.lb-player.lb-same .lb-pos { color: hsla(210, 75%, 60%, 1.0); }
   .lb-name {
     font-weight: var(--fw-semi);
     color: var(--text-secondary);
@@ -1398,13 +1513,26 @@
     text-align: right;
   }
   .lb-gap {
-    font-size: 10px;
+    font-family: var(--ff-mono);
+    font-size: 9px;
     text-align: right;
-    font-weight: var(--fw-semi);
+    font-weight: 500;
+    letter-spacing: -0.03em;
   }
   .lb-gap.gap-ahead { color: var(--green); }
   .lb-gap.gap-behind { color: var(--red); }
   .lb-gap.gap-player { color: var(--cyan); }
+  .lb-lap {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    text-align: right;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: -0.03em;
+  }
+  .lb-lap.lap-pb { color: hsla(270, 80%, 65%, 1.0); }
+  .lb-lap.lap-fast { color: var(--green); }
+  .lb-lap.lap-slow { color: hsla(45, 90%, 55%, 1.0); }
   /* WebGL player highlight canvas */
   .lb-gl {
     position: absolute;
@@ -1426,6 +1554,416 @@
     height: 16px;
     opacity: 0.5;
   }
+
+  /* ═══════════════════════════════════════════════
+     RACE TIMELINE STRIP
+     ═══════════════════════════════════════════════ */
+  .race-timeline {
+    margin-top: 4px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: hsla(0, 0%, 5%, 0.82);
+    border: 1px solid hsla(0, 0%, 100%, 0.07);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    padding: 2px;
+  }
+  .rt-canvas {
+    display: block;
+    width: 100%;
+    height: 9px;
+    border-radius: 3px;
+  }
+
+  /* ═══════════════════════════════════════════════
+     DATASTREAM PANEL
+     ═══════════════════════════════════════════════ */
+  .datastream-panel {
+    position: fixed;
+    z-index: 50;
+    width: 200px;
+    transition: opacity 0.4s ease;
+  }
+  .datastream-panel.section-hidden { display: none; }
+  .datastream-panel.ds-bottom { bottom: 28px; }
+  .datastream-panel.ds-top { top: 10px; }
+  .datastream-panel.ds-right { right: 326px; }   /* leaderboard (310) + 16px gap */
+  .datastream-panel.ds-left { left: 326px; }
+  .datastream-panel.ds-center-right { right: 172px; }  /* half LB + gap from center */
+  .datastream-panel.ds-center-left { left: 172px; }
+
+  .ds-inner {
+    background: hsla(0, 0%, 5%, 0.82);
+    border: 1px solid hsla(0, 0%, 100%, 0.07);
+    border-radius: 8px;
+    padding: 6px 10px 8px;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    position: relative;
+  }
+  .ds-header {
+    font-size: 9px;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsla(0, 0%, 100%, 0.35);
+    padding-bottom: 5px;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.06);
+    margin-bottom: 6px;
+  }
+
+  /* G-force diamond */
+  .ds-gforce {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .ds-gforce-diamond {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+  }
+  .ds-gforce-diamond canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .ds-gforce-vals {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* Data rows */
+  .ds-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.03);
+  }
+  .ds-row:last-child { border-bottom: none; }
+  .ds-label {
+    font-size: 9px;
+    font-weight: var(--fw-semi);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: hsla(0, 0%, 100%, 0.35);
+  }
+  .ds-value {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: var(--fw-semi);
+    color: var(--text-secondary);
+    letter-spacing: -0.02em;
+    text-align: right;
+  }
+  .ds-value.ds-positive { color: hsla(0, 70%, 55%, 1.0); }
+  .ds-value.ds-negative { color: hsla(145, 65%, 50%, 1.0); }
+  .ds-value.ds-neutral  { color: var(--text-dim); }
+
+
+  /* Yaw rate mini bar */
+  .ds-yaw-bar {
+    height: 3px;
+    background: hsla(0, 0%, 100%, 0.06);
+    border-radius: 2px;
+    margin-top: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ds-yaw-fill {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 2px;
+    background: hsla(210, 70%, 55%, 0.7);
+    transition: left 0.1s, width 0.1s;
+  }
+
+  /* Datastream value-change highlights */
+  .ds-value.ds-flash {
+    animation: ds-val-flash 1.2s ease forwards;
+  }
+  @keyframes ds-val-flash {
+    0%   { filter: brightness(1.8); text-shadow: 0 0 6px currentColor; }
+    100% { filter: brightness(1.0); text-shadow: none; }
+  }
+
+  /* ═══════════════════════════════════════════════
+     INCIDENTS MODULE
+     ═══════════════════════════════════════════════ */
+  .incidents-panel {
+    position: fixed;
+    z-index: 50;
+    transition: opacity 0.4s ease;
+  }
+  .incidents-panel.section-hidden { display: none; }
+  .incidents-panel.inc-bottom { bottom: 28px; }
+  .incidents-panel.inc-top { top: 10px; }
+  .incidents-panel.inc-right { right: 532px; }   /* DS left edge(526) + 6px gap */
+  .incidents-panel.inc-left { left: 532px; }
+  .incidents-panel.inc-center-right { right: 378px; }
+  .incidents-panel.inc-center-left { left: 378px; }
+
+  .inc-inner {
+    background: hsla(0, 0%, 5%, 0.82);
+    border: 1px solid hsla(0, 0%, 100%, 0.07);
+    border-radius: 8px;
+    padding: 4px 8px 6px;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    text-align: center;
+    transition: background 0.4s ease, border-color 0.4s ease;
+  }
+  .inc-label {
+    font-size: 9px;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsla(0, 0%, 100%, 0.35);
+    padding-bottom: 3px;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.06);
+    margin-bottom: 3px;
+  }
+  .inc-value-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+  }
+  .inc-count {
+    font-size: 56px;
+    font-weight: var(--fw-bold);
+    letter-spacing: -0.02em;
+    color: hsl(145, 65%, 50%);
+    transition: color 0.4s ease;
+    line-height: 1;
+  }
+  .inc-x {
+    font-size: 28px;
+    font-weight: var(--fw-semi);
+    color: hsla(0, 0%, 100%, 0.25);
+    line-height: 1;
+  }
+
+  /* Progressive color escalation: green → yellow → orange → red */
+  .incidents-panel.inc-level-0 .inc-count { color: hsl(145, 65%, 50%); }
+  .incidents-panel.inc-level-1 .inc-count { color: hsl(90, 60%, 50%); }
+  .incidents-panel.inc-level-2 .inc-count { color: hsl(48, 80%, 55%); }
+  .incidents-panel.inc-level-3 .inc-count { color: hsl(30, 80%, 52%); }
+  .incidents-panel.inc-level-4 .inc-count { color: hsl(8, 75%, 52%); }
+  .incidents-panel.inc-level-5 .inc-count { color: hsl(0, 80%, 50%); }
+
+  /* Border + background escalation */
+  .incidents-panel.inc-level-0 .inc-inner { border-color: hsla(145, 50%, 40%, 0.12); }
+  .incidents-panel.inc-level-1 .inc-inner { border-color: hsla(90, 50%, 40%, 0.15); }
+  .incidents-panel.inc-level-2 .inc-inner { border-color: hsla(48, 60%, 40%, 0.18); }
+  .incidents-panel.inc-level-3 .inc-inner { border-color: hsla(30, 65%, 40%, 0.20); background: hsla(30, 40%, 8%, 0.85); }
+  .incidents-panel.inc-level-4 .inc-inner { border-color: hsla(8, 65%, 40%, 0.25); background: hsla(8, 40%, 8%, 0.88); }
+  .incidents-panel.inc-level-5 .inc-inner { border-color: hsla(0, 70%, 40%, 0.30); background: hsla(0, 45%, 8%, 0.90); }
+
+  /* Threshold rows — penalty / DQ remaining */
+  .inc-thresholds {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid hsla(0, 0%, 100%, 0.06);
+  }
+  .inc-thresh-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: var(--fw-medium);
+    letter-spacing: 0.04em;
+    color: hsla(0, 0%, 100%, 0.35);
+  }
+  .inc-thresh-val {
+    font-weight: var(--fw-semi);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: hsla(0, 0%, 100%, 0.50);
+    transition: color 0.4s ease;
+  }
+  .inc-thresh-val.thresh-near { color: hsl(48, 80%, 55%); }
+  .inc-thresh-val.thresh-crit { color: hsl(0, 75%, 55%); }
+  .inc-thresh-val.thresh-hit  { color: hsl(0, 80%, 50%); font-weight: var(--fw-black); }
+
+  /* Flash on increment */
+  @keyframes inc-flash {
+    0%   { filter: brightness(1.6); transform: scale(1.06); }
+    100% { filter: brightness(1.0); transform: scale(1.0); }
+  }
+  .inc-count.inc-flash {
+    animation: inc-flash 0.8s ease forwards;
+  }
+
+  /* ═══════════════════════════════════════════════
+     RACE CONTROL MESSAGE BANNER
+     ═══════════════════════════════════════════════ */
+  .rc-banner {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    z-index: 200;
+    pointer-events: none;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+    opacity: 0;
+  }
+  .rc-banner.rc-visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .rc-inner {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: hsla(0, 0%, 3%, 0.96);
+    border: 2px solid hsla(48, 90%, 55%, 0.40);
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    padding: 16px 36px 18px 28px;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    box-shadow: 0 6px 40px hsla(0, 0%, 0%, 0.7), inset 0 -1px 0 hsla(48, 90%, 55%, 0.10);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Animated flag stripe background */
+  .rc-inner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: repeating-linear-gradient(
+      -45deg,
+      hsla(48, 90%, 55%, 0.08) 0px,
+      hsla(48, 90%, 55%, 0.08) 12px,
+      transparent 12px,
+      transparent 24px
+    );
+    background-size: 34px 34px;
+    animation: rc-flag-scroll 1.5s linear infinite;
+    pointer-events: none;
+  }
+  .rc-banner.rc-visible .rc-inner::after {
+    opacity: 1;
+  }
+  @keyframes rc-flag-scroll {
+    0%   { background-position: 0 0; }
+    100% { background-position: 34px 34px; }
+  }
+  /* Per-flag stripe color overrides — only critical flags */
+  .rc-banner.rc-flag-red .rc-inner::after {
+    background: repeating-linear-gradient(-45deg, hsla(0, 85%, 55%, 0.10) 0px, hsla(0, 85%, 55%, 0.10) 12px, transparent 12px, transparent 24px);
+    background-size: 34px 34px;
+  }
+  .rc-banner.rc-flag-checkered .rc-inner::after {
+    background: repeating-linear-gradient(-45deg, hsla(0, 0%, 100%, 0.08) 0px, hsla(0, 0%, 100%, 0.08) 12px, hsla(0, 0%, 0%, 0.08) 12px, hsla(0, 0%, 0%, 0.08) 24px);
+    background-size: 34px 34px;
+  }
+  .rc-banner.rc-flag-black .rc-inner::after {
+    background: repeating-linear-gradient(-45deg, hsla(0, 75%, 45%, 0.10) 0px, hsla(0, 75%, 45%, 0.10) 12px, transparent 12px, transparent 24px);
+    background-size: 34px 34px;
+  }
+  .rc-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .rc-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: relative;
+    z-index: 1;
+  }
+  .rc-title {
+    font-family: var(--ff);
+    font-size: 28px;
+    font-weight: var(--fw-black);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: #FFFFFF;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .rc-detail {
+    font-family: var(--ff-semi);
+    font-size: 15px;
+    font-weight: var(--fw-semi);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(48, 80%, 55%);
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  /* Yellow stripe accent on left edge */
+  .rc-inner::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    z-index: 2;
+    background: hsl(48, 90%, 55%);
+    border-radius: 0 0 0 14px;
+  }
+
+  /* ── Dim HUD elements when RC banner is active (not the game background) ── */
+  body.rc-active #dashboard,
+  body.rc-active .leaderboard-panel,
+  body.rc-active .datastream-panel,
+  body.rc-active .incidents-panel {
+    opacity: 0.5;
+    transition: opacity 0.5s ease;
+  }
+
+  /* Pulse glow on the border */
+  .rc-banner.rc-visible .rc-inner {
+    animation: rc-glow 3s ease-in-out infinite alternate;
+  }
+  @keyframes rc-glow {
+    0%   { box-shadow: 0 4px 24px hsla(0, 0%, 0%, 0.6), inset 0 -1px 0 hsla(48, 90%, 55%, 0.08), 0 0 8px hsla(48, 85%, 50%, 0.08); }
+    100% { box-shadow: 0 4px 24px hsla(0, 0%, 0%, 0.6), inset 0 -1px 0 hsla(48, 90%, 55%, 0.15), 0 0 18px hsla(48, 85%, 50%, 0.18); }
+  }
+
+  /* Per-flag accent overrides — only critical flags (red, black, yellow, checkered) */
+
+  /* ── Yellow / Caution — default yellow accents already apply ── */
+
+  /* ── Red Flag ── */
+  .rc-banner.rc-flag-red .rc-inner    { border-color: hsla(0, 85%, 55%, 0.45); }
+  .rc-banner.rc-flag-red .rc-inner::before { background: hsl(0, 85%, 55%); }
+  .rc-banner.rc-flag-red .rc-detail   { color: hsl(0, 80%, 65%); }
+  .rc-banner.rc-flag-red.rc-visible .rc-inner { animation-name: rc-glow-red; }
+  @keyframes rc-glow-red {
+    0%   { box-shadow: 0 4px 24px hsla(0, 0%, 0%, 0.6), 0 0 8px hsla(0, 80%, 50%, 0.10); }
+    100% { box-shadow: 0 4px 24px hsla(0, 0%, 0%, 0.6), 0 0 18px hsla(0, 80%, 50%, 0.22); }
+  }
+
+  /* ── Checkered ── */
+  .rc-banner.rc-flag-checkered .rc-inner { border-color: hsla(0, 0%, 100%, 0.30); }
+  .rc-banner.rc-flag-checkered .rc-inner::before { background: repeating-linear-gradient(180deg, #fff 0 4px, #222 4px 8px); }
+  .rc-banner.rc-flag-checkered .rc-detail { color: hsl(0, 0%, 80%); }
+
+  /* ── Black Flag ── */
+  .rc-banner.rc-flag-black .rc-inner  { border-color: hsla(0, 75%, 40%, 0.40); }
+  .rc-banner.rc-flag-black .rc-inner::before { background: hsl(0, 75%, 45%); }
+  .rc-banner.rc-flag-black .rc-detail { color: hsl(0, 60%, 60%); }
 
   /* ═══════════════════════════════════════════════
      SETTINGS PANEL
@@ -1538,7 +2076,7 @@
   .settings-overlay.open { display: block; }
 
   .settings-panel {
-    background: hsla(0,0%,10%,0.92);
+    background: hsla(0,0%,6%,0.92);
     border: 1px solid hsla(0,0%,100%,0.1);
     border-radius: 12px;
     padding: 24px;
@@ -1786,7 +2324,7 @@
       <div class="panel cycle-container rating-pos-block" id="cycleRatingPos">
         <div class="cycle-sizer">
           <div class="pos-layout">
-            <div class="pos-number"><span class="skew-accent">P—</span></div>
+            <div class="pos-number"><span class="skew-accent">P—</span><div class="pos-delta"></div></div>
             <div class="pos-meta">
               <div class="pos-meta-row">Lap <span class="val">—</span></div>
               <div class="pos-meta-row best-row">Best <span class="val purple">—:——.———</span></div>
@@ -1836,7 +2374,7 @@
         <!-- Page B: Position + Best (purple) -->
         <div class="cycle-page inactive" id="positionPage">
           <div class="pos-layout">
-            <div class="pos-number"><span class="skew-accent">P—</span></div>
+            <div class="pos-number"><span class="skew-accent">P—</span><div class="pos-delta"></div></div>
             <div class="pos-meta">
               <div class="pos-meta-row">Lap <span class="val">—</span></div>
               <div class="pos-meta-row best-row">Best <span class="val purple">—:——.———</span></div>
@@ -1889,7 +2427,8 @@
     <!-- COL: Logo (two stacked squares) -->
     <div class="logo-col">
       <div class="logo-square" id="k10LogoSquare">
-        <img src="logomark.png" alt="K10 Media Coach" style="width:75%;height:auto;opacity:1;">
+        <canvas class="gl-overlay" id="k10LogoGlCanvas" style="z-index:1;"></canvas>
+        <img src="logomark.png" alt="K10 Media Coach" style="width:75%;height:auto;opacity:1;position:relative;z-index:2;">
       </div>
       <div class="logo-square" id="carLogoSquare">
         <!-- Generic logo (replaced by JS when CarModel data arrives) -->
@@ -1922,8 +2461,11 @@
   <!-- COMMENTARY — spans both rows, hidden by default -->
   <div class="commentary-col" id="commentaryCol" style="--commentary-h: 0;">
     <div class="commentary-inner" id="commentaryInner">
+      <div class="commentary-icon" id="commentaryIcon"></div>
       <div class="commentary-title" id="commentaryTitle"></div>
-      <div class="commentary-text" id="commentaryText"></div>
+      <div class="commentary-text-scroll" id="commentaryScroll">
+        <div class="commentary-text" id="commentaryText"></div>
+      </div>
       <div class="commentary-meta" id="commentaryMeta"></div>
     </div>
   </div>
@@ -1948,8 +2490,110 @@
 <div class="leaderboard-panel lb-bottom lb-right" id="leaderboardPanel">
   <div class="lb-inner">
     <canvas class="lb-gl gl-overlay" id="lbPlayerGlCanvas"></canvas>
+    <canvas class="lb-gl gl-overlay" id="lbEventGlCanvas"></canvas>
     <div class="lb-header">Relative</div>
     <div id="lbRows"></div>
+  </div>
+  <!-- Race Timeline — color-coded position state history strip -->
+  <div class="race-timeline" id="raceTimeline">
+    <canvas class="rt-canvas" id="rtCanvas" width="310" height="9"></canvas>
+  </div>
+</div>
+
+<!-- DATASTREAM — advanced telemetry panel, positioned adjacent to leaderboard -->
+<div class="datastream-panel ds-bottom ds-right" id="datastreamPanel">
+  <div class="ds-inner">
+    <div class="ds-header">Datastream</div>
+
+    <!-- G-force diamond + values -->
+    <div class="ds-gforce">
+      <div class="ds-gforce-diamond">
+        <canvas id="dsGforceCanvas" width="128" height="128"></canvas>
+      </div>
+      <div class="ds-gforce-vals">
+        <div class="ds-row" style="border:none;padding:0;">
+          <span class="ds-label">Lat</span>
+          <span class="ds-value" id="dsLatG">0.00g</span>
+        </div>
+        <div class="ds-row" style="border:none;padding:0;">
+          <span class="ds-label">Long</span>
+          <span class="ds-value" id="dsLongG">0.00g</span>
+        </div>
+        <div class="ds-row" style="border:none;padding:0;">
+          <span class="ds-label">Peak</span>
+          <span class="ds-value" id="dsPeakG" style="color:var(--text-dim);">0.00g</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yaw rate with bar -->
+    <div class="ds-row">
+      <span class="ds-label">Yaw</span>
+      <span class="ds-value" id="dsYawRate">0.00 r/s</span>
+    </div>
+    <div class="ds-yaw-bar"><div class="ds-yaw-fill" id="dsYawFill"></div></div>
+
+    <!-- Steering torque -->
+    <div class="ds-row">
+      <span class="ds-label">FFB</span>
+      <span class="ds-value" id="dsSteerTorque">0.0 Nm</span>
+    </div>
+
+    <!-- Lap delta -->
+    <div class="ds-row">
+      <span class="ds-label">Delta</span>
+      <span class="ds-value ds-neutral" id="dsDelta">+0.000</span>
+    </div>
+
+    <!-- Track temp -->
+    <div class="ds-row">
+      <span class="ds-label">Track</span>
+      <span class="ds-value" id="dsTrackTemp">—°C</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- INCIDENTS MODULE — standalone incident counter -->
+<div class="incidents-panel inc-bottom inc-right" id="incidentsPanel">
+  <div class="inc-inner">
+    <div class="inc-label">Incidents</div>
+    <div class="inc-value-row">
+      <span class="inc-count" id="incCount">0</span><span class="inc-x">x</span>
+    </div>
+    <div class="inc-thresholds">
+      <div class="inc-thresh-row"><span>Penalty</span><span class="inc-thresh-val" id="incToPen">—</span></div>
+      <div class="inc-thresh-row"><span>DQ</span><span class="inc-thresh-val" id="incToDQ">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- RACE CONTROL MESSAGE BANNER -->
+<div class="rc-banner" id="rcBanner">
+  <div class="rc-inner">
+    <!-- Race control tower icon — yellow/white on black -->
+    <svg class="rc-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Tower base -->
+      <rect x="11" y="14" width="6" height="12" rx="1" fill="hsl(48, 85%, 55%)"/>
+      <!-- Tower top / control room -->
+      <rect x="8" y="8" width="12" height="7" rx="1.5" fill="#fff"/>
+      <!-- Window panes -->
+      <rect x="9.5" y="9.5" width="3" height="4" rx="0.5" fill="hsl(48, 85%, 55%)" opacity="0.9"/>
+      <rect x="15.5" y="9.5" width="3" height="4" rx="0.5" fill="hsl(48, 85%, 55%)" opacity="0.9"/>
+      <!-- Antenna -->
+      <line x1="14" y1="3" x2="14" y2="8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Antenna tip -->
+      <circle cx="14" cy="2.5" r="1.5" fill="hsl(48, 90%, 55%)"/>
+      <!-- Signal arcs -->
+      <path d="M10 5.5 A5 5 0 0 1 14 3" stroke="hsla(48, 85%, 55%, 0.5)" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+      <path d="M18 5.5 A5 5 0 0 0 14 3" stroke="hsla(48, 85%, 55%, 0.5)" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+      <!-- Foundation -->
+      <rect x="9" y="25" width="10" height="2" rx="1" fill="hsla(0, 0%, 100%, 0.3)"/>
+    </svg>
+    <div class="rc-content">
+      <div class="rc-title" id="rcTitle">RACE CONTROL</div>
+      <div class="rc-detail" id="rcDetail">—</div>
+    </div>
   </div>
 </div>
 
@@ -1969,6 +2613,8 @@
     <div class="settings-row"><span class="settings-label">Tachometer</span><div class="settings-toggle on" data-section="tacho-block" data-key="showTacho" onclick="toggleSetting(this)"></div></div>
     <div class="settings-row"><span class="settings-label">Commentary</span><div class="settings-toggle on" data-section="commentary-col" data-key="showCommentary" onclick="toggleSetting(this)"></div></div>
     <div class="settings-row"><span class="settings-label">Leaderboard</span><div class="settings-toggle on" data-section="leaderboardPanel" data-key="showLeaderboard" onclick="toggleSetting(this)"></div></div>
+    <div class="settings-row"><span class="settings-label">Datastream</span><div class="settings-toggle on" data-section="datastreamPanel" data-key="showDatastream" onclick="toggleSetting(this)"></div></div>
+    <div class="settings-row"><span class="settings-label">Incidents</span><div class="settings-toggle on" data-section="incidentsPanel" data-key="showIncidents" onclick="toggleSetting(this)"></div></div>
 
     <div class="settings-group-label">Effects</div>
     <div class="settings-row"><span class="settings-label">WebGL Effects</span><div class="settings-toggle on" data-key="showWebGL" onclick="toggleWebGL(this)"></div></div>
@@ -2084,6 +2730,8 @@
   lotus: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" style="filter: drop-shadow(0 0 1.5px rgba(255,242,0,0.3)) drop-shadow(0 0 3px rgba(255,242,0,0.15))"><g transform="translate(4.00,4.00) scale(1.1250)"><g transform="translate(0,0)"><ellipse cx="32" cy="32" rx="32" ry="32" fill="#FFF200"></ellipse> <path d="M31.5446 19.5913V18.5H31.39C30.9517 18.5 30.5479 18.6633 30.2299 18.9726L27.5747 21.6278H29.5081C29.6972 20.5967 30.5135 19.7803 31.5446 19.5913Z" fill="black"></path> <path d="M35.2309 24.1108C35.2309 23.2515 34.5263 22.5469 33.667 22.5469H32.4554V23.6468C32.5929 23.6038 32.7303 23.5436 32.8506 23.4663H34.1224C33.7529 24.042 33.1514 24.4545 32.4468 24.5834V25.6661H33.6584C34.5263 25.6661 35.2309 24.9615 35.2309 24.1108Z" fill="black"></path> <path d="M30.3848 22.0924C30.3848 22.8228 30.8746 23.4501 31.5448 23.6477V20.5371C30.8746 20.7347 30.3848 21.3534 30.3848 22.0924Z" fill="black"></path> <path d="M35.2306 20.0737C35.2306 19.2144 34.526 18.5098 33.6667 18.5098H32.4551V19.6011C33.1511 19.73 33.7526 20.1424 34.1307 20.7181H32.8589C32.7386 20.6408 32.6012 20.5807 32.4637 20.5377V21.6376H33.6667C34.526 21.629 35.2306 20.933 35.2306 20.0737Z" fill="black"></path> <path d="M56.0175 32.3787C56.0175 32.3787 42.5438 16.5935 39.3386 13.3884L39.3301 13.3798C37.4482 11.4979 34.8617 10.3379 32.0003 10.3379C29.1389 10.3379 26.5352 11.4979 24.6534 13.3798C24.6534 13.3798 24.6534 13.3798 24.6448 13.3884C21.4224 16.5763 7.98313 32.3787 7.98313 32.3787C6.89183 33.7879 6.23877 35.5581 6.23877 37.4829C6.23877 37.818 6.25596 38.1446 6.29892 38.4625C6.58249 40.8943 7.91439 43.0081 9.8392 44.34C9.8392 44.34 15.5105 48.7568 32.0605 48.7568C48.619 48.7568 54.1614 44.34 54.1614 44.34C56.0433 43.0339 57.3666 40.9716 57.6845 38.5914C57.7361 38.2305 57.7618 37.861 57.7618 37.4829C57.7618 35.5581 57.1088 33.7965 56.0175 32.3787ZM17.401 41.702H11.2742V33.3067H13.0959V39.9405H17.6158L17.401 41.702ZM22.8489 41.8309C20.4514 41.8309 18.5094 39.8889 18.5094 37.4915C18.5094 35.0941 20.4514 33.1521 22.8489 33.1521C25.2463 33.1521 27.1883 35.0941 27.1883 37.4915C27.1883 39.8889 25.2463 41.8309 22.8489 41.8309ZM32.9112 35.0511V41.702H31.0895V35.0511H28.3827L28.5975 33.2982H35.4203L35.6351 35.0511H32.9112ZM32.0003 29.2165C28.7522 29.2165 26.0025 27.0425 25.1518 24.0608L22.6684 26.5441H21.3709L24.9283 22.9867C24.894 22.6945 24.8768 22.3937 24.8768 22.093C24.8768 18.1574 28.0648 14.9695 32.0003 14.9695C34.9734 14.9695 37.5255 16.7912 38.5911 19.3862H37.5857C36.5803 17.3153 34.4579 15.8889 32.0003 15.8889C28.5717 15.8889 25.7962 18.6644 25.7962 22.093C25.7962 22.1016 25.7962 22.1102 25.7962 22.1102L29.5857 18.3207C30.0755 17.8481 30.7114 17.5903 31.3816 17.5903H33.6673C35.0336 17.5903 36.1421 18.6988 36.1421 20.0651C36.1421 20.8986 35.7296 21.6376 35.0938 22.0844C35.721 22.5312 36.1421 23.2702 36.1421 24.1037C36.1421 25.47 35.0336 26.5785 33.6673 26.5785H31.5449V24.5849C30.5137 24.3959 29.6974 23.5796 29.5084 22.5484H26.6641L25.9165 23.296C26.4751 26.1488 28.9928 28.3057 32.0089 28.3057C34.4493 28.3057 36.5631 26.8964 37.5771 24.8427H38.5739C37.4998 27.412 34.9563 29.2165 32.0003 29.2165ZM45.0186 38.093C45.0186 40.1553 43.3429 41.8309 41.2806 41.8309C39.2183 41.8309 37.5427 40.1553 37.5427 38.093V33.3583H39.3558V34.8878V38.093C39.3558 39.1585 40.2151 40.0178 41.2806 40.0178C42.3462 40.0178 43.2055 39.1585 43.2055 38.093V34.8878V33.3067H45.0186V38.093ZM53.3279 40.542C53.0701 40.9373 52.6834 41.2466 52.1765 41.4786C51.6609 41.7106 51.0422 41.8223 50.3032 41.8223C49.6673 41.8223 49.0486 41.7364 48.4557 41.5559C47.9745 41.4099 47.5792 41.2294 47.2527 41.0146L47.4675 39.2444L47.6566 39.3991C48.0003 39.6655 48.4128 39.8717 48.8854 40.035C49.358 40.1983 49.8392 40.2756 50.3118 40.2756C50.8446 40.2756 51.2312 40.1983 51.4804 40.0264C51.7296 39.8631 51.8585 39.6483 51.8585 39.3733C51.8585 39.1757 51.7812 39.0124 51.6351 38.875C51.489 38.7461 51.2914 38.6344 51.0594 38.557C50.8274 38.4797 50.5094 38.3937 50.1142 38.2906C49.5041 38.136 48.9971 37.9899 48.6104 37.8352C48.2237 37.6805 47.8886 37.4399 47.605 37.1048C47.3215 36.7697 47.184 36.3229 47.184 35.7643C47.184 35.2745 47.3129 34.8363 47.5621 34.441C47.8113 34.0457 48.1979 33.7364 48.7049 33.5044C49.2119 33.2724 49.8392 33.1607 50.5696 33.1607C51.0852 33.1607 51.5835 33.2208 52.0733 33.3497C52.5631 33.4786 52.9928 33.6591 53.3623 33.8997L52.7865 35.369C52.0476 34.9308 51.3 34.716 50.561 34.716C50.0368 34.716 49.6587 34.8019 49.4095 34.9824C49.1603 35.1542 49.04 35.3862 49.04 35.6784C49.04 35.9705 49.1861 36.1768 49.4697 36.3143C49.7533 36.4518 50.1915 36.5892 50.7844 36.7267C51.3945 36.8814 51.9015 37.0275 52.2882 37.1821C52.6748 37.3368 53.01 37.5688 53.2935 37.8954C53.5771 38.2219 53.7146 38.6601 53.7146 39.2187C53.7146 39.7085 53.5857 40.1467 53.3279 40.542Z" fill="black"></path> <path d="M22.8486 40.0936C24.2913 40.0936 25.4608 38.9241 25.4608 37.4814C25.4608 36.0387 24.2913 34.8691 22.8486 34.8691C21.4059 34.8691 20.2363 36.0387 20.2363 37.4814C20.2363 38.9241 21.4059 40.0936 22.8486 40.0936Z" fill="black"></path></g></g></svg>`,
   // ── HONDA — REAL LOGO ──
   honda: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" style="filter: drop-shadow(0 0 1.5px rgba(228,5,33,0.3)) drop-shadow(0 0 3px rgba(228,5,33,0.15))"><g transform="translate(4.00,35.58) scale(0.6792)"><g transform="translate(0,0)"><path d="M82.5664 12.4183V10.8097L84.1778 10.6167C84.7579 10.5523 84.9512 10.0376 85.0157 9.90892L89.0763 3.41031C89.3986 2.89557 89.0763 2.44517 88.6896 2.38083L86.5626 2.12346V0.514893H95.7151C96.2308 0.514893 96.5531 0.900948 96.7464 1.15832L102.096 9.32983C102.547 9.97326 102.87 10.488 103.385 10.5523L105.061 10.7454V12.4183H94.7483V10.8097L96.0374 10.681C96.682 10.6167 97.1976 10.295 96.682 9.58721L96.1663 8.81509H88.883L88.3029 9.71589C87.9806 10.295 88.3029 10.6167 88.8185 10.681L90.1076 10.8097V12.4183H82.5664ZM90.2365 6.62744H94.8772L92.4924 2.95991L90.2365 6.62744Z" fill="#CC0000"/> <path d="M75.7342 0.514893H63.939V2.12346L65.4214 2.25214C65.9371 2.31649 66.1949 2.70254 66.1949 3.28163C66.1949 3.79637 66.1949 9.20115 66.1949 9.65155C66.1949 10.1019 66.0015 10.488 65.5503 10.5523L63.939 10.7454V12.2896H75.7342C81.1483 12.2896 83.4687 9.65155 83.4687 6.17704C83.5332 3.15294 81.1483 0.514893 75.7342 0.514893ZM73.9294 10.1019H70.9001V2.76688H73.9294C76.8299 2.76688 78.0545 3.41031 78.0545 6.43441C78.0545 9.45852 76.8299 10.1019 73.9294 10.1019Z" fill="#CC0000"/> <path d="M0 12.4183H9.53928V10.8097L7.92792 10.6167C7.54119 10.5523 7.15446 10.3593 7.15446 9.52286V7.59258H14.5023V9.39418C14.5023 9.90892 14.4378 10.4237 13.7933 10.488L12.1175 10.681V12.4183H21.6567V10.8097L19.9809 10.6167C19.6587 10.5523 19.2719 10.295 19.2719 9.65155V3.41031C19.2719 2.76689 19.5297 2.38083 19.9809 2.31649L21.6567 2.12346V0.514893H12.1175V2.12346L13.7933 2.31649C14.3089 2.38083 14.5023 2.83123 14.5023 3.41031V5.27625H7.15446V3.41031C7.15446 2.70254 7.41228 2.38083 7.92792 2.31649L9.53928 2.12346V0.514893H0V2.12346L1.61137 2.31649C2.25591 2.38083 2.38482 2.83123 2.38482 3.47465V9.52286C2.38482 10.1663 2.19146 10.6167 1.61137 10.681L0 10.8741V12.4183Z" fill="#CC0000"/> <path d="M22.1079 6.36992C22.1079 2.63805 25.1373 0 31.8406 0C38.5438 0.0643426 41.5732 2.63805 41.5732 6.36992C41.5732 10.1661 38.5438 12.8042 31.8406 12.8042C25.1373 12.8042 22.1079 10.2305 22.1079 6.36992ZM31.8406 2.31634C29.1335 2.31634 27.5866 3.34582 27.5866 6.36992C27.5866 9.52271 29.1335 10.4879 31.8406 10.4879C34.5477 10.4879 36.0946 9.45837 36.0946 6.36992C36.0946 3.34582 34.5477 2.31634 31.8406 2.31634Z" fill="#CC0000"/> <path d="M42.0889 12.4183H49.6945V10.8097L48.0187 10.6167C47.5675 10.5523 47.2452 10.1663 47.2452 9.65155V3.60334L53.5618 11.9035C53.7551 12.1609 54.1419 12.3539 54.5286 12.3539H60.5229V3.41031C60.5229 2.95991 60.6518 2.38083 61.2319 2.31649L62.9722 2.12346V0.514893H55.3665V2.12346L57.0423 2.31649C57.6224 2.38083 57.7513 2.89557 57.7513 3.41031V9.26549L51.4348 1.02963C51.177 0.70792 50.9191 0.514893 50.468 0.514893H42.0889V2.12346L43.7002 2.31649C44.2803 2.38083 44.4737 2.70254 44.4737 3.47465V9.52286C44.4737 10.2306 44.2803 10.5523 43.7002 10.681L42.1533 10.8741V12.4183" fill="#CC0000"/></g></g></svg>`,
+  // ── HONDA WHITE — white-fill variant for red background ──
+  honda_white: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" style="filter: drop-shadow(0 0 1.5px rgba(255,255,255,0.25)) drop-shadow(0 0 3px rgba(255,255,255,0.1))"><g transform="translate(4.00,35.58) scale(0.6792)"><g transform="translate(0,0)"><path d="M82.5664 12.4183V10.8097L84.1778 10.6167C84.7579 10.5523 84.9512 10.0376 85.0157 9.90892L89.0763 3.41031C89.3986 2.89557 89.0763 2.44517 88.6896 2.38083L86.5626 2.12346V0.514893H95.7151C96.2308 0.514893 96.5531 0.900948 96.7464 1.15832L102.096 9.32983C102.547 9.97326 102.87 10.488 103.385 10.5523L105.061 10.7454V12.4183H94.7483V10.8097L96.0374 10.681C96.682 10.6167 97.1976 10.295 96.682 9.58721L96.1663 8.81509H88.883L88.3029 9.71589C87.9806 10.295 88.3029 10.6167 88.8185 10.681L90.1076 10.8097V12.4183H82.5664ZM90.2365 6.62744H94.8772L92.4924 2.95991L90.2365 6.62744Z" fill="#FFFFFF"/> <path d="M75.7342 0.514893H63.939V2.12346L65.4214 2.25214C65.9371 2.31649 66.1949 2.70254 66.1949 3.28163C66.1949 3.79637 66.1949 9.20115 66.1949 9.65155C66.1949 10.1019 66.0015 10.488 65.5503 10.5523L63.939 10.7454V12.2896H75.7342C81.1483 12.2896 83.4687 9.65155 83.4687 6.17704C83.5332 3.15294 81.1483 0.514893 75.7342 0.514893ZM73.9294 10.1019H70.9001V2.76688H73.9294C76.8299 2.76688 78.0545 3.41031 78.0545 6.43441C78.0545 9.45852 76.8299 10.1019 73.9294 10.1019Z" fill="#FFFFFF"/> <path d="M0 12.4183H9.53928V10.8097L7.92792 10.6167C7.54119 10.5523 7.15446 10.3593 7.15446 9.52286V7.59258H14.5023V9.39418C14.5023 9.90892 14.4378 10.4237 13.7933 10.488L12.1175 10.681V12.4183H21.6567V10.8097L19.9809 10.6167C19.6587 10.5523 19.2719 10.295 19.2719 9.65155V3.41031C19.2719 2.76689 19.5297 2.38083 19.9809 2.31649L21.6567 2.12346V0.514893H12.1175V2.12346L13.7933 2.31649C14.3089 2.38083 14.5023 2.83123 14.5023 3.41031V5.27625H7.15446V3.41031C7.15446 2.70254 7.41228 2.38083 7.92792 2.31649L9.53928 2.12346V0.514893H0V2.12346L1.61137 2.31649C2.25591 2.38083 2.38482 2.83123 2.38482 3.47465V9.52286C2.38482 10.1663 2.19146 10.6167 1.61137 10.681L0 10.8741V12.4183Z" fill="#FFFFFF"/> <path d="M22.1079 6.36992C22.1079 2.63805 25.1373 0 31.8406 0C38.5438 0.0643426 41.5732 2.63805 41.5732 6.36992C41.5732 10.1661 38.5438 12.8042 31.8406 12.8042C25.1373 12.8042 22.1079 10.2305 22.1079 6.36992ZM31.8406 2.31634C29.1335 2.31634 27.5866 3.34582 27.5866 6.36992C27.5866 9.52271 29.1335 10.4879 31.8406 10.4879C34.5477 10.4879 36.0946 9.45837 36.0946 6.36992C36.0946 3.34582 34.5477 2.31634 31.8406 2.31634Z" fill="#FFFFFF"/> <path d="M42.0889 12.4183H49.6945V10.8097L48.0187 10.6167C47.5675 10.5523 47.2452 10.1663 47.2452 9.65155V3.60334L53.5618 11.9035C53.7551 12.1609 54.1419 12.3539 54.5286 12.3539H60.5229V3.41031C60.5229 2.95991 60.6518 2.38083 61.2319 2.31649L62.9722 2.12346V0.514893H55.3665V2.12346L57.0423 2.31649C57.6224 2.38083 57.7513 2.89557 57.7513 3.41031V9.26549L51.4348 1.02963C51.177 0.70792 50.9191 0.514893 50.468 0.514893H42.0889V2.12346L43.7002 2.31649C44.2803 2.38083 44.4737 2.70254 44.4737 3.47465V9.52286C44.4737 10.2306 44.2803 10.5523 43.7002 10.681L42.1533 10.8741V12.4183" fill="#FFFFFF"/></g></g></svg>`,
   generic: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><circle cx="40" cy="40" r="30" fill="none" stroke="hsla(0,0%,100%,0.3)" stroke-width="4"/><circle cx="40" cy="40" r="22" fill="none" stroke="hsla(0,0%,100%,0.15)" stroke-width="2"/><circle cx="40" cy="40" r="5" fill="hsla(0,0%,100%,0.3)"/><line x1="40" y1="10" x2="40" y2="18" stroke="hsla(0,0%,100%,0.3)" stroke-width="3" stroke-linecap="round"/><line x1="40" y1="62" x2="40" y2="70" stroke="hsla(0,0%,100%,0.3)" stroke-width="3" stroke-linecap="round"/><line x1="10" y1="40" x2="18" y2="40" stroke="hsla(0,0%,100%,0.3)" stroke-width="3" stroke-linecap="round"/><line x1="62" y1="40" x2="70" y2="40" stroke="hsla(0,0%,100%,0.3)" stroke-width="3" stroke-linecap="round"/></svg>`,
   none: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><text x="40" y="44" text-anchor="middle" fill="hsla(0,0%,100%,0.15)" font-family="Corbel,sans-serif" font-size="10" font-weight="600">NO CAR</text></svg>`
 };
@@ -2092,6 +2740,33 @@
   const carLogoOrder = ['bmw', 'mclaren', 'mazda', 'nissan', 'dallara', 'ferrari', 'porsche', 'audi', 'mercedes', 'lamborghini', 'chevrolet', 'ford', 'toyota', 'hyundai', 'cadillac', 'astonmartin', 'lotus', 'honda'];
   let currentCarLogoIdx = 0;
   let _currentCarLogo = '';
+
+  // ── Manufacturer brand colors for logo background tinting ──
+  // White/mono logos → low-opacity brand-colored background.
+  // Colored logos (BMW, Chevy, Ford, Lotus) → keep black bg to preserve logo colors.
+  // Honda → red bg with white-fill logo swap (honda_white key).
+  const _mfrBrandColors = {
+    bmw:         'hsla(204, 100%, 15%, 0.49)',   // BMW blue (#0066B1)
+    mclaren:     'hsla(24, 100%, 21%, 0.49)',    // Papaya orange
+    mazda:       'hsla(0, 90%, 18%, 0.49)',       // Soul Red
+    nissan:      'hsla(0, 85%, 21%, 0.49)',       // Red
+    dallara:     'hsla(210, 85%, 20%, 0.49)',     // Blue
+    ferrari:     'hsla(0, 90%, 20%, 0.49)',       // Rosso Corsa
+    porsche:     'hsla(0, 0%, 25%, 0.39)',        // Silver grey
+    audi:        'hsla(0, 0%, 25%, 0.39)',        // Silver
+    mercedes:    'hsla(175, 65%, 19%, 0.45)',     // Petronas teal
+    lamborghini: 'hsla(48, 90%, 21%, 0.45)',      // Gold
+    chevrolet:   'hsla(40, 62%, 15%, 0.49)',      // Chevy gold (#977124)
+    ford:        'hsla(237, 100%, 8%, 0.49)',     // Ford blue (#00095B)
+    toyota:      'hsla(0, 85%, 21%, 0.49)',       // Red
+    hyundai:     'hsla(216, 85%, 19%, 0.49)',     // Blue
+    cadillac:    'hsla(0, 0%, 25%, 0.39)',        // Silver
+    astonmartin: 'hsla(155, 70%, 16%, 0.49)',     // Racing green
+    lotus:       'hsla(57, 100%, 21%, 0.49)',     // Lotus yellow (#FFF200)
+    honda:       'hsla(0, 90%, 18%, 0.70)'        // Red bg (white logo)
+  };
+  // Default bg for logos not in _mfrBrandColors (keeps original dark bg)
+  const _defaultLogoBg = 'hsla(0, 0%, 4%, 1.0)';
 
   // Sample car names for demo cycle (brand logo is already shown, so just the model)
   const _demoModels = {
@@ -2107,8 +2782,13 @@
     currentCarLogoIdx = (currentCarLogoIdx + 1) % carLogoOrder.length;
     const key = carLogoOrder[currentCarLogoIdx];
     console.log('[K10] Logo cycle:', key);
-    document.getElementById('carLogoIcon').innerHTML = carLogos[key];
+    // Honda special case: use white-fill logo on red bg
+    const svg = (key === 'honda') ? carLogos.honda_white : carLogos[key];
+    document.getElementById('carLogoIcon').innerHTML = svg;
     document.getElementById('carModelLabel').textContent = _demoModels[key] || '';
+    // Apply brand-colored background (or default dark bg)
+    const sq = document.getElementById('carLogoSquare');
+    sq.style.background = _mfrBrandColors[key] || _defaultLogoBg;
     _currentCarLogo = ''; // reset so setCarLogo always fires on first real data
   }
 
@@ -2134,9 +2814,13 @@
   function setCarLogo(key, modelName) {
     if (key === _currentCarLogo && modelName === undefined) return;
     _currentCarLogo = key;
-    const svg = carLogos[key] || carLogos.generic;
+    // Honda special case: white-fill logo on red background
+    const svg = (key === 'honda') ? (carLogos.honda_white || carLogos.honda) : (carLogos[key] || carLogos.generic);
     document.getElementById('carLogoIcon').innerHTML = svg;
     document.getElementById('carModelLabel').textContent = stripBrand(modelName);
+    // Apply brand-colored background for white/mono logos, default dark bg otherwise
+    const sq = document.getElementById('carLogoSquare');
+    sq.style.background = _mfrBrandColors[key] || _defaultLogoBg;
   }
 
   // ═══ TACHOMETER ═══
@@ -2225,19 +2909,158 @@
   const dash = document.getElementById('dashboard');
   const inner = document.getElementById('commentaryInner');
 
-  function showCommentary(hue, title, text, meta) {
+  // ── Commentary icon library ──
+  // Each SVG uses currentColor so it inherits the sentiment hue via style.color.
+  // viewBox 0 0 24 24, stroke-based, 1.5px stroke for clarity at 28px render size.
+  const _s = (d, extra) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"${extra||''}>${d}</svg>`;
+  const _commentaryIcons = {
+    // ── car_response ──
+    spin_catch:        _s('<path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/><path d="M14.5 9.5l3-3" stroke-dasharray="2 2"/>'),
+    wall_contact:      _s('<rect x="2" y="4" width="4" height="16" rx="1"/><path d="M6 12h5"/><path d="M11 8l4 4-4 4"/><path d="M15 7l2 2-2 2"/><path d="M17 13l2 2-2 2"/><circle cx="19" cy="6" r="1" fill="currentColor" stroke="none"/>'),
+    off_track:         _s('<path d="M3 20L12 4l9 16H3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/>'),
+    kerb_hit:          _s('<path d="M3 18h18"/><path d="M3 18l3-3h2l3-3h2l3-3h2l3-3"/><path d="M8 12v6"/><path d="M16 6v12"/><circle cx="12" cy="9" r="2"/>'),
+    high_cornering_load: _s('<circle cx="12" cy="12" r="9"/><path d="M12 12l6-3"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.64 5.64l1.41 1.41"/><path d="M16.95 16.95l1.41 1.41"/>'),
+    heavy_braking:     _s('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><rect x="10" y="6" width="4" height="5" rx="1" fill="currentColor" stroke="none" opacity="0.5"/><path d="M8 12h8"/><path d="M12 8v8"/>'),
+    car_balance_sustained: _s('<path d="M4 16l4-8h8l4 8"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/><path d="M12 4v4"/><path d="M10 6h4"/>'),
+    rapid_gear_change: _s('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7v4h3V7"/><path d="M12 11v4h3v-4"/><path d="M9 15v3"/><circle cx="12" cy="19" r="0.5" fill="currentColor"/>'),
+
+    // ── hardware ──
+    abs_activation:    _s('<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h2l1-2 1 4 1-4 1 2h2"/>', ' stroke-width="1.8"'),
+    tc_intervention:   _s('<path d="M12 3a9 9 0 1 0 0 18"/><path d="M12 3a9 9 0 0 1 0 18"/><path d="M9 9l6 6"/><path d="M9 9h3v3"/>'),
+    ffb_torque_spike:  _s('<path d="M12 2v20"/><path d="M2 12h20"/><path d="M7 7c2 2 3 5 5 5s3-3 5-5"/><path d="M7 17c2-2 3-5 5-5s3 3 5 5"/>'),
+    brake_bias_change: _s('<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M8 8h-1a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1"/><path d="M16 8h1a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-1"/><path d="M8 12h8" stroke-dasharray="2 1"/>'),
+    tc_setting_change: _s('<circle cx="12" cy="12" r="9"/><path d="M8 8h8"/><path d="M12 8v8"/><path d="M9 15l3-3 3 3" stroke-dasharray="2 1"/>'),
+    abs_setting_change: _s('<circle cx="12" cy="12" r="9"/><path d="M7 12h10"/><path d="M7 9h10"/><path d="M7 15h10"/><circle cx="14" cy="12" r="1.5" fill="currentColor" stroke="none"/>'),
+    arb_front_change:  _s('<path d="M4 16h16"/><path d="M6 16V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"/><path d="M10 12h4" stroke-dasharray="2 1"/><path d="M8 10l2 2-2 2"/>'),
+    arb_rear_change:   _s('<path d="M4 8h16"/><path d="M6 8v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M10 12h4" stroke-dasharray="2 1"/><path d="M16 10l-2 2 2 2"/>'),
+
+    // ── game_feel ──
+    qualifying_push:   _s('<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8"/>'),
+    drs_active:        _s('<path d="M2 8h20"/><path d="M4 8l2 10h12l2-10"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/><path d="M10 12h4" stroke-dasharray="3 2"/>'),
+    ers_low:           _s('<path d="M2 12h4l2-4 3 8 3-8 2 4h4"/><path d="M18 6l2 2-2 2"/>'),
+    personal_best:     _s('<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.3L12 16.7l-6.2 4.5 2.4-7.3L2 9.4h7.6z"/>'),
+    long_stint:        _s('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M16 4l2 2"/><path d="M8 4L6 6"/>'),
+    session_time_low:  _s('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/><path d="M3 3l3 3"/><path d="M21 3l-3 3"/>'),
+
+    // ── racing_experience ──
+    close_battle:      _s('<path d="M5 17l3-12h3l2 5 2-5h3l3 12"/><path d="M4 10h16" stroke-dasharray="3 2"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/>'),
+    position_gained:   _s('<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>'),
+    position_lost:     _s('<path d="M12 5v14"/><path d="M5 12l7 7 7-7"/>'),
+    yellow_flag:       _s('<path d="M5 2v20"/><path d="M5 4h12l-3 4 3 4H5"/>'),
+    debris_on_track:   _s('<path d="M3 20h18"/><path d="M7 17l2-5"/><path d="M12 12l-1-4"/><path d="M15 14l2-6"/><path d="M10 17l1-3"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="14" cy="7" r="1.5" fill="currentColor"/><circle cx="17" cy="11" r="1" fill="currentColor"/>'),
+    race_start:        _s('<circle cx="8" cy="6" r="2.5"/><circle cx="16" cy="6" r="2.5"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="12" r="2.5"/><circle cx="8" cy="18" r="2.5" fill="currentColor" opacity="0.3"/><circle cx="16" cy="18" r="2.5" fill="currentColor" opacity="0.3"/>'),
+    formation_lap:     _s('<path d="M3 6h18"/><path d="M7 6v12"/><path d="M12 6v12"/><path d="M17 6v12"/><path d="M5 14h14" stroke-dasharray="2 2"/><path d="M3 18h18"/>'),
+    pit_entry:         _s('<path d="M3 12h4l2-3h6l2 3h4"/><path d="M7 12v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-5"/><circle cx="9" cy="15" r="1"/><circle cx="15" cy="15" r="1"/><path d="M11 5h2v4h-2z" fill="currentColor" stroke="none"/><path d="M10 5h4"/>'),
+    low_fuel:          _s('<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4V2h6v2"/><path d="M9 12h6"/><path d="M12 12v5"/><path d="M8 18h8" stroke-dasharray="2 1"/>'),
+    wet_track:         _s('<path d="M4 14a4 4 0 0 1 4-4 4 4 0 0 1 4 4 4 4 0 0 0 4-4 4 4 0 0 1 4 4"/><path d="M4 18a4 4 0 0 1 4-4 4 4 0 0 1 4 4 4 4 0 0 0 4-4 4 4 0 0 1 4 4"/><path d="M8 3v3"/><path d="M12 2v4"/><path d="M16 3v3"/>'),
+    track_temp_cold:   _s('<path d="M12 2v14"/><circle cx="12" cy="18" r="4"/><path d="M8 18a4 4 0 0 0 8 0"/><path d="M10 8h4"/><path d="M10 11h4"/><path d="M3 5l2 1"/><path d="M3 9l2-1"/>'),
+    track_temp_hot:    _s('<path d="M12 2v14"/><circle cx="12" cy="18" r="4" fill="currentColor" opacity="0.2"/><path d="M8 18a4 4 0 0 0 8 0"/><path d="M10 8h4"/><path d="M10 11h4"/><path d="M18 3l1 3"/><path d="M20 8l-2 1"/><path d="M19 12l-2-1"/>'),
+    tyre_wear_high:    _s('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M9 7l6 10" stroke-dasharray="2 2"/><path d="M15 7l-6 10" stroke-dasharray="2 2"/>'),
+    hot_tyres:         _s('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M10 10l-3-3" stroke-dasharray="1.5 1.5"/><path d="M14 14l3 3" stroke-dasharray="1.5 1.5"/>'),
+    incident_spike:    _s('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>'),
+    black_flag:        _s('<path d="M5 2v20"/><path d="M5 4h14v8H5"/><path d="M5 4h7v4H5" fill="currentColor" opacity="0.4"/><path d="M12 8h7v4h-7" fill="currentColor" opacity="0.4"/>'),
+
+    // fallback
+    _default:          _s('<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/>')
+  };
+
+  // Title → topicId reverse map (fallback when CommentaryTopicId isn't available)
+  const _titleToTopicId = {
+    'Big Save': 'spin_catch',
+    'Wall / Barrier Contact': 'wall_contact',
+    'Off Track': 'off_track',
+    'Kerb / Curb Hit': 'kerb_hit',
+    'ABS Activation': 'abs_activation',
+    'Traction Control Cut': 'tc_intervention',
+    'Close Racing': 'close_battle',
+    'Position Gained': 'position_gained',
+    'Position Lost': 'position_lost',
+    'Yellow Flag': 'yellow_flag',
+    'Debris on Track': 'debris_on_track',
+    'Race Start': 'race_start',
+    'Formation / Pace Lap': 'formation_lap',
+    'Personal Best Lap': 'personal_best',
+    'Pit Lane Entry': 'pit_entry',
+    'Maximum Cornering Load': 'high_cornering_load',
+    'FFB Torque Spike': 'ffb_torque_spike',
+    'Low Fuel': 'low_fuel',
+    'Wet Conditions': 'wet_track',
+    'Cold Track Conditions': 'track_temp_cold',
+    'High Tyre Wear': 'tyre_wear_high',
+    'Overheating Tyres': 'hot_tyres',
+    'Major Braking Zone': 'heavy_braking',
+    'Hot Qualifying Lap': 'qualifying_push',
+    'iRacing Incident Points': 'incident_spike',
+    'ERS Battery Low': 'ers_low',
+    'High Track Temperature': 'track_temp_hot',
+    'DRS Open': 'drs_active',
+    'Car On The Limit': 'car_balance_sustained',
+    'Black Flag': 'black_flag',
+    'Aggressive Gear Shift': 'rapid_gear_change',
+    'Long Stint Distance': 'long_stint',
+    'Session Time Running Out': 'session_time_low',
+    'Brake Bias Adjustment': 'brake_bias_change',
+    'Traction Control Adjusted': 'tc_setting_change',
+    'ABS Level Adjusted': 'abs_setting_change',
+    'Front ARB Adjusted': 'arb_front_change',
+    'Rear ARB Adjusted': 'arb_rear_change',
+  };
+
+  // Category → icon fallback (when neither topicId nor title match)
+  const _categoryIcons = {
+    car_response:       _commentaryIcons['car_balance_sustained'],
+    hardware:           _commentaryIcons['abs_activation'],
+    game_feel:          _commentaryIcons['qualifying_push'],
+    racing_experience:  _commentaryIcons['close_battle'],
+  };
+
+  function _resolveCommentaryIcon(topicId, title, category) {
+    if (topicId && _commentaryIcons[topicId]) return _commentaryIcons[topicId];
+    const idFromTitle = _titleToTopicId[title];
+    if (idFromTitle && _commentaryIcons[idFromTitle]) return _commentaryIcons[idFromTitle];
+    if (category && _categoryIcons[category]) return _categoryIcons[category];
+    return _commentaryIcons['_default'];
+  }
+
+  function showCommentary(hue, title, text, meta, topicId) {
     col.style.setProperty('--commentary-h', hue);
-    inner.style.background = `hsla(${hue}, 50%, 22%, 0.48)`;
-    inner.style.borderColor = `hsla(${hue}, 50%, 45%, 0.25)`;
+    inner.style.background = `hsla(${hue}, 50%, 13%, 0.48)`;
+    inner.style.borderColor = `hsla(${hue}, 50%, 27%, 0.25)`;
     document.getElementById('commentaryTitle').textContent = title;
     document.getElementById('commentaryTitle').style.color = `hsl(${hue},55%,65%)`;
-    document.getElementById('commentaryText').textContent = text;
+    // Set commentary icon — try topicId, then title lookup, then category, then default
+    const iconEl = document.getElementById('commentaryIcon');
+    const iconColor = `hsl(${hue},55%,65%)`;
+    const svgStr = _resolveCommentaryIcon(topicId, title, meta);
+    iconEl.innerHTML = svgStr;
+    iconEl.style.color = iconColor;
+    const textEl = document.getElementById('commentaryText');
+    const scrollEl = document.getElementById('commentaryScroll');
+    textEl.textContent = text;
+    textEl.classList.remove('scrolling');
+    scrollEl.classList.remove('no-overflow');
     document.getElementById('commentaryMeta').textContent = meta;
     col.classList.add('visible');
     dash.style.setProperty('--sentiment-h', hue);
     dash.style.setProperty('--sentiment-s', '40%');
-    dash.style.setProperty('--sentiment-l', '20%');
+    dash.style.setProperty('--sentiment-l', '12%');
     dash.style.setProperty('--sentiment-alpha', '0.06');
+
+    // After layout settles, check if text overflows and set up slow scroll
+    requestAnimationFrame(() => { requestAnimationFrame(() => {
+      const scrollH = scrollEl.clientHeight;
+      const textH = textEl.scrollHeight;
+      if (textH > scrollH + 4) {
+        const overflow = textH - scrollH;
+        textEl.style.setProperty('--scroll-distance', `-${overflow}px`);
+        // Duration: ~40px/s so it reads comfortably
+        const duration = Math.max(6, overflow / 40 * 2 + 4);
+        textEl.style.setProperty('--scroll-duration', `${duration.toFixed(1)}s`);
+        textEl.classList.add('scrolling');
+      } else {
+        scrollEl.classList.add('no-overflow');
+      }
+    }); });
   }
   function hideCommentary() {
     col.classList.remove('visible');
@@ -2313,6 +3136,19 @@
     void el.offsetWidth;
     el.classList.add(className);
     setTimeout(() => el.classList.remove(className), 1500);
+  }
+
+  function flashCtrlBar(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('ctrl-changed', 'ctrl-flash-out');
+    void el.offsetWidth;
+    el.classList.add('ctrl-changed');
+    setTimeout(() => {
+      el.classList.remove('ctrl-changed');
+      el.classList.add('ctrl-flash-out');
+      setTimeout(() => el.classList.remove('ctrl-flash-out'), 1200);
+    }, 300);
   }
 
   // ═══ CONTROL VISIBILITY ═══
@@ -2538,6 +3374,7 @@
     'K10MediaCoach.Plugin.CommentaryVisible',
     'K10MediaCoach.Plugin.CommentaryText',
     'K10MediaCoach.Plugin.CommentaryTopicTitle',
+    'K10MediaCoach.Plugin.CommentaryTopicId',
     'K10MediaCoach.Plugin.CommentaryCategory',
     'K10MediaCoach.Plugin.CommentarySentimentColor',
     'K10MediaCoach.Plugin.CommentarySeverity',
@@ -2582,6 +3419,28 @@
     'K10MediaCoach.Plugin.Demo.DriverBehind',
     'K10MediaCoach.Plugin.Demo.IRAhead',
     'K10MediaCoach.Plugin.Demo.IRBehind',
+    // Datastream (advanced telemetry)
+    'K10MediaCoach.Plugin.DS.LatG',
+    'K10MediaCoach.Plugin.DS.LongG',
+    'K10MediaCoach.Plugin.DS.YawRate',
+    'K10MediaCoach.Plugin.DS.SteerTorque',
+    'K10MediaCoach.Plugin.DS.TrackTemp',
+    'K10MediaCoach.Plugin.DS.IncidentCount',
+    'K10MediaCoach.Plugin.DS.AbsActive',
+    'K10MediaCoach.Plugin.DS.TcActive',
+    'K10MediaCoach.Plugin.DS.TrackPct',
+    'K10MediaCoach.Plugin.DS.LapDelta',
+    'K10MediaCoach.Plugin.DS.CompletedLaps',
+    // Demo Datastream
+    'K10MediaCoach.Plugin.Demo.DS.LatG',
+    'K10MediaCoach.Plugin.Demo.DS.LongG',
+    'K10MediaCoach.Plugin.Demo.DS.YawRate',
+    'K10MediaCoach.Plugin.Demo.DS.SteerTorque',
+    'K10MediaCoach.Plugin.Demo.DS.TrackTemp',
+    'K10MediaCoach.Plugin.Demo.DS.IncidentCount',
+    'K10MediaCoach.Plugin.Demo.DS.AbsActive',
+    'K10MediaCoach.Plugin.Demo.DS.TcActive',
+    'K10MediaCoach.Plugin.Demo.DS.LapDelta',
     // Track map
     'K10MediaCoach.Plugin.TrackMap.Ready',
     'K10MediaCoach.Plugin.TrackMap.SvgPath',
@@ -2590,6 +3449,9 @@
     'K10MediaCoach.Plugin.TrackMap.Opponents',
     // Leaderboard
     'K10MediaCoach.Plugin.Leaderboard',
+    // Driver name
+    'K10MediaCoach.Plugin.DriverFirstName',
+    'K10MediaCoach.Plugin.DriverLastName',
     // Flag status
     'currentFlagState'
   ];
@@ -2597,6 +3459,7 @@
   // ─── State ───
   let _pollFrame = 0;
   let _cycleFrameCount = 0;
+  let _driverDisplayName = 'YOU'; // fallback; updated from plugin settings
   const _cycleIntervalFrames = Math.round(10000 / POLL_MS); // 10s
   let _thrHist = new Array(20).fill(0);
   let _brkHist = new Array(20).fill(0);
@@ -2612,8 +3475,12 @@
   let _lastDriverAhead = '';
   let _lastDriverBehind = '';
   let _lastPosition = 0;
+  let _startPosition = 0;    // position at race start — for highlight color
+  let _prevBB = -1, _prevTC = -1, _prevABS = -1;  // for ctrl bar flash detection
   let _lastFlagState = 'none';
   let _greenFlagTimeout = null;
+  let _rcTimeout = null;           // race control banner auto-hide timer
+  let _rcVisible = false;          // race control banner visibility state
   let _commentaryWasVisible = false;
   let _tcSeen = false;
   let _absSeen = false;
@@ -2793,6 +3660,7 @@
   async function pollUpdate() {
     if (_pollActive) return;
     _pollActive = true;
+    try {
 
     const p = await fetchProps();
     if (!p) { _pollActive = false; return; }
@@ -2933,6 +3801,14 @@
     if (tcOk) { const el = document.querySelector('#ctrlTC .ctrl-value'); if (el) { el.textContent = Math.round(+tc); document.getElementById('ctrlTC').style.setProperty('--ctrl-pct', Math.min(100, (+tc/12)*100) + '%'); } }
     if (absOk) { const el = document.querySelector('#ctrlABS .ctrl-value'); if (el) { el.textContent = Math.round(+abs); document.getElementById('ctrlABS').style.setProperty('--ctrl-pct', Math.min(100, (+abs/12)*100) + '%'); } }
 
+    // Flash control bars on value change
+    if (_prevBB >= 0 && bb > 0 && Math.abs(bb - _prevBB) > 0.05) flashCtrlBar('ctrlBB');
+    if (_prevTC >= 0 && +tc !== _prevTC) flashCtrlBar('ctrlTC');
+    if (_prevABS >= 0 && +abs !== _prevABS) flashCtrlBar('ctrlABS');
+    if (bb > 0) _prevBB = bb;
+    if (tcOk) _prevTC = +tc;
+    if (absOk) _prevABS = +abs;
+
     // ─── Position / Lap / Best Lap ───
     const pos = +d('DataCorePlugin.GameData.Position', 'Demo.Position') || 0;
     const lap = +d('DataCorePlugin.GameData.CurrentLap', 'Demo.CurrentLap') || 0;
@@ -2947,8 +3823,49 @@
     });
     if (pos !== _lastPosition && _lastPosition > 0 && pos > 0) {
       document.querySelectorAll('.pos-number').forEach(el => flashElement(el, pos < _lastPosition ? 'ahead-changed' : 'behind-changed'));
+      // WebGL leaderboard event animation on position change
+      if (window.triggerLBEvent) {
+        if (pos === 1 && pos < _lastPosition) {
+          window.triggerLBEvent('p1');   // P1 gold celebration
+        } else {
+          window.triggerLBEvent(pos < _lastPosition ? 'gain' : 'lose');
+        }
+      }
     }
+    // Capture starting position on first valid reading
+    if (_startPosition === 0 && pos > 0) _startPosition = pos;
     _lastPosition = pos;
+    // Position delta indicator
+    document.querySelectorAll('.pos-delta').forEach(el => {
+      if (_startPosition > 0 && pos > 0) {
+        const delta = _startPosition - pos; // positive = gained
+        if (delta > 0) {
+          el.textContent = '▲ ' + delta;
+          el.className = 'pos-delta visible delta-up';
+        } else if (delta < 0) {
+          el.textContent = '▼ ' + Math.abs(delta);
+          el.className = 'pos-delta visible delta-down';
+        } else {
+          el.textContent = '';
+          el.className = 'pos-delta delta-same';
+        }
+      } else {
+        el.textContent = '';
+        el.className = 'pos-delta';
+      }
+    });
+    // Update player highlight: 0=blue(same), 1=green(ahead), 2=red(behind), 3=gold(P1)
+    if (window.setLBHighlightMode) {
+      if (pos === 1) {
+        window.setLBHighlightMode(3);
+      } else if (_startPosition > 0 && pos > 0) {
+        if (pos < _startPosition) window.setLBHighlightMode(1);      // ahead of start
+        else if (pos > _startPosition) window.setLBHighlightMode(2); // behind start
+        else window.setLBHighlightMode(0);                           // same as start
+      } else {
+        window.setLBHighlightMode(0);
+      }
+    }
 
     // ─── Race Timer + Last Lap + End-of-Race Logic ───
     const sessionTime = +d('DataCorePlugin.GameData.SessionTimeSpan', 'Demo.SessionTime') || 0;
@@ -3070,6 +3987,29 @@
       } else {
         if (window.setFlagGLColors) window.setFlagGLColors(null);
       }
+      // ── Race Control banner — only for critical events ──
+      // Minor flags (blue, white, green, debris) are handled by the flag module on the gaps block.
+      // Race Control only fires for session-altering events: red, black, yellow (full course), checkered.
+      const RC_FLAGS = { red: true, black: true, yellow: true, checkered: true };
+      if (flagState !== _lastFlagState) {
+        if (RC_FLAGS[flagState]) {
+          showRaceControl(flagState);
+        } else if (flagState === 'none' || !RC_FLAGS[flagState]) {
+          hideRaceControl();
+        }
+      }
+
+      // ── Leaderboard event animations for race start / finish ──
+      if (flagState !== _lastFlagState && window.triggerLBEvent) {
+        // Green flag transition from non-green = race start (or restart)
+        if (flagState === 'green' && _lastFlagState !== 'green' && _lastFlagState !== 'none') {
+          window.triggerLBEvent('green');
+        }
+        // Checkered flag = race finish
+        if (flagState === 'checkered' && _lastFlagState !== 'checkered') {
+          window.triggerLBEvent('finish');
+        }
+      }
       _lastFlagState = flagState;
     }
 
@@ -3077,11 +4017,18 @@
     const cmVis = +v('K10MediaCoach.Plugin.CommentaryVisible') || 0;
     if (cmVis && !_commentaryWasVisible) {
       const hue = colorToHue(vs('K10MediaCoach.Plugin.CommentarySentimentColor'));
-      showCommentary(hue, vs('K10MediaCoach.Plugin.CommentaryTopicTitle'), vs('K10MediaCoach.Plugin.CommentaryText'), vs('K10MediaCoach.Plugin.CommentaryCategory'));
+      showCommentary(hue, vs('K10MediaCoach.Plugin.CommentaryTopicTitle'), vs('K10MediaCoach.Plugin.CommentaryText'), vs('K10MediaCoach.Plugin.CommentaryCategory'), vs('K10MediaCoach.Plugin.CommentaryTopicId'));
     } else if (!cmVis && _commentaryWasVisible) {
       hideCommentary();
     }
     _commentaryWasVisible = !!cmVis;
+
+    // ─── Driver display name (for leaderboard) ───
+    const dfn = vs('K10MediaCoach.Plugin.DriverFirstName') || '';
+    const dln = vs('K10MediaCoach.Plugin.DriverLastName') || '';
+    if (dfn || dln) {
+      _driverDisplayName = (dfn && dln) ? dfn.charAt(0) + '. ' + dln : (dfn || dln);
+    }
 
     // ─── Track map ───
     const mapReady = +v('K10MediaCoach.Plugin.TrackMap.Ready') || 0;
@@ -3093,15 +4040,28 @@
       updateTrackMap(mapPath, mapPX, mapPY, mapOpp);
     }
 
+    // ─── Datastream ───
+    try { updateDatastream(p, _demo); } catch(e) { console.error('[K10] Datastream error:', e); }
+
+    // ─── Incidents ───
+    try { updateIncidents(p, _demo); } catch(e) { console.error('[K10] Incidents error:', e); }
+
     // ─── Leaderboard ───
-    updateLeaderboard(p);
+    try { updateLeaderboard(p); } catch(e) { console.error('[K10] Leaderboard error:', e); }
+
+    // ─── Race Timeline ───
+    try { updateRaceTimeline(pos, lap, flagState); } catch(e) { console.error('[K10] Timeline error:', e); }
 
     // ─── Cycling timer ───
     // Suppress cycling while timer row is visible — keep position page showing
     const _timerShowing = timerRow && timerRow.classList.contains('timer-visible');
     if (_cycleFrameCount >= _cycleIntervalFrames) { _cycleFrameCount = 0; if (!_timerShowing) cycleRatingPos(); }
 
-    _pollActive = false;
+    } catch (err) {
+      console.error('[K10 poll] Error in poll frame #' + _pollFrame + ':', err);
+    } finally {
+      _pollActive = false;
+    }
   }
 
   // ─── Start polling ───
@@ -3111,6 +4071,179 @@
   // telemetry, demo, commentary, and track map data as a single JSON blob.
   console.log('[K10 Media Broadcast] Polling SimHub HTTP API at ' + SIMHUB_URL);
   setInterval(pollUpdate, POLL_MS);
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RACE CONTROL MESSAGE BANNER
+  // ═══════════════════════════════════════════════════════════════
+
+  // Only critical session-altering events get the Race Control banner.
+  // Blue, white, green, debris are handled by the flag overlay on the gaps block.
+  const RC_MESSAGES = {
+    yellow:    { title: 'CAUTION',          detail: 'Full course yellow — hold position' },
+    red:       { title: 'RED FLAG',         detail: 'Session stopped — return to pits' },
+    checkered: { title: 'CHECKERED FLAG',   detail: 'Race complete — cool down lap' },
+    black:     { title: 'BLACK FLAG',       detail: 'Penalty — report to pit lane immediately' },
+  };
+
+  // Duration each race control message stays visible (ms)
+  const RC_DISPLAY_MS = 8000;
+
+  function showRaceControl(flagType) {
+    const banner = document.getElementById('rcBanner');
+    if (!banner) return;
+    const msg = RC_MESSAGES[flagType];
+    if (!msg) return;
+
+    const titleEl = document.getElementById('rcTitle');
+    const detailEl = document.getElementById('rcDetail');
+    if (titleEl) titleEl.textContent = msg.title;
+    if (detailEl) detailEl.textContent = msg.detail;
+
+    // Remove previous flag classes
+    banner.className = banner.className.replace(/\brc-flag-\S+/g, '').trim();
+    banner.classList.add('rc-flag-' + flagType);
+    banner.classList.add('rc-visible');
+    _rcVisible = true;
+
+    // Dim HUD elements
+    document.body.classList.add('rc-active');
+
+    // Auto-hide after duration
+    if (_rcTimeout) clearTimeout(_rcTimeout);
+    _rcTimeout = setTimeout(() => {
+      hideRaceControl();
+    }, RC_DISPLAY_MS);
+  }
+
+  function hideRaceControl() {
+    const banner = document.getElementById('rcBanner');
+    if (!banner) return;
+    banner.classList.remove('rc-visible');
+    _rcVisible = false;
+    if (_rcTimeout) { clearTimeout(_rcTimeout); _rcTimeout = null; }
+
+    // Restore HUD elements
+    document.body.classList.remove('rc-active');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RACE TIMELINE — position state color strip
+  // ═══════════════════════════════════════════════════════════════
+
+  // History stores objects: { delta: N, p1: bool, checkered: bool }
+  // delta = positions gained/lost vs start (negative = gained, positive = lost from start)
+  const RT_MAX_SAMPLES = 310;
+  const _rtHistory = [];
+  let _rtStartPos = 0;
+  let _rtLastLap = 0;
+  let _rtLastPos = 0;
+  let _rtLastDelta = null;
+  let _rtFinished = false;
+
+  // Heat-mapped color: intensity scales with number of positions gained/lost
+  // delta 0 = neutral blue, negative = green (gained), positive = red (lost)
+  // Clamp heat at ±5 positions for a sane max
+  function rtColor(sample) {
+    if (sample.checkered) return null; // handled separately
+    if (sample.p1) {
+      // P1 gold — brighter the further they climbed
+      const heat = Math.min(Math.abs(sample.delta), 5);
+      const alpha = 0.22 + heat * 0.09;  // 0.22 → 0.67
+      const lit   = 48 + heat * 3;       // 48 → 63  (brighter)
+      return 'hsla(42, 60%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+    }
+    const d = sample.delta;
+    if (d === 0) return 'hsla(210, 35%, 45%, 0.20)';
+    if (d < 0) {
+      // Gained positions — green, brighter with more positions gained
+      const heat = Math.min(Math.abs(d), 5);
+      const alpha = 0.18 + heat * 0.10;   // 1 pos: 0.28, 2: 0.38, 3: 0.48 ...
+      const sat   = 32 + heat * 7;        // 39 → 67
+      const lit   = 38 + heat * 4;        // 42 → 58  (brighter)
+      return 'hsla(145, ' + sat + '%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+    }
+    // Lost positions — red, brighter with more positions lost
+    const heat = Math.min(d, 5);
+    const alpha = 0.18 + heat * 0.10;
+    const sat   = 32 + heat * 7;
+    const lit   = 40 + heat * 4;
+    return 'hsla(0, ' + sat + '%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+  }
+
+  function updateRaceTimeline(position, currentLap, flagState) {
+    if (!position || position <= 0) return;
+    if (_rtStartPos <= 0 && position > 0) _rtStartPos = position;
+
+    const delta = position - _rtStartPos;  // negative = gained positions, positive = lost positions
+    const sample = {
+      delta: delta,
+      p1: position === 1,
+      checkered: flagState === 'checkered',
+    };
+    if (sample.checkered) _rtFinished = true;
+
+    const lapChanged = currentLap > 0 && currentLap !== _rtLastLap;
+    const posChanged = position !== _rtLastPos && _rtLastPos > 0;
+    if (lapChanged || posChanged) {
+      _rtHistory.push(sample);
+      _rtLastLap = currentLap;
+      _rtLastDelta = delta;
+    } else if (_rtHistory.length === 0) {
+      _rtHistory.push(sample);
+      _rtLastDelta = delta;
+    }
+    _rtLastPos = position;
+    if (_rtHistory.length > RT_MAX_SAMPLES) _rtHistory.shift();
+
+    renderTimeline();
+  }
+
+  function renderTimeline() {
+    const canvas = document.getElementById('rtCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const len = _rtHistory.length;
+    if (len === 0) return;
+
+    const sliceW = Math.max(1, w / len);
+
+    for (let i = 0; i < len; i++) {
+      const sample = _rtHistory[i];
+      const x = Math.floor(i * sliceW);
+      const nextX = Math.floor((i + 1) * sliceW);
+      const sw = nextX - x;
+
+      if (sample.checkered) {
+        const sqSize = 2;
+        for (let cy = 0; cy < h; cy += sqSize) {
+          for (let cx = x; cx < x + sw; cx += sqSize) {
+            const row = Math.floor(cy / sqSize);
+            const col = Math.floor((cx - x) / sqSize);
+            ctx.fillStyle = (row + col) % 2 === 0 ? 'hsla(0,0%,100%,0.15)' : 'hsla(0,0%,100%,0.04)';
+            ctx.fillRect(cx, cy, Math.min(sqSize, x + sw - cx), Math.min(sqSize, h - cy));
+          }
+        }
+      } else {
+        ctx.fillStyle = rtColor(sample);
+        ctx.fillRect(x, 0, sw, h);
+      }
+    }
+  }
+
+  function resetTimeline() {
+    _rtHistory.length = 0;
+    _rtStartPos = 0;
+    _rtLastLap = 0;
+    _rtLastPos = 0;
+    _rtLastDelta = null;
+    _rtFinished = false;
+    const canvas = document.getElementById('rtCanvas');
+    if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  }
 
   // ═══════════════════════════════════════════════════════════════
   //  LEADERBOARD RENDERER
@@ -3125,7 +4258,12 @@
     const lbPanel = document.getElementById('leaderboardPanel');
     if (!lbPanel || lbPanel.classList.contains('section-hidden')) return;
     // Leaderboard comes as raw JSON array from the plugin
-    const raw = p['K10MediaCoach.Plugin.Leaderboard'];
+    let raw = p['K10MediaCoach.Plugin.Leaderboard'];
+    // If plugin sends leaderboard as a JSON string, parse it
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch(e) { console.warn('[K10 LB] Failed to parse leaderboard string:', e); return; }
+    }
+    if (_pollFrame <= 3) console.log('[K10 LB] raw type:', typeof raw, 'isArray:', Array.isArray(raw), 'length:', raw ? raw.length : 0, 'sample:', raw ? JSON.stringify(raw).slice(0, 200) : 'null');
     if (!raw || !Array.isArray(raw) || raw.length === 0) return;
 
     // Dedupe: skip render if data hasn't changed
@@ -3137,11 +4275,29 @@
     if (!container) return;
 
     // Entry format: [pos, name, irating, bestLap, lastLap, gapToPlayer, inPit, isPlayer]
+    // Find the session-best lap across ALL drivers (lowest bestLap > 0)
+    let sessionBest = Infinity;
+    for (const e of raw) {
+      const b = +e[3];
+      if (b > 0 && b < sessionBest) sessionBest = b;
+    }
+    if (sessionBest === Infinity) sessionBest = 0;
+
     let html = '';
     for (const entry of raw) {
       const [pos, name, ir, best, last, gap, pit, isPlayer] = entry;
       const classes = ['lb-row'];
-      if (isPlayer) classes.push('lb-player');
+      if (isPlayer) {
+        classes.push('lb-player');
+        if (pos === 1) classes.push('lb-p1');
+        else if (_startPosition > 0 && pos < _startPosition) classes.push('lb-ahead');
+        else if (_startPosition > 0 && pos > _startPosition) classes.push('lb-behind');
+        else classes.push('lb-same');
+      }
+      // Mark the starting position row when player has moved away from it
+      if (!isPlayer && _startPosition > 0 && pos === _startPosition && _lastPosition !== _startPosition) {
+        classes.push('lb-start-pos');
+      }
       if (pit) classes.push('lb-pit');
 
       // Gap display
@@ -3184,13 +4340,35 @@
           return x.toFixed(1) + ',' + y.toFixed(1);
         }).join(' ');
         const lastY = h2 - ((hist[hist.length - 1] - mn) / range) * h2;
-        const col = isPlayer ? 'var(--cyan)' : 'hsla(0,0%,100%,0.3)';
+        let col = 'hsla(0,0%,100%,0.3)';
+        if (isPlayer) {
+          if (pos === 1) col = 'hsla(42,80%,55%,1)';
+          else if (_startPosition > 0 && pos < _startPosition) col = 'hsla(145,75%,50%,1)';
+          else if (_startPosition > 0 && pos > _startPosition) col = 'hsla(0,75%,50%,1)';
+          else col = 'hsla(210,75%,55%,1)';
+        }
         sparkSvg = '<svg class="lb-spark" viewBox="0 0 ' + w + ' ' + h2 + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="' + (w).toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="1.5" fill="' + col + '"/></svg>';
+      }
+
+      // Lap time display with color coding
+      // Purple: session best (one only), Green: driver personal best, Yellow: off-pace
+      let lapStr = '', lapClass = '';
+      if (last > 0) {
+        const m = Math.floor(last / 60), s = last - m * 60;
+        lapStr = m + ':' + (s < 10 ? '0' : '') + s.toFixed(1);
+        if (sessionBest > 0 && Math.abs(last - sessionBest) < 0.05) {
+          lapClass = 'lap-pb';                             // session best lap
+        } else if (best > 0 && Math.abs(last - best) < 0.05) {
+          lapClass = 'lap-fast';                           // driver personal best
+        } else {
+          lapClass = 'lap-slow';                           // off-pace
+        }
       }
 
       html += '<div class="' + classes.join(' ') + '">'
         + '<div class="lb-pos">' + pos + '</div>'
-        + '<div class="lb-name">' + escHtml(isPlayer ? 'YOU' : name) + '</div>'
+        + '<div class="lb-name">' + escHtml(isPlayer ? _driverDisplayName : name) + '</div>'
+        + '<div class="lb-lap ' + lapClass + '">' + lapStr + '</div>'
         + '<div class="lb-ir">' + irStr + '</div>'
         + '<div class="lb-gap ' + gapClass + '">' + gapStr + '</div>'
         + sparkSvg
@@ -3216,7 +4394,8 @@
     showK10Logo: true, showCarLogo: true, simhubUrl: 'http://localhost:8889/k10mediacoach/',
     layoutPosition: 'top-right', layoutFlow: 'ltr', verticalSwap: false,
     greenScreen: false, showWebGL: true,
-    zoom: 100, forceFlag: '', showLeaderboard: true
+    zoom: 100, forceFlag: '', showLeaderboard: true, showDatastream: true, showIncidents: true,
+    incPenalty: 17, incDQ: 25
   };
 
   let _settings = Object.assign({}, _defaultSettings);
@@ -3421,6 +4600,26 @@
       else if (pos.includes('left')) lb.classList.add('lb-left');
       else lb.classList.add('lb-center');
     }
+
+    // Position datastream adjacent to leaderboard
+    const ds = document.getElementById('datastreamPanel');
+    if (ds) {
+      ds.classList.remove('ds-top', 'ds-bottom', 'ds-left', 'ds-right', 'ds-center-left', 'ds-center-right');
+      ds.classList.add(pos.includes('bottom') ? 'ds-top' : 'ds-bottom');
+      if (pos.includes('right')) ds.classList.add('ds-right');
+      else if (pos.includes('left')) ds.classList.add('ds-left');
+      else ds.classList.add('ds-center-right');
+    }
+
+    // Position incidents module adjacent to datastream
+    const inc = document.getElementById('incidentsPanel');
+    if (inc) {
+      inc.classList.remove('inc-top', 'inc-bottom', 'inc-left', 'inc-right', 'inc-center-left', 'inc-center-right');
+      inc.classList.add(pos.includes('bottom') ? 'inc-top' : 'inc-bottom');
+      if (pos.includes('right')) inc.classList.add('inc-right');
+      else if (pos.includes('left')) inc.classList.add('inc-left');
+      else inc.classList.add('inc-center-right');
+    }
   }
 
   function updateLayoutPosition(value) {
@@ -3455,6 +4654,12 @@
     document.getElementById('dashboard').style.zoom = scale;
     const lb = document.getElementById('leaderboardPanel');
     if (lb) lb.style.zoom = scale;
+    const ds = document.getElementById('datastreamPanel');
+    if (ds) ds.style.zoom = scale;
+    const inc = document.getElementById('incidentsPanel');
+    if (inc) inc.style.zoom = scale;
+    const rc = document.getElementById('rcBanner');
+    if (rc) rc.style.zoom = scale;
   }
 
   function updateForceFlag(val) {
@@ -3524,6 +4729,260 @@
 
   // Load settings on startup
   loadSettings();
+
+  // ═══════════════════════════════════════════════════════════════
+  //  DATASTREAM RENDERER
+  // ═══════════════════════════════════════════════════════════════
+
+  const _dsCanvas = document.getElementById('dsGforceCanvas');
+  const _dsCtx = _dsCanvas ? _dsCanvas.getContext('2d') : null;
+  let _dsPeakG = 0;
+  const _dsTrailLen = 40;
+  const _dsTrailLat = new Float32Array(_dsTrailLen);
+  const _dsTrailLong = new Float32Array(_dsTrailLen);
+  let _dsTrailIdx = 0;
+  let _dsTrailCount = 0;
+  let _dsAbsFlash = 0;
+  let _dsTcFlash = 0;
+  let _dsPrevTrackTemp = 0;
+  let _dsPrevIncidents = -1;
+  let _dsPrevDeltaSign = 0;  // -1, 0, 1
+
+  function dsFlash(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('ds-flash');
+    void el.offsetWidth;
+    el.classList.add('ds-flash');
+  }
+
+  function drawGforceDiamond(latG, longG) {
+    if (!_dsCtx) return;
+    const c = _dsCanvas;
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = 64, cssH = 64;
+    c.width = cssW * dpr;
+    c.height = cssH * dpr;
+    const ctx = _dsCtx;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const cx = cssW / 2, cy = cssH / 2;
+    const maxG = 3.0;  // full scale
+    const r = 28;       // diamond radius in px
+
+    // Diamond outline (rotated square)
+    ctx.strokeStyle = 'hsla(0,0%,100%,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r);
+    ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx, cy + r);
+    ctx.lineTo(cx - r, cy);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Inner grid lines (crosshair)
+    ctx.strokeStyle = 'hsla(0,0%,100%,0.04)';
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+    ctx.stroke();
+
+    // Half-diamond
+    ctx.strokeStyle = 'hsla(0,0%,100%,0.03)';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r/2);
+    ctx.lineTo(cx + r/2, cy);
+    ctx.lineTo(cx, cy + r/2);
+    ctx.lineTo(cx - r/2, cy);
+    ctx.closePath();
+    ctx.stroke();
+
+    // G-force trail
+    if (_dsTrailCount > 1) {
+      ctx.beginPath();
+      ctx.strokeStyle = 'hsla(210,60%,55%,0.15)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < Math.min(_dsTrailCount, _dsTrailLen); i++) {
+        const idx = (_dsTrailIdx - 1 - i + _dsTrailLen) % _dsTrailLen;
+        const px = cx + (_dsTrailLat[idx] / maxG) * r;
+        const py = cy - (_dsTrailLong[idx] / maxG) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // Store trail
+    _dsTrailLat[_dsTrailIdx] = latG;
+    _dsTrailLong[_dsTrailIdx] = longG;
+    _dsTrailIdx = (_dsTrailIdx + 1) % _dsTrailLen;
+    _dsTrailCount++;
+
+    // Current G dot
+    const dotX = cx + (latG / maxG) * r;
+    const dotY = cy - (longG / maxG) * r;
+    const totalG = Math.sqrt(latG * latG + longG * longG);
+
+    // Dot color: blue at low G, shifts toward red/orange at high G
+    const hue = Math.max(0, 210 - totalG * 50);
+    const lum = 55 + totalG * 5;
+    ctx.fillStyle = `hsl(${hue},70%,${lum}%)`;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glow
+    ctx.fillStyle = `hsla(${hue},70%,${lum}%,0.25)`;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function updateDatastream(p, isDemo) {
+    const pre = isDemo ? 'K10MediaCoach.Plugin.Demo.DS.' : 'K10MediaCoach.Plugin.DS.';
+    const vd = (key) => +p[pre + key] || 0;
+
+    const latG = vd('LatG');
+    const longG = vd('LongG');
+    const yawRate = vd('YawRate');
+    const steerTorque = vd('SteerTorque');
+    const trackTemp = vd('TrackTemp');
+    const incidentCount = vd('IncidentCount');
+    const absActive = vd('AbsActive') > 0;
+    const tcActive = vd('TcActive') > 0;
+    const lapDelta = vd('LapDelta');
+
+    // G-force diamond
+    drawGforceDiamond(latG, longG);
+
+    // Lat/Long G values
+    const latEl = document.getElementById('dsLatG');
+    const longEl = document.getElementById('dsLongG');
+    if (latEl) latEl.textContent = Math.abs(latG).toFixed(2) + 'g';
+    if (longEl) longEl.textContent = Math.abs(longG).toFixed(2) + 'g';
+
+    // Peak G tracking
+    const totalG = Math.sqrt(latG * latG + longG * longG);
+    const wasNewPeak = totalG > _dsPeakG && _dsPeakG > 0;
+    if (totalG > _dsPeakG) _dsPeakG = totalG;
+    const peakEl = document.getElementById('dsPeakG');
+    if (peakEl) { peakEl.textContent = _dsPeakG.toFixed(2) + 'g'; if (wasNewPeak) dsFlash('dsPeakG'); }
+
+    // Yaw rate
+    const yawEl = document.getElementById('dsYawRate');
+    if (yawEl) yawEl.textContent = Math.abs(yawRate).toFixed(2) + ' r/s';
+
+    // Yaw bar (centered, extends left for negative, right for positive)
+    const yawFill = document.getElementById('dsYawFill');
+    if (yawFill) {
+      const maxYaw = 1.5;
+      const pct = Math.min(Math.abs(yawRate) / maxYaw, 1.0) * 50;
+      if (yawRate >= 0) {
+        yawFill.style.left = '50%';
+        yawFill.style.width = pct + '%';
+      } else {
+        yawFill.style.left = (50 - pct) + '%';
+        yawFill.style.width = pct + '%';
+      }
+      // Color: blue for small, red for high yaw
+      const yawHue = Math.max(0, 210 - Math.abs(yawRate) * 120);
+      yawFill.style.background = `hsla(${yawHue},70%,55%,0.7)`;
+    }
+
+    // Steering torque
+    const ffbEl = document.getElementById('dsSteerTorque');
+    if (ffbEl) ffbEl.textContent = steerTorque.toFixed(1) + ' Nm';
+
+    // Lap delta
+    const deltaEl = document.getElementById('dsDelta');
+    if (deltaEl) {
+      const sign = lapDelta >= 0 ? '+' : '';
+      deltaEl.textContent = sign + lapDelta.toFixed(3);
+      deltaEl.classList.remove('ds-positive', 'ds-negative', 'ds-neutral');
+      if (lapDelta > 0.05) deltaEl.classList.add('ds-positive');
+      else if (lapDelta < -0.05) deltaEl.classList.add('ds-negative');
+      else deltaEl.classList.add('ds-neutral');
+      // Flash on sign change
+      const curSign = lapDelta > 0.05 ? 1 : lapDelta < -0.05 ? -1 : 0;
+      if (_dsPrevDeltaSign !== 0 && curSign !== 0 && curSign !== _dsPrevDeltaSign) dsFlash('dsDelta');
+      if (curSign !== 0) _dsPrevDeltaSign = curSign;
+    }
+
+    // Track temp
+    const tempEl = document.getElementById('dsTrackTemp');
+    if (tempEl) {
+      tempEl.textContent = trackTemp > 0 ? trackTemp.toFixed(1) + '°C' : '—°C';
+      if (_dsPrevTrackTemp > 0 && Math.abs(trackTemp - _dsPrevTrackTemp) > 0.3) dsFlash('dsTrackTemp');
+      _dsPrevTrackTemp = trackTemp;
+    }
+
+    // ABS/TC activity → glow on adjustments module bars
+    if (absActive) _dsAbsFlash = 8;
+    if (tcActive) _dsTcFlash = 8;
+    const absCtrl = document.getElementById('ctrlABS');
+    const tcCtrl = document.getElementById('ctrlTC');
+    if (absCtrl) {
+      absCtrl.classList.toggle('ctrl-active', _dsAbsFlash > 0);
+      if (_dsAbsFlash > 0) _dsAbsFlash--;
+    }
+    if (tcCtrl) {
+      tcCtrl.classList.toggle('ctrl-active', _dsTcFlash > 0);
+      if (_dsTcFlash > 0) _dsTcFlash--;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  INCIDENTS MODULE RENDERER
+  // ═══════════════════════════════════════════════════════════════
+  function updateIncidents(p, isDemo) {
+    const panel = document.getElementById('incidentsPanel');
+    if (!panel || panel.classList.contains('section-hidden')) return;
+    const pre = isDemo ? 'K10MediaCoach.Plugin.Demo.DS.' : 'K10MediaCoach.Plugin.DS.';
+    const incidentCount = +(p[pre + 'IncidentCount']) || 0;
+
+    const countEl = document.getElementById('incCount');
+    if (!countEl) return;
+    countEl.textContent = incidentCount;
+
+    // Flash on increment
+    if (_dsPrevIncidents >= 0 && incidentCount > _dsPrevIncidents) {
+      countEl.classList.remove('inc-flash');
+      void countEl.offsetWidth;
+      countEl.classList.add('inc-flash');
+    }
+    _dsPrevIncidents = incidentCount;
+
+    // Progressive color level: 0=green, 5=red
+    // 0x=0, 1-2x=1, 3-4x=2, 5-6x=3, 7-9x=4, 10+=5
+    let level;
+    if (incidentCount === 0) level = 0;
+    else if (incidentCount <= 2) level = 1;
+    else if (incidentCount <= 4) level = 2;
+    else if (incidentCount <= 6) level = 3;
+    else if (incidentCount <= 9) level = 4;
+    else level = 5;
+
+    for (let i = 0; i <= 5; i++) panel.classList.toggle('inc-level-' + i, i === level);
+
+    // Threshold counters — remaining incidents to penalty / DQ
+    const penLimit = _settings.incPenalty || 17;
+    const dqLimit  = _settings.incDQ || 25;
+    const toPen = Math.max(0, penLimit - incidentCount);
+    const toDQ  = Math.max(0, dqLimit - incidentCount);
+
+    const penEl = document.getElementById('incToPen');
+    const dqEl  = document.getElementById('incToDQ');
+    if (penEl) {
+      penEl.textContent = toPen > 0 ? toPen + 'x' : 'PENALTY';
+      penEl.className = 'inc-thresh-val' + (toPen === 0 ? ' thresh-hit' : toPen <= 3 ? ' thresh-crit' : toPen <= 6 ? ' thresh-near' : '');
+    }
+    if (dqEl) {
+      dqEl.textContent = toDQ > 0 ? toDQ + 'x' : 'DQ';
+      dqEl.className = 'inc-thresh-val' + (toDQ === 0 ? ' thresh-hit' : toDQ <= 3 ? ' thresh-crit' : toDQ <= 6 ? ' thresh-near' : '');
+    }
+  }
 
   // ═══════════════════════════════════════════════════════════════
   //  WebGL FX ENGINE — Tachometer + Pedal Histograms
@@ -4022,6 +5481,8 @@
     let _lbPlayerTop = 0;     // 0-1 normalized
     let _lbPlayerBottom = 1;   // 0-1 normalized
     let _lbHasPlayer = false;
+    // Highlight mode: 0=blue(same), 1=green(ahead), 2=red(behind), 3=gold(P1)
+    let _lbHighlightMode = 0;
 
     if (lbCtx) {
       const { canvas: lC, gl: lGL } = lbCtx;
@@ -4042,32 +5503,51 @@
         uniform float uTime;
         uniform float uPlayerTop;    // normalized y of player row top
         uniform float uPlayerBot;    // normalized y of player row bottom
+        uniform float uMode;         // 0=blue, 1=green, 2=red, 3=gold(P1)
         uniform vec2  uRes;
+
+        // Pseudo-random for P1 sparkles
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
 
         void main() {
           vec2 uv = vUV;
-          // Flip Y: CSS has origin top-left, GL has bottom-left
           float y = 1.0 - uv.y;
 
-          // Only render in the player row band
           if (y < uPlayerTop || y > uPlayerBot) {
             fragColor = vec4(0.0);
             return;
           }
 
-          // Local UV within the player row
           float ly = (y - uPlayerTop) / max(uPlayerBot - uPlayerTop, 0.001);
           float lx = uv.x;
 
-          vec3 cyan = vec3(0.0, 0.675, 0.757);
+          // ── Color selection by mode ──
+          // 0=blue(same), 1=green(ahead), 2=red(behind), 3=gold(P1)
+          vec3 baseColor;
+          vec3 brightColor;
+          if (uMode < 0.5) {
+            baseColor  = vec3(0.25, 0.45, 0.80);   // blue
+            brightColor = vec3(0.40, 0.60, 0.95);
+          } else if (uMode < 1.5) {
+            baseColor  = vec3(0.15, 0.70, 0.40);   // green
+            brightColor = vec3(0.25, 0.85, 0.55);
+          } else if (uMode < 2.5) {
+            baseColor  = vec3(0.80, 0.20, 0.15);   // red
+            brightColor = vec3(0.95, 0.35, 0.25);
+          } else {
+            baseColor  = vec3(0.76, 0.60, 0.22);   // deep gold
+            brightColor = vec3(1.0, 0.88, 0.55);    // bright gold
+          }
 
           // ── Effect 1: Shimmer sweep ──
           float sweepSpeed = 0.25;
           float sweepX = fract(uTime * sweepSpeed);
-          // Main highlight beam
           float beamW = 0.08;
           float beam = exp(-pow((lx - sweepX) / beamW, 2.0)) * 0.55;
-          // Soft trailing glow
           float trail = exp(-max(0.0, lx - sweepX + 0.1) * 4.0) * 0.08
                       * step(sweepX - 0.3, lx);
           float effect1 = beam + trail;
@@ -4075,22 +5555,42 @@
           // ── Effect 2: Edge breathing glow ──
           float edgeY = min(ly, 1.0 - ly);
           float edgeGlow = exp(-edgeY * 10.0) * 0.35;
-          // Left edge accent (the cyan border side)
           float leftGlow = exp(-lx * 6.0) * 0.45;
           float pulse = 0.55 + 0.45 * sin(uTime * 1.8);
           float effect2 = (edgeGlow + leftGlow) * pulse;
 
           // ── Crossfade between effects (~8s per full cycle) ──
           float blend = 0.5 + 0.5 * sin(uTime * 0.4);
-
           float effect = mix(effect1, effect2, blend);
 
-          // Fade at top/bottom edges of row
           float rowEdge = smoothstep(0.0, 0.15, ly) * smoothstep(1.0, 0.85, ly);
           effect *= rowEdge;
 
           float alpha = clamp(effect * 0.55, 0.0, 0.5);
-          fragColor = vec4(cyan * alpha, alpha);
+          vec3 col = baseColor;
+
+          // ── P1 sparkle overlay (very sparse) ──
+          if (uMode > 2.5) {
+            float beamBright = exp(-pow((lx - sweepX) / beamW, 2.0)) * 0.15 * rowEdge;
+            col = mix(baseColor, brightColor, beamBright * 2.0 + 0.3);
+
+            float gridScale = 24.0;
+            vec2 gridCell = floor(vec2(lx, ly) * gridScale);
+            float cellRand = hash21(gridCell);
+            if (cellRand > 0.94) {
+              vec2 cellUV = fract(vec2(lx, ly) * gridScale);
+              float sparklePhase = cellRand * 6.28 + uTime * (2.5 + cellRand * 2.0);
+              float blink = pow(max(0.0, sin(sparklePhase)), 28.0);
+              float dist = length(cellUV - 0.5);
+              float point = exp(-dist * dist * 50.0);
+              float sparkle = blink * point * rowEdge * 0.5;
+              col += vec3(1.0, 0.97, 0.85) * sparkle;
+              alpha += sparkle;
+            }
+          }
+
+          alpha = clamp(alpha, 0.0, 0.55);
+          fragColor = vec4(col * alpha, alpha);
         }`;
 
       const vs = createShader(lGL, lGL.VERTEX_SHADER, quadVS);
@@ -4102,6 +5602,7 @@
         const uTime      = lGL.getUniformLocation(prog, 'uTime');
         const uPlayerTop = lGL.getUniformLocation(prog, 'uPlayerTop');
         const uPlayerBot = lGL.getUniformLocation(prog, 'uPlayerBot');
+        const uMode      = lGL.getUniformLocation(prog, 'uMode');
         const uRes       = lGL.getUniformLocation(prog, 'uRes');
 
         const buf = lGL.createBuffer();
@@ -4127,6 +5628,7 @@
           lGL.uniform1f(uTime, _lbTime);
           lGL.uniform1f(uPlayerTop, _lbPlayerTop);
           lGL.uniform1f(uPlayerBot, _lbPlayerBottom);
+          lGL.uniform1f(uMode, _lbHighlightMode);
           lGL.uniform2f(uRes, lC.width, lC.height);
 
           lGL.drawArrays(lGL.TRIANGLE_STRIP, 0, 4);
@@ -4150,6 +5652,404 @@
       _lbHasPlayer = true;
     };
 
+    // Update highlight mode: 0=blue(same), 1=green(ahead), 2=red(behind), 3=gold(P1)
+    window.setLBHighlightMode = function(mode) { _lbHighlightMode = mode; };
+
+    /* ════════════════════════════════════════════
+       K10 LOGO BACKGROUND — ultra-subtle chevron drift
+       SDF-based chevron shapes from the K10 logomark,
+       barely perceptible at 3-4% opacity, drifting so slowly
+       you only notice after 4-5 minutes of watching.
+       ════════════════════════════════════════════ */
+    const k10LogoCtx = initGL('k10LogoGlCanvas');
+    let _k10LogoTime = 0;
+
+    if (k10LogoCtx) {
+      const { canvas: kC, gl: kGL } = k10LogoCtx;
+
+      const quadVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      const k10FS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+        uniform float uTime;
+        uniform vec2  uRes;
+
+        // Rotate 2D point
+        vec2 rot(vec2 p, float a) {
+          float c = cos(a), s = sin(a);
+          return vec2(p.x*c - p.y*s, p.x*s + p.y*c);
+        }
+
+        // SDF for a single chevron (two angled bars forming a > shape)
+        // Centered at origin, pointing right, with arm length and thickness
+        float sdChevron(vec2 p, float armLen, float thick, float angle) {
+          // Mirror across x-axis for the two arms
+          vec2 q = vec2(p.x, abs(p.y));
+          // Rotate the arm direction
+          vec2 dir = vec2(cos(angle), sin(angle));
+          // Project onto arm line
+          float t = clamp(dot(q, dir), 0.0, armLen);
+          vec2 closest = dir * t;
+          return length(q - closest) - thick;
+        }
+
+        // Smoother chevron using box-like approach
+        float sdChevronV(vec2 p, float size, float thick) {
+          vec2 q = vec2(p.x, abs(p.y));
+          // V-shape: line from (0, size) to (size*0.6, 0)
+          vec2 a = vec2(0.0, size);
+          vec2 b = vec2(size * 0.7, 0.0);
+          vec2 ab = b - a;
+          vec2 aq = q - a;
+          float t = clamp(dot(aq, ab) / dot(ab, ab), 0.0, 1.0);
+          vec2 closest = a + ab * t;
+          return length(q - closest) - thick;
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          float aspect = uRes.x / uRes.y;
+          vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+
+          float t = uTime;
+
+          // Three chevrons that drift independently at glacial speeds
+          // Each has its own phase, position offset, scale, and slight rotation
+
+          float totalAlpha = 0.0;
+          vec3 totalColor = vec3(0.0);
+
+          // Chevron 1 — leftmost, lighter red
+          {
+            // Drift: very slow circular path + slight horizontal oscillation
+            vec2 offset = vec2(
+              sin(t * 0.008 + 0.0) * 0.12 + cos(t * 0.003) * 0.05,
+              cos(t * 0.006 + 1.0) * 0.08 + sin(t * 0.004) * 0.03
+            );
+            float scale = 0.38 + sin(t * 0.005 + 2.0) * 0.03;
+            float angle = sin(t * 0.004) * 0.06;
+            vec2 cp = rot(p - vec2(-0.15, 0.0) - offset, angle) / scale;
+            float d = sdChevronV(cp, 0.5, 0.06);
+            float shape = 1.0 - smoothstep(-0.01, 0.03, d);
+            float breath = 0.5 + 0.5 * sin(t * 0.012 + 0.0);
+            float a = shape * breath * 0.035;
+            totalColor += vec3(0.85, 0.30, 0.25) * a;
+            totalAlpha += a;
+          }
+
+          // Chevron 2 — middle, medium red
+          {
+            vec2 offset = vec2(
+              cos(t * 0.007 + 2.0) * 0.10 + sin(t * 0.0035) * 0.04,
+              sin(t * 0.009 + 0.5) * 0.10 + cos(t * 0.005) * 0.03
+            );
+            float scale = 0.42 + cos(t * 0.006 + 1.0) * 0.025;
+            float angle = cos(t * 0.005 + 1.0) * 0.05;
+            vec2 cp = rot(p - vec2(0.0, 0.0) - offset, angle) / scale;
+            float d = sdChevronV(cp, 0.5, 0.06);
+            float shape = 1.0 - smoothstep(-0.01, 0.03, d);
+            float breath = 0.5 + 0.5 * sin(t * 0.010 + 2.1);
+            float a = shape * breath * 0.035;
+            totalColor += vec3(0.75, 0.22, 0.20) * a;
+            totalAlpha += a;
+          }
+
+          // Chevron 3 — rightmost, dark maroon/wine
+          {
+            vec2 offset = vec2(
+              sin(t * 0.006 + 4.0) * 0.11 + cos(t * 0.004) * 0.05,
+              cos(t * 0.008 + 3.0) * 0.09 + sin(t * 0.003) * 0.04
+            );
+            float scale = 0.35 + sin(t * 0.007 + 3.5) * 0.03;
+            float angle = sin(t * 0.003 + 2.0) * 0.07;
+            vec2 cp = rot(p - vec2(0.12, 0.0) - offset, angle) / scale;
+            float d = sdChevronV(cp, 0.5, 0.06);
+            float shape = 1.0 - smoothstep(-0.01, 0.03, d);
+            float breath = 0.5 + 0.5 * sin(t * 0.014 + 4.2);
+            float a = shape * breath * 0.035;
+            totalColor += vec3(0.55, 0.12, 0.15) * a;
+            totalAlpha += a;
+          }
+
+          // Very subtle edge vignette to keep it contained
+          float vig = smoothstep(0.0, 0.15, min(uv.x, min(uv.y, min(1.0-uv.x, 1.0-uv.y))));
+          totalAlpha *= vig;
+          totalColor *= vig;
+
+          totalAlpha = clamp(totalAlpha, 0.0, 0.06);
+          fragColor = vec4(totalColor, totalAlpha);
+        }`;
+
+      const vs = createShader(kGL, kGL.VERTEX_SHADER, quadVS);
+      const fs = createShader(kGL, kGL.FRAGMENT_SHADER, k10FS);
+      const prog = createProgram(kGL, vs, fs);
+
+      if (prog) {
+        const aPos  = kGL.getAttribLocation(prog, 'aPos');
+        const uTime = kGL.getUniformLocation(prog, 'uTime');
+        const uRes  = kGL.getUniformLocation(prog, 'uRes');
+
+        const buf = kGL.createBuffer();
+        kGL.bindBuffer(kGL.ARRAY_BUFFER, buf);
+        kGL.bufferData(kGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), kGL.STATIC_DRAW);
+
+        kGL.enable(kGL.BLEND);
+        kGL.blendFunc(kGL.ONE, kGL.ONE_MINUS_SRC_ALPHA);
+
+        window._k10LogoFXFrame = function(dt) {
+          resizeCanvas(kC, kGL);
+          _k10LogoTime += dt;
+
+          kGL.clearColor(0, 0, 0, 0);
+          kGL.clear(kGL.COLOR_BUFFER_BIT);
+
+          kGL.useProgram(prog);
+          kGL.bindBuffer(kGL.ARRAY_BUFFER, buf);
+          kGL.enableVertexAttribArray(aPos);
+          kGL.vertexAttribPointer(aPos, 2, kGL.FLOAT, false, 0, 0);
+
+          kGL.uniform1f(uTime, _k10LogoTime);
+          kGL.uniform2f(uRes, kC.width, kC.height);
+
+          kGL.drawArrays(kGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       LEADERBOARD EVENT OVERLAY — position change / race start / finish
+       Subtle full-panel flash effects, lower intensity than flag animations
+       ════════════════════════════════════════════ */
+    const lbEvtCtx = initGL('lbEventGlCanvas');
+    let _lbEvtTime = 0;
+    let _lbEvtActive = false;
+    let _lbEvtColor = [0.0, 0.8, 0.3]; // green default
+    let _lbEvtDuration = 1.2;           // seconds
+    let _lbEvtElapsed = 99;             // start expired
+    let _lbEvtMode = 0;                 // 0=flash, 1=green-flag sweep, 2=checkered
+
+    if (lbEvtCtx) {
+      const { canvas: eC, gl: eGL } = lbEvtCtx;
+
+      const quadVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      const evtFS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+
+        uniform float uTime;
+        uniform float uElapsed;
+        uniform float uDuration;
+        uniform vec3  uColor;
+        uniform float uMode;     // 0=flash, 1=green sweep, 2=checkered, 3=P1 gold
+        uniform vec2  uRes;
+
+        // Pseudo-random hash for sparkle particles
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          float progress = clamp(uElapsed / uDuration, 0.0, 1.0);
+
+          // Global fade out — starts fading at 40% through
+          float fadeOut = smoothstep(1.0, 0.4, progress);
+
+          float alpha = 0.0;
+          vec3 col = uColor;
+
+          if (uMode < 0.5) {
+            // ── MODE 0: Subtle edge flash (position change) ──
+            float edgeX = min(uv.x, 1.0 - uv.x);
+            float edgeY = min(uv.y, 1.0 - uv.y);
+            float edge = exp(-min(edgeX, edgeY) * 8.0);
+            float attack = smoothstep(0.0, 0.15, progress);
+            float envelope = attack * fadeOut;
+            alpha = edge * envelope * 0.28;
+            alpha += envelope * 0.04;
+          }
+          else if (uMode < 1.5) {
+            // ── MODE 1: Green flag sweep (race start) ──
+            float sweepPos = progress * 1.6 - 0.3;
+            float sweep = exp(-pow((uv.x - sweepPos) / 0.15, 2.0));
+            alpha = sweep * fadeOut * 0.22;
+            alpha += fadeOut * 0.03 * (1.0 - progress);
+          }
+          else if (uMode < 2.5) {
+            // ── MODE 2: Checkered finish ──
+            float scale = 8.0;
+            float cx = floor(uv.x * scale);
+            float cy = floor(uv.y * scale);
+            float checker = mod(cx + cy, 2.0);
+            float reveal = smoothstep(uv.x - 0.3, uv.x + 0.1, progress * 1.5);
+            col = mix(vec3(0.9), vec3(0.15), checker);
+            alpha = reveal * fadeOut * 0.16;
+          }
+          else {
+            // ── MODE 3: P1 Gold celebration ──
+            // Rich gold palette — warm, not yellow
+            vec3 goldDeep = vec3(0.76, 0.60, 0.22);   // deep warm gold
+            vec3 goldBright = vec3(1.0, 0.88, 0.55);   // bright highlight gold
+            vec3 goldWhite = vec3(1.0, 0.97, 0.85);    // near-white sparkle peak
+
+            // ── Slow fade-in, long presence, gentle fade-out ──
+            float fadeIn = smoothstep(0.0, 0.12, progress);
+            float fadeP1 = fadeIn * smoothstep(1.0, 0.5, progress);
+
+            // ── Warm edge glow (stronger than normal gain) ──
+            float edgeX = min(uv.x, 1.0 - uv.x);
+            float edgeY = min(uv.y, 1.0 - uv.y);
+            float edge = exp(-min(edgeX, edgeY) * 5.0);
+            float edgeAlpha = edge * fadeP1 * 0.35;
+
+            // ── Soft horizontal shimmer sweep ──
+            float shimmerPos = fract(uTime * 0.3 + 0.2);
+            float shimmer = exp(-pow((uv.x - shimmerPos) / 0.12, 2.0)) * 0.18;
+            shimmer *= fadeP1;
+
+            // ── Sparse sparkle particles ──
+            // Grid of potential sparkle sites — only a few activate
+            float sparkle = 0.0;
+            float gridScale = 18.0; // controls density — higher = more cells but sparser activation
+            vec2 gridCell = floor(uv * gridScale);
+            float cellRand = hash21(gridCell);
+
+            // Only ~8% of cells can sparkle at all
+            if (cellRand > 0.92) {
+              vec2 cellUV = fract(uv * gridScale);
+              // Each sparkle has its own timing offset
+              float sparklePhase = cellRand * 6.28 + uTime * (2.0 + cellRand * 3.0);
+              // Sharp on/off blink — visible for only a narrow window
+              float blink = pow(max(0.0, sin(sparklePhase)), 24.0);
+              // Point-like: bright only near cell center
+              float dist = length(cellUV - 0.5);
+              float point = exp(-dist * dist * 40.0);
+              // Stagger appearance across the animation
+              float appear = smoothstep(cellRand * 0.4, cellRand * 0.4 + 0.1, progress);
+              sparkle = blink * point * appear * fadeP1 * 0.65;
+            }
+
+            // Compose: edge glow is deep gold, shimmer is bright gold, sparkles are near-white
+            col = goldDeep * edgeAlpha
+                + goldBright * shimmer
+                + goldWhite * sparkle;
+            alpha = edgeAlpha + shimmer + sparkle;
+            // Very subtle overall warm wash
+            col += goldDeep * fadeP1 * 0.03;
+            alpha += fadeP1 * 0.03;
+          }
+
+          alpha = clamp(alpha, 0.0, 0.55);
+          fragColor = vec4(col * alpha, alpha);
+        }`;
+
+      const vs = createShader(eGL, eGL.VERTEX_SHADER, quadVS);
+      const fs = createShader(eGL, eGL.FRAGMENT_SHADER, evtFS);
+      const prog = createProgram(eGL, vs, fs);
+
+      if (prog) {
+        const aPos      = eGL.getAttribLocation(prog, 'aPos');
+        const uTime     = eGL.getUniformLocation(prog, 'uTime');
+        const uElapsed  = eGL.getUniformLocation(prog, 'uElapsed');
+        const uDuration = eGL.getUniformLocation(prog, 'uDuration');
+        const uColor    = eGL.getUniformLocation(prog, 'uColor');
+        const uMode     = eGL.getUniformLocation(prog, 'uMode');
+        const uRes      = eGL.getUniformLocation(prog, 'uRes');
+
+        const buf = eGL.createBuffer();
+        eGL.bindBuffer(eGL.ARRAY_BUFFER, buf);
+        eGL.bufferData(eGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), eGL.STATIC_DRAW);
+
+        eGL.enable(eGL.BLEND);
+        eGL.blendFunc(eGL.ONE, eGL.ONE_MINUS_SRC_ALPHA);
+
+        window._lbEvtFXFrame = function(dt) {
+          _lbEvtElapsed += dt;
+          if (_lbEvtElapsed > _lbEvtDuration) {
+            // Clear canvas when animation is done
+            if (_lbEvtActive) {
+              eGL.clearColor(0, 0, 0, 0);
+              eGL.clear(eGL.COLOR_BUFFER_BIT);
+              _lbEvtActive = false;
+            }
+            return;
+          }
+          _lbEvtActive = true;
+          resizeCanvas(eC, eGL);
+          _lbEvtTime += dt;
+
+          eGL.clearColor(0, 0, 0, 0);
+          eGL.clear(eGL.COLOR_BUFFER_BIT);
+
+          eGL.useProgram(prog);
+          eGL.bindBuffer(eGL.ARRAY_BUFFER, buf);
+          eGL.enableVertexAttribArray(aPos);
+          eGL.vertexAttribPointer(aPos, 2, eGL.FLOAT, false, 0, 0);
+
+          eGL.uniform1f(uTime, _lbEvtTime);
+          eGL.uniform1f(uElapsed, _lbEvtElapsed);
+          eGL.uniform1f(uDuration, _lbEvtDuration);
+          eGL.uniform3fv(uColor, _lbEvtColor);
+          eGL.uniform1f(uMode, _lbEvtMode);
+          eGL.uniform2f(uRes, eC.width, eC.height);
+
+          eGL.drawArrays(eGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    // Public API: trigger a leaderboard event animation
+    // type: 'gain' | 'lose' | 'p1' | 'green' | 'finish'
+    window.triggerLBEvent = function(type) {
+      switch (type) {
+        case 'gain':
+          _lbEvtColor = [0.1, 0.85, 0.35];  // green
+          _lbEvtDuration = 1.0;
+          _lbEvtMode = 0;
+          break;
+        case 'lose':
+          _lbEvtColor = [0.9, 0.15, 0.1];   // red
+          _lbEvtDuration = 1.0;
+          _lbEvtMode = 0;
+          break;
+        case 'p1':
+          _lbEvtColor = [0.76, 0.60, 0.22]; // deep gold (shader handles its own palette)
+          _lbEvtDuration = 3.5;
+          _lbEvtMode = 3;
+          break;
+        case 'green':
+          _lbEvtColor = [0.1, 0.85, 0.35];  // green
+          _lbEvtDuration = 2.0;
+          _lbEvtMode = 1;
+          break;
+        case 'finish':
+          _lbEvtColor = [0.9, 0.9, 0.9];    // white (checkered)
+          _lbEvtDuration = 2.5;
+          _lbEvtMode = 2;
+          break;
+      }
+      _lbEvtElapsed = 0;
+      _lbEvtActive = true;
+    };
+
     /* ── Master FX animation loop ── */
     let _lastFXTime = 0;
     function fxLoop(now) {
@@ -4164,6 +6064,8 @@
       if (window._pedalsFXFrame) window._pedalsFXFrame(dt);
       if (window._flagFXFrame) window._flagFXFrame(dt);
       if (window._lbFXFrame) window._lbFXFrame(dt);
+      if (window._lbEvtFXFrame) window._lbEvtFXFrame(dt);
+      if (window._k10LogoFXFrame) window._k10LogoFXFrame(dt);
       requestAnimationFrame(fxLoop);
     }
     requestAnimationFrame((now) => { _lastFXTime = now; requestAnimationFrame(fxLoop); });

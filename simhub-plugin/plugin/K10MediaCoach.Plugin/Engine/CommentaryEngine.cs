@@ -118,6 +118,12 @@ namespace K10MediaCoach.Plugin.Engine
         public bool EventOnlyMode { get; set; } = false;
         public bool DemoMode      { get; set; } = false;
 
+        /// <summary>Driver's first name (e.g. "Hal"). Set from Settings.</summary>
+        public string DriverFirstName { get; set; } = "Hal";
+
+        /// <summary>Driver's last name (e.g. "Incandenze"). Set from Settings.</summary>
+        public string DriverLastName { get; set; } = "Incandenze";
+
         /// <summary>
         /// Optional hook — returns a cooldown multiplier for a given topic ID.
         /// Supplied by the plugin from FeedbackEngine. Default: no adjustment.
@@ -228,6 +234,7 @@ namespace K10MediaCoach.Plugin.Engine
 
         public void LoadFragments(string jsonPath)
         {
+            _fragmentAssembler.ResolveDriverName = () => ResolveDriverName();
             _fragmentAssembler.LoadFragments(jsonPath);
         }
 
@@ -527,6 +534,9 @@ namespace K10MediaCoach.Plugin.Engine
                 }
             }
 
+            // Substitute {driver} with randomly-chosen first or last name
+            prompt = prompt.Replace("{driver}", ResolveDriverName());
+
             // Build event exposition text (used in event-only mode)
             string exposition = BuildEventExposition(topic, context);
 
@@ -585,6 +595,9 @@ namespace K10MediaCoach.Plugin.Engine
                 template = template.Replace("{behind}", FormatDriver(context.NearestBehindName, context.NearestBehindRating));
             }
 
+            // Substitute {driver} with randomly-chosen first or last name
+            template = template.Replace("{driver}", ResolveDriverName());
+
             return template;
         }
 
@@ -611,6 +624,22 @@ namespace K10MediaCoach.Plugin.Engine
         {
             if (string.IsNullOrEmpty(name)) return "the car";
             return rating > 0 ? $"{name} ({rating:N0} iR)" : name;
+        }
+
+        /// <summary>
+        /// Randomly resolves {driver} placeholder to the driver's first or last name.
+        /// If only one name is configured, uses that. Falls back to "the driver".
+        /// </summary>
+        private string ResolveDriverName()
+        {
+            bool hasFirst = !string.IsNullOrWhiteSpace(DriverFirstName);
+            bool hasLast  = !string.IsNullOrWhiteSpace(DriverLastName);
+
+            if (hasFirst && hasLast)
+                return _rng.Next(2) == 0 ? DriverFirstName.Trim() : DriverLastName.Trim();
+            if (hasFirst) return DriverFirstName.Trim();
+            if (hasLast)  return DriverLastName.Trim();
+            return "the driver";
         }
 
         /// <summary>

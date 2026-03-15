@@ -23,7 +23,7 @@ namespace K10MediaCoach.Plugin.Engine
         {
             GameRunning        = true,
             SessionTypeName    = "Race",
-            Position           = 6,
+            Position           = 4,
             CurrentLap         = 8,
             CompletedLaps      = 7,
             FuelLevel          = 18.4,
@@ -96,7 +96,7 @@ namespace K10MediaCoach.Plugin.Engine
             raceStart.CompletedLaps = 0;
             raceStart.FuelPercent   = 1.0;
             raceStart.FuelLevel     = 45.0;
-            raceStart.Position      = 6;
+            raceStart.Position      = 4;
             steps.Add(new Step { TopicId = "race_start", Snapshot = raceStart, DelaySeconds = 0 });
 
             // ── 2. TC INTERVENTION — severity 1, slate grey ──────────────────────
@@ -104,18 +104,20 @@ namespace K10MediaCoach.Plugin.Engine
             var tcFire = Base();
             tcFire.TcActive    = true;
             tcFire.CurrentLap  = 1;
-            tcFire.Position    = 6;
+            tcFire.Position    = 4;
             steps.Add(new Step { TopicId = "tc_intervention", Snapshot = tcFire, DelaySeconds = 18 });
 
             // ── 3. HIGH CORNERING LOAD — severity 2, blue ────────────────────────
             var highG = Base();
             highG.LatAccel = 4.3;
+            highG.CurrentLap = 3;
             steps.Add(new Step { TopicId = "high_cornering_load", Snapshot = highG, DelaySeconds = 14 });
 
             // ── 4. CLOSE BATTLE — severity 3, orange ────────────────────────────
             // Show orange while blue is still clearing — sev 3 > sev 2 → INTERRUPT.
             var close = Base();
-            close.Position = 6;
+            close.Position = 4;
+            close.CurrentLap = 4;
             // Fake proximity array: one car very close
             close.CarIdxLapDistPct = new float[] { 0.0f, 0.412f, 0.411f };
             close.PlayerCarIdx     = 1;
@@ -127,10 +129,27 @@ namespace K10MediaCoach.Plugin.Engine
 
             // ── 5. POSITION GAINED — severity 4, amber ──────────────────────────
             var passedFwd = Base();
-            passedFwd.Position = 5;   // moved up from 6
+            passedFwd.Position = 3;   // moved up from 4
+            passedFwd.CurrentLap = 5;
             steps.Add(new Step { TopicId = "position_gained", Snapshot = passedFwd, DelaySeconds = 20 });
 
-            // ── 6. HOT TYRES — severity 3, orange ───────────────────────────────
+            // ── 6. BRAKE BIAS CHANGE — severity 1, slate grey ───────────────────
+            // Driver shifts bias forward to stabilise entry on a tight section.
+            var bbChange = Base();
+            bbChange.BrakeBias  = 57.0;
+            bbChange.CurrentLap = 7;
+            bbChange.Position   = 4;
+            steps.Add(new Step { TopicId = "brake_bias_change", Snapshot = bbChange, DelaySeconds = 18 });
+
+            // ── 7. TC SETTING CHANGE — severity 1, slate grey ──────────────────
+            // As the tyres warm up, the driver dials TC down for more control.
+            var tcChange = Base();
+            tcChange.TractionControlSetting = 3;
+            tcChange.CurrentLap = 8;
+            tcChange.Position   = 4;
+            steps.Add(new Step { TopicId = "tc_setting_change", Snapshot = tcChange, DelaySeconds = 16 });
+
+            // ── 8. HOT TYRES — severity 3, orange ───────────────────────────────
             var hotTyres = Base();
             hotTyres.TyreTempFL = 245.0;
             hotTyres.TyreTempFR = 250.0;
@@ -143,6 +162,7 @@ namespace K10MediaCoach.Plugin.Engine
             crash.VertAccel    = 17.3;
             crash.SpeedKmh     = 0.0;
             crash.IncidentCount = 4;
+            crash.CurrentLap    = 10;
             steps.Add(new Step
             {
                 TopicId = "wall_contact", Snapshot = crash,
@@ -152,6 +172,7 @@ namespace K10MediaCoach.Plugin.Engine
             // ── 8. INCIDENT SPIKE — severity 4, amber ───────────────────────────
             var incident = Base();
             incident.IncidentCount = 6;
+            incident.CurrentLap = 10;
             steps.Add(new Step { TopicId = "incident_spike", Snapshot = incident, DelaySeconds = 18 });
 
             // ── 9. YELLOW FLAG — severity 4, amber ──────────────────────────────
@@ -160,12 +181,18 @@ namespace K10MediaCoach.Plugin.Engine
             yellow.CurrentLap   = 11;
             steps.Add(new Step { TopicId = "yellow_flag", Snapshot = yellow, DelaySeconds = 20 });
 
-            // ── 10. ABS ACTIVATION — severity 1, slate grey ──────────────────────
-            // Back to ambient colour after the caution.
+            // ── 10. GREEN FLAG — clears the caution (flag overlay handles this) ──
+            var greenRestart = Base();
+            greenRestart.SessionFlags = TelemetrySnapshot.FLAG_GREEN;
+            greenRestart.CurrentLap   = 12;
+            steps.Add(new Step { TopicId = "abs_activation", Snapshot = greenRestart, DelaySeconds = 12 });
+
+            // ── 11. ABS ACTIVATION — severity 1, slate grey ────────────────────
+            // Back to ambient colour after the green flag clears.
             var abs = Base();
             abs.AbsActive  = true;
             abs.CurrentLap = 12;
-            steps.Add(new Step { TopicId = "abs_activation", Snapshot = abs, DelaySeconds = 22 });
+            steps.Add(new Step { TopicId = "abs_activation", Snapshot = abs, DelaySeconds = 10 });
 
             // ── 11. SPIN CATCH — severity 5, red ─────────────────────────────────
             // Second major interrupt — fires while ABS (sev 1) is still on screen.
@@ -198,7 +225,14 @@ namespace K10MediaCoach.Plugin.Engine
             pitEntry.FuelPercent = 0.22;
             steps.Add(new Step { TopicId = "pit_entry", Snapshot = pitEntry, DelaySeconds = 22 });
 
-            // ── 15. FFB TORQUE SPIKE — severity 3, orange ────────────────────────
+            // ── 16. ABS SETTING CHANGE — severity 1, slate grey ─────────────────
+            // Out of pits on fresh tyres — the driver reduces ABS for better feel.
+            var absChange = Base();
+            absChange.AbsSetting = 2;
+            absChange.CurrentLap = 16;
+            steps.Add(new Step { TopicId = "abs_setting_change", Snapshot = absChange, DelaySeconds = 14 });
+
+            // ── 17. FFB TORQUE SPIKE — severity 3, orange ────────────────────────
             var ffb = Base();
             ffb.SteeringWheelTorque = 23.4;
             ffb.CurrentLap = 16;
@@ -213,7 +247,7 @@ namespace K10MediaCoach.Plugin.Engine
             // ── 17. POSITION LOST — severity 4, amber ────────────────────────────
             // Passes {behind} while DRS is still showing → interrupt (sev 4 > sev 2).
             var passedBack = Base();
-            passedBack.Position = 7;
+            passedBack.Position = 5;
             passedBack.CurrentLap = 17;
             steps.Add(new Step
             {
@@ -237,12 +271,20 @@ namespace K10MediaCoach.Plugin.Engine
             pb.FuelPercent  = 0.07;
             steps.Add(new Step { TopicId = "personal_best", Snapshot = pb, DelaySeconds = 20 });
 
-            // ── 20. CAR BALANCE SUSTAINED — severity 1, slate grey ───────────────
+            // ── 20. CHECKERED FLAG (race control) ───────────────────────────────
+            // Shows the "CHECKERED FLAG — Race complete" race control banner.
+            var checker = Base();
+            checker.SessionFlags = TelemetrySnapshot.FLAG_CHECKERED;
+            checker.CurrentLap   = 21;
+            checker.Position     = 3;
+            steps.Add(new Step { TopicId = "car_balance_sustained", Snapshot = checker, DelaySeconds = 16 });
+
+            // ── 21. CAR BALANCE SUSTAINED — severity 1, slate grey ───────────────
             // Calm ending — back to ambient before the loop restarts.
             var hooked = Base();
             hooked.LatAccel   = 3.8;
-            hooked.CurrentLap = 20;
-            steps.Add(new Step { TopicId = "car_balance_sustained", Snapshot = hooked, DelaySeconds = 16 });
+            hooked.CurrentLap = 21;
+            steps.Add(new Step { TopicId = "car_balance_sustained", Snapshot = hooked, DelaySeconds = 14 });
 
             return steps;
         }

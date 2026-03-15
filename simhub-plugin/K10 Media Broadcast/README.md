@@ -17,6 +17,7 @@ The same `dashboard.html` file powers three deployment modes: the Electron overl
 - Node.js 18+
 - SimHub running with the K10 Media Coach plugin enabled
 - The plugin's HTTP server active on port 8889 (starts automatically with the plugin)
+- **iRacing users:** The [iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) plugin by RomainRob (required for iRating and Safety Rating display). Copy `RSC.iRacingExtraProperties.dll` into your SimHub folder while SimHub is closed.
 
 ### Install and Run
 

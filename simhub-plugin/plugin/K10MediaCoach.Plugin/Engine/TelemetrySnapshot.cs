@@ -80,6 +80,17 @@ namespace K10MediaCoach.Plugin.Engine
         public double MgukPower           { get; set; }
         /// <summary>True when the car has demonstrated ERS capability (battery seen > 0).</summary>
         public bool   HasErs              { get; set; }
+        public int    IRating             { get; set; }
+        public double SafetyRating        { get; set; }
+
+        // ── In-car adjustments (driver controls) ───────────────────────────
+        // These change when the driver adjusts settings via button box / black box.
+        // iRacing: dcBrakeBias, dcTractionControl, dcABS, dcAntiRollFront, dcAntiRollRear
+        public double BrakeBias           { get; set; }
+        public double TractionControlSetting { get; set; }
+        public double AbsSetting          { get; set; }
+        public double ArbFront            { get; set; }
+        public double ArbRear             { get; set; }
         public float[] CarIdxLapDistPct   { get; set; } = new float[0];
         public bool[]  CarIdxOnPitRoad    { get; set; } = new bool[0];
         public int     PlayerCarIdx       { get; set; }

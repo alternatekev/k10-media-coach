@@ -127,6 +127,18 @@ namespace K10MediaCoach.Plugin.Engine
             s.CarIdxLapDistPct    = GetRawArray<float>(pm, "CarIdxLapDistPct");
             s.CarIdxOnPitRoad     = GetRawArray<bool>(pm, "CarIdxOnPitRoad");
 
+            // ── iRating / Safety Rating (from IRacingExtraProperties plugin) ────
+            s.IRating      = GetPluginProp<int>(pm, "IRacingExtraProperties.iRacing_DriverInfo_IRating");
+            s.SafetyRating = GetPluginProp<double>(pm, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating");
+
+            // ── In-car adjustments (driver controls) ────────────────────────
+            // iRacing raw telemetry: dc* = driver control values
+            s.BrakeBias              = GetRaw<float>(pm, "dcBrakeBias");
+            s.TractionControlSetting = GetRaw<float>(pm, "dcTractionControl");
+            s.AbsSetting             = GetRaw<float>(pm, "dcABS");
+            s.ArbFront               = GetRaw<float>(pm, "dcAntiRollFront");
+            s.ArbRear                = GetRaw<float>(pm, "dcAntiRollRear");
+
             return s;
         }
 
@@ -138,6 +150,19 @@ namespace K10MediaCoach.Plugin.Engine
             try
             {
                 var val = pm.GetPropertyValue("DataCorePlugin.GameRawData.Telemetry." + name);
+                if (val is T typed) return typed;
+                if (val is IConvertible) return (T)Convert.ChangeType(val, typeof(T));
+            }
+            catch { }
+            return default(T);
+        }
+
+        /// <summary>Read a SimHub plugin property by its full name (e.g. IRacingExtraProperties.*).</summary>
+        private static T GetPluginProp<T>(PluginManager pm, string fullName)
+        {
+            try
+            {
+                var val = pm.GetPropertyValue(fullName);
                 if (val is T typed) return typed;
                 if (val is IConvertible) return (T)Convert.ChangeType(val, typeof(T));
             }

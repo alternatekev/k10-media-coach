@@ -125,6 +125,9 @@ namespace K10MediaCoach.Plugin
             // Short topic title
             this.AttachDelegate("CommentaryTopicTitle", () => _engine.CurrentTitle);
 
+            // Topic ID (snake_case) for icon lookup in dashboard
+            this.AttachDelegate("CommentaryTopicId", () => _engine.CurrentTopicId);
+
             // Seconds remaining until auto-clear (integer for clean display)
             this.AttachDelegate("CommentarySecondsRemaining", () => (int)Math.Round(_engine.SecondsRemaining));
 
@@ -355,6 +358,8 @@ namespace K10MediaCoach.Plugin
             _engine.DisplaySeconds    = Settings.PromptDisplaySeconds;
             _engine.EventOnlyMode     = Settings.EventOnlyMode;
             _engine.DemoMode          = Settings.DemoMode;
+            _engine.DriverFirstName   = Settings.DriverFirstName ?? "Hal";
+            _engine.DriverLastName    = Settings.DriverLastName ?? "Incandenze";
             _trackMap.SetDemoMode(Settings.DemoMode);
             _engine.EnabledCategories = Settings.EnabledCategories?.Count > 0
                 ? new System.Collections.Generic.HashSet<string>(Settings.EnabledCategories)
@@ -645,9 +650,11 @@ namespace K10MediaCoach.Plugin
                     Jp(sb, "DataCorePlugin.GameData.TyreWearFrontRight", s.TyreWearFR, ic);
                     Jp(sb, "DataCorePlugin.GameData.TyreWearRearLeft", s.TyreWearRL, ic);
                     Jp(sb, "DataCorePlugin.GameData.TyreWearRearRight", s.TyreWearRR, ic);
-                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcBrakeBias", 0.0, ic);
-                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcTractionControl", 0.0, ic);
-                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcABS", 0.0, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcBrakeBias", s.BrakeBias, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcTractionControl", s.TractionControlSetting, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcABS", s.AbsSetting, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcAntiRollFront", s.ArbFront, ic);
+                    Jp(sb, "DataCorePlugin.GameRawData.Telemetry.dcAntiRollRear", s.ArbRear, ic);
                     Jp(sb, "DataCorePlugin.GameData.Position", s.Position);
                     Jp(sb, "DataCorePlugin.GameData.CurrentLap", s.CurrentLap);
                     Jp(sb, "DataCorePlugin.GameData.BestLapTime", s.LapBestTime, ic);
@@ -659,8 +666,8 @@ namespace K10MediaCoach.Plugin
                     Jp(sb, "DataCorePlugin.GameData.RemainingTime", s.SessionTimeRemain, ic);
                     Jp(sb, "DataCorePlugin.GameData.TotalLaps", 0);  // populated from game data when available
                     Jp(sb, "DataCorePlugin.GameData.CarModel", Escape(s.CarModel ?? ""));
-                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_IRating", 0);
-                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating", 0.0, ic);
+                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_IRating", s.IRating);
+                    Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating", s.SafetyRating, ic);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Gap", 0.0, ic);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_Gap", 0.0, ic);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Name", Escape(s.NearestAheadName ?? ""));
@@ -668,10 +675,24 @@ namespace K10MediaCoach.Plugin
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_IRating", s.NearestAheadRating);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_IRating", s.NearestBehindRating);
 
+                    // ── Datastream (advanced physics/performance) ──
+                    Jp(sb, "K10MediaCoach.Plugin.DS.LatG", s.LatAccel, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.LongG", s.LongAccel, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.YawRate", s.YawRate, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.SteerTorque", s.SteeringWheelTorque, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.TrackTemp", s.TrackTemp, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.IncidentCount", s.IncidentCount);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.AbsActive", s.AbsActive ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.TcActive", s.TcActive ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.TrackPct", s.TrackPositionPct, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.LapDelta", s.LapDeltaToBest, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.DS.CompletedLaps", s.CompletedLaps);
+
                     // ── Commentary ──
                     Jp(sb, "K10MediaCoach.Plugin.CommentaryVisible", _engine.IsVisible ? 1 : 0);
                     Jp(sb, "K10MediaCoach.Plugin.CommentaryText", Escape(_engine.CurrentText ?? ""));
                     Jp(sb, "K10MediaCoach.Plugin.CommentaryTopicTitle", Escape(_engine.CurrentTitle ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.CommentaryTopicId", Escape(_engine.CurrentTopicId ?? ""));
                     Jp(sb, "K10MediaCoach.Plugin.CommentaryCategory", Escape(category));
                     Jp(sb, "K10MediaCoach.Plugin.CommentarySentimentColor", Escape(_engine.CurrentSentimentColor ?? "#FF000000"));
                     Jp(sb, "K10MediaCoach.Plugin.CommentarySeverity", _engine.IsVisible ? _engine.CurrentSeverity : 0);
@@ -716,6 +737,21 @@ namespace K10MediaCoach.Plugin
                     Jp(sb, "K10MediaCoach.Plugin.Demo.DriverBehind", Escape(dt.DriverBehind ?? ""));
                     Jp(sb, "K10MediaCoach.Plugin.Demo.IRAhead", dt.IRAhead);
                     Jp(sb, "K10MediaCoach.Plugin.Demo.IRBehind", dt.IRBehind);
+
+                    // ── Demo Datastream ──
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.LatG", dt.LatG, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.LongG", dt.LongG, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.YawRate", dt.YawRate, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.SteerTorque", dt.SteerTorque, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.TrackTemp", dt.TrackTemp, ic);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.IncidentCount", dt.IncidentCount);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.AbsActive", dt.AbsActive ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.TcActive", dt.TcActive ? 1 : 0);
+                    Jp(sb, "K10MediaCoach.Plugin.Demo.DS.LapDelta", dt.LapDelta, ic);
+
+                    // ── Driver name (for leaderboard display) ──
+                    Jp(sb, "K10MediaCoach.Plugin.DriverFirstName", Escape(Settings.DriverFirstName ?? ""));
+                    Jp(sb, "K10MediaCoach.Plugin.DriverLastName", Escape(Settings.DriverLastName ?? ""));
 
                     // ── Track map ──
                     Jp(sb, "K10MediaCoach.Plugin.TrackMap.Ready", _trackMap.IsReady ? 1 : 0);

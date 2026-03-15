@@ -1,6 +1,6 @@
 {
-  "version": "5.0",
-  "description": "Commentary topics for Media Coach. Prompts use Kevin's direct, technically-grounded voice. Each topic now includes severity (1-5) for priority-based interruption and eventExposition for event-only display mode. Driver name placeholders: {ahead}, {behind}. Event exposition uses {value} for the primary trigger's current telemetry value.",
+  "version": "6.0",
+  "description": "Commentary topics for Media Coach. 3rd-person broadcast commentary style — talks ABOUT the driver using {driver} placeholder (randomly resolved to first or last name). Each topic includes severity (1-5) for priority-based interruption and eventExposition for event-only display mode. Driver name placeholders: {driver}, {ahead}, {behind}. Event exposition uses {value} for the primary trigger's current telemetry value.",
   "categories": ["hardware", "game_feel", "car_response", "racing_experience"],
   "topics": [
 
@@ -10,7 +10,7 @@
       "title": "Big Save",
       "sentiment": "technical_analytical",
       "severity": 5,
-      "eventExposition": "Snap oversteer — yaw rate hit {value} rad/s, full correction needed",
+      "eventExposition": "Snap oversteer — yaw rate hit {value} rad/s, full correction from {driver}",
       "sessionTypes": [],
       "description": "Extreme yaw event — genuine snap oversteer or spin attempt.",
       "triggers": [
@@ -22,11 +22,11 @@
         }
       ],
       "commentaryPrompts": [
-        "The rear came all the way round. That's the car communicating exactly what happens when you push past the limit — feel that in real time.",
-        "Massive snap right there. The difference between catching it and not is all in how much the wheel is actually talking to you.",
-        "That's the yaw limit of this car in real conditions. Talk the viewer through what you felt and what saved it.",
-        "Full rotation. That's not a controlled slide — that's the car telling you it's done with the corner.",
-        "Caught it, barely. The physics of that save are worth explaining — left foot, hands, instinct."
+        "The rear came all the way round on {driver} there. That's what happens when the car gets pushed past the limit — brilliant save to keep it pointing the right way.",
+        "Massive snap of oversteer. {driver} caught it, but that was right on the edge. The difference between that and a spin is pure reaction time.",
+        "That's the yaw limit of this car and {driver} just found it. Full opposite lock to save that — the kind of moment that gets replayed.",
+        "Full rotation attempt and {driver} wrestled it back. The physics of that save — left foot, hands, instinct — all working together.",
+        "{driver} nearly lost it completely there. Caught at the last moment — that's a save that takes real feel through the wheel."
       ],
       "cooldownMinutes": 4
     },
@@ -37,7 +37,7 @@
       "title": "Wall / Barrier Contact",
       "sentiment": "frustration_negative",
       "severity": 5,
-      "eventExposition": "Hard impact — {value}G vertical spike, barrier or car contact",
+      "eventExposition": "Hard impact — {value}G vertical spike, {driver} into the barrier",
       "sessionTypes": [],
       "description": "Heavy impact — car hit a barrier or another vehicle at significant speed.",
       "triggers": [
@@ -49,11 +49,11 @@
         }
       ],
       "commentaryPrompts": [
-        "That's the wall. The race just changed in that impact — real damage to time, maybe to the car.",
-        "Contact with the barrier. That's a moment that resets everything — talk about what it costs you from here.",
-        "Hard impact. You feel that through the entire car. This is where the session either continues or it doesn't.",
-        "Into the barrier. It happened fast and the consequences are going to be felt for the rest of this stint.",
-        "That's a real hit. The sim is telling you exactly what that does to a car — let the viewer hear your reaction."
+        "That's the wall for {driver}. The race just changed with that impact — real damage to time, possibly to the car itself.",
+        "Contact with the barrier. {driver} felt that through the entire car — this is the kind of moment that reshapes a session.",
+        "Hard impact for {driver}. That's where the session either continues or it doesn't — assessing the damage now.",
+        "{driver} into the barrier. It happened fast and the consequences are going to be felt for the rest of this stint.",
+        "That's a real hit for {driver}. The sim is communicating exactly what that kind of impact does to a car."
       ],
       "cooldownMinutes": 3
     },
@@ -64,7 +64,7 @@
       "title": "Off Track",
       "sentiment": "self_deprecating",
       "severity": 4,
-      "eventExposition": "Off track — vertical G spiked to {value}, left the racing surface",
+      "eventExposition": "Off track — vertical G spiked to {value}, {driver} left the racing surface",
       "sessionTypes": [],
       "description": "Car left the track surface — run-off, gravel, grass.",
       "triggers": [
@@ -75,11 +75,11 @@
         }
       ],
       "commentaryPrompts": [
-        "Off track, and that's entirely on me. The car went exactly where I pointed it.",
-        "Into the run-off. That's lap time I'm not getting back and honestly I deserve that.",
-        "Off the circuit. What's interesting is what the car does out here — totally different surface, totally different feedback.",
-        "Gone wide and off. That's what happens when confidence outruns grip.",
-        "Out of bounds. Self-inflicted. Moving on with the appropriate amount of embarrassment."
+        "{driver} off the track there. The car went exactly where it was pointed — entirely self-inflicted.",
+        "Into the run-off for {driver}. That's lap time gone and there's no getting it back.",
+        "{driver} off the circuit. What's interesting is what the car does out here — totally different surface, totally different feedback.",
+        "Gone wide for {driver}. That's what happens when confidence outruns grip.",
+        "{driver} out of bounds. Self-inflicted, moving on — the appropriate amount of frustration there."
       ],
       "cooldownMinutes": 3
     },
@@ -102,10 +102,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Hit that kerb hard. You can feel it trying to unsettle the car — whether to use the kerbs here is a real setup decision.",
-        "Big impact over the apex kerb. The car reacted to that and you can feel why that's a risk in the sim.",
-        "That kerb grabbed the car. There's a reason some of these are controversial — they punish you for getting it slightly wrong.",
-        "Rode over that kerb and felt it everywhere. That's the sim doing its job — communicating what happens when you take that risk."
+        "{driver} hit that kerb hard. You can feel it trying to unsettle the car — whether to use the kerbs here is a real setup decision.",
+        "Big impact over the apex kerb for {driver}. The car reacted to that and that's a risk worth considering.",
+        "That kerb grabbed {driver}'s car. There's a reason some of these are controversial — they punish you for getting it slightly wrong.",
+        "{driver} rode over that kerb and felt it everywhere. That's the sim communicating what happens when you take that risk."
       ],
       "cooldownMinutes": 3
     },
@@ -116,7 +116,7 @@
       "title": "ABS Activation",
       "sentiment": "technical_analytical",
       "severity": 1,
-      "eventExposition": "ABS fired under braking — system intervened at the lock-up threshold",
+      "eventExposition": "ABS fired under braking — system intervened for {driver}",
       "sessionTypes": [],
       "description": "ABS system fired — brakes locked before the system intervened.",
       "triggers": [
@@ -128,10 +128,10 @@
         }
       ],
       "commentaryPrompts": [
-        "The ABS fired there. You can feel it working — the difference between that and locking up is what separates a controlled stop from a slide.",
-        "ABS active on that braking zone. Whether you rely on it or fight against it says a lot about how you're driving this car.",
-        "The system intervened under braking. That's the threshold — braked slightly past it and the electronics took over.",
-        "ABS on. In real life that pulse through the pedal is constant information. In the sim it's the same principle."
+        "ABS fired for {driver}. The brake pressure exceeded the tyre's grip threshold — the system pulsed the calipers to prevent a flat spot on the compound.",
+        "ABS active under braking for {driver}. The front tyres hit their slip ratio limit — without the intervention that's a locked wheel and a ruined tyre surface.",
+        "The ABS intervened for {driver} in that braking zone. The pedal pressure was past what the current tyre grip could handle — the electronics modulated to keep rotation.",
+        "ABS cycling for {driver}. The brake torque exceeded tyre adhesion — the system is releasing and reapplying pressure faster than any driver could manage manually."
       ],
       "cooldownMinutes": 10
     },
@@ -142,7 +142,7 @@
       "title": "Traction Control Cut",
       "sentiment": "technical_analytical",
       "severity": 1,
-      "eventExposition": "TC cut power on corner exit — rear wheels breaking traction",
+      "eventExposition": "TC cut power on corner exit for {driver}",
       "sessionTypes": [],
       "description": "TC cut power on corner exit — rear sliding under throttle.",
       "triggers": [
@@ -154,10 +154,10 @@
         }
       ],
       "commentaryPrompts": [
-        "TC cutting in on exit. The system is working and it's costing me a small amount of traction — it's a tradeoff I made in the setup.",
-        "Traction control fired. The rear wants to go and the computer says not yet — this is the balance between driver and electronics.",
-        "TC intervention on exit. You can feel it choking the throttle application — the question is whether the setting is right for this corner.",
-        "The system stepped in there. Running TC means you're trading raw exit speed for consistency — depends entirely on the circuit."
+        "TC cutting power on exit for {driver}. The rear tyre slip ratio exceeded the threshold — the system reduced engine torque to prevent wheelspin.",
+        "Traction control fired on {driver}'s car. The throttle application exceeded what the rear tyres could transmit — the ECU cut ignition to match power to grip.",
+        "TC intervention for {driver} on corner exit. The rear axle was spinning faster than the front — the system pulled engine power until the slip ratio normalised.",
+        "The TC stepped in for {driver}. The throttle map shows the system chopped about 15-20% of requested power — that's the cost of keeping the rear tyres alive."
       ],
       "cooldownMinutes": 10
     },
@@ -168,7 +168,7 @@
       "title": "Close Racing",
       "sentiment": "excitement_positive",
       "severity": 3,
-      "eventExposition": "Wheel-to-wheel — car within 0.8% track distance, door-to-door racing",
+      "eventExposition": "Wheel-to-wheel — {driver} within 0.8% track distance, door-to-door racing",
       "sessionTypes": ["race"],
       "description": "Running wheel-to-wheel or within close proximity of another car.",
       "triggers": [
@@ -180,10 +180,10 @@
         }
       ],
       "commentaryPrompts": [
-        "There's a car right there. Every input matters more when you're this close — one mistake and it's both of you in the barrier.",
-        "Door to door. This is the real test — how precise can you be when someone's watching every move you make?",
-        "Running this close in a race is genuinely intense. The margins in the sim match what this would feel like in real life.",
-        "That gap is nothing. Real wheel-to-wheel racing — the kind of moment that's worth being on stream for."
+        "There's a car within half a car length of {driver}. At these speeds, that gap is less than a tenth of a second — one braking error and it's contact.",
+        "Door to door for {driver}. The proximity data shows them within 0.8% track distance — that's closer than the braking zone margin for most corners.",
+        "{driver} and {ahead} running wheel-to-wheel through that section. The aerodynamic turbulence alone at this distance costs downforce — that makes every input harder.",
+        "Bumper-to-bumper for {driver}. Running this close means the dirty air is destroying the front grip — commitment through every corner is the only way to hold position."
       ],
       "cooldownMinutes": 4
     },
@@ -194,7 +194,7 @@
       "title": "Position Gained",
       "sentiment": "excitement_positive",
       "severity": 4,
-      "eventExposition": "Overtake — passed {ahead}, moving up to P{value}",
+      "eventExposition": "Overtake — {driver} past {ahead}, moving up to P{value}",
       "sessionTypes": ["race"],
       "description": "Player moved up a position — made a clean pass.",
       "triggers": [
@@ -205,10 +205,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Past {ahead}. That's a position gained and every one counts in this race.",
-        "Made the move on {ahead}. Clean pass, well-timed — that's real on-track progress.",
-        "Got past {ahead} and now it's about not making a mistake in the next few corners.",
-        "Position gained on {ahead}. The gap ahead is what matters now — build the margin."
+        "{driver} past {ahead}. That's a position gained and every one counts in this race.",
+        "Clean move by {driver} on {ahead}. Well-timed overtake — that's real on-track progress.",
+        "{driver} gets past {ahead} and now it's about not making a mistake in the next few corners.",
+        "Position gained for {driver} on {ahead}. The gap ahead is what matters now — time to build the margin."
       ],
       "cooldownMinutes": 2
     },
@@ -219,7 +219,7 @@
       "title": "Position Lost",
       "sentiment": "frustration_negative",
       "severity": 4,
-      "eventExposition": "Overtaken — {behind} got past, dropped to P{value}",
+      "eventExposition": "Overtaken — {behind} got past {driver}, dropped to P{value}",
       "sessionTypes": ["race"],
       "description": "Player dropped a position — was overtaken.",
       "triggers": [
@@ -230,10 +230,10 @@
         }
       ],
       "commentaryPrompts": [
-        "{behind} got me. That's a position gone and I need to respond — not panic, respond.",
-        "Lost that position to {behind}. Credit to them — clean move. Now I need to close that gap down.",
-        "{behind} found a way through. It stings but it's part of racing — figure out where I gave them the opportunity.",
-        "Dropped a place to {behind}. This is where the race either falls apart or I dig in and fix it."
+        "{behind} gets past {driver}. That's a position gone — the response needs to be measured, not panicked.",
+        "{driver} loses that position to {behind}. Credit to them — clean move. Now the gap needs closing down.",
+        "{behind} found a way through on {driver}. It stings but it's part of racing — the question is where the opportunity was given.",
+        "{driver} drops a place to {behind}. This is where the race either falls apart or {driver} digs in and fixes it."
       ],
       "cooldownMinutes": 2
     },
@@ -255,10 +255,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Yellow flag out. Something happened and the race has paused itself — this changes the calculation completely.",
-        "Caution. The field bunches up and everything we built in terms of gap just resets. That's racing.",
-        "Yellow. Depending on where this falls in the stint it either saves us or costs us the strategy.",
-        "Flag is out. This is a moment where patience matters more than pace — get through the caution cleanly."
+        "Yellow flag out. Something happened and the race has paused itself — this changes the calculation for {driver} completely.",
+        "Caution. The field bunches up and everything {driver} built in terms of gap just resets. That's racing.",
+        "Yellow. Depending on where this falls in the stint it either saves {driver} or costs the strategy.",
+        "Flag is out. This is a moment where patience matters more than pace — {driver} needs to get through the caution cleanly."
       ],
       "cooldownMinutes": 4
     },
@@ -281,10 +281,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Debris flag. Something's on the circuit and you're running blind to it — this is where caution is actually the fast option.",
-        "Debris on track. In a real car this is one of the most dangerous moments — the sim captures that uncertainty.",
-        "Debris flag showing. This is exactly the kind of situation where incident points get handed out for no reason — stay clean.",
-        "Something on the circuit. Debris changes the risk calculation on every lap until it's cleared."
+        "Debris flag for {driver}. Something's on the circuit — this is where caution is actually the fast option.",
+        "Debris on track. In a real car this is one of the most dangerous moments — {driver} needs to stay alert.",
+        "Debris flag showing. This is exactly the kind of situation where incident points get handed out — {driver} needs to stay clean.",
+        "Something on the circuit ahead of {driver}. Debris changes the risk calculation until it's cleared."
       ],
       "cooldownMinutes": 5
     },
@@ -295,7 +295,7 @@
       "title": "Race Start",
       "sentiment": "excitement_positive",
       "severity": 4,
-      "eventExposition": "Race start — lights out, lap 1 underway from P{value}",
+      "eventExposition": "Race start — lights out, {driver} underway from P{value}",
       "sessionTypes": ["race"],
       "description": "Race session has just started.",
       "triggers": [
@@ -306,10 +306,10 @@
         }
       ],
       "commentaryPrompts": [
-        "We're racing. The work that went into this session — setup, qualifying, pace — gets tested right now.",
-        "Lights out. Every bit of preparation comes down to the next ninety seconds of first lap chaos.",
-        "Race start. The goal is simple: survive lap one, then race from there. Nothing clever, just clean.",
-        "Here we go. First corner is make or break — stay out of trouble and build from whatever we come out of it with."
+        "And they're racing. All the work {driver} put into this session — setup, qualifying, pace — gets tested right now.",
+        "Lights out. Every bit of {driver}'s preparation comes down to the next ninety seconds of first lap chaos.",
+        "Race start for {driver}. The goal is simple: survive lap one, then race from there. Nothing clever, just clean.",
+        "Here we go. First corner is make or break — {driver} needs to stay out of trouble and build from there."
       ],
       "cooldownMinutes": 60
     },
@@ -320,7 +320,7 @@
       "title": "Formation / Pace Lap",
       "sentiment": "neutral_narrative",
       "severity": 2,
-      "eventExposition": "Formation lap — building to race start, P{value}, check setup one last time",
+      "eventExposition": "Formation lap — {driver} building to race start from P{value}",
       "sessionTypes": ["race"],
       "description": "Race formation lap — lap zero before lights out.",
       "triggers": [
@@ -332,10 +332,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Formation lap. Last chance to check the setup feels right and get focused for the start.",
-        "Pace lap. Running behind the leader, building temperature in the tyres and brakes for what's coming.",
-        "This is the moment before it all gets real. Get the car sorted, tyres warm, head in the right place.",
-        "Building to the start. The formation lap is where you dial in mentally for the first corner chaos."
+        "Formation lap for {driver} from P{value}. Weaving to get temperature into the tyres — cold rubber means no grip into turn one.",
+        "{driver} on the pace lap from P{value}. Building heat in the brakes and tyres — the surface temps need to hit the operating window before the green flag.",
+        "Pace lap for {driver}, starting P{value}. Scrubbing the brakes to get the disc temperatures up and loading the tyres through the corners.",
+        "{driver} rolling from P{value} on the formation lap. The tyre pressures climb as the rubber heats — cold starts are where the biggest gains and losses happen."
       ],
       "cooldownMinutes": 60
     },
@@ -346,7 +346,7 @@
       "title": "Personal Best Lap",
       "sentiment": "excitement_positive",
       "severity": 3,
-      "eventExposition": "Personal best — new fastest lap set",
+      "eventExposition": "Personal best — {driver} sets a new fastest lap",
       "sessionTypes": [],
       "description": "New personal best lap time just set.",
       "triggers": [
@@ -357,10 +357,10 @@
         }
       ],
       "commentaryPrompts": [
-        "That's a personal best. The lap did what it needed to do — clean, committed, no mistakes where it mattered.",
-        "PB. That's the car working and the driving matching it — every sector contributed.",
-        "New personal best. That's the result of getting the setup right and then actually executing on it.",
-        "Personal best lap and it felt like one. The confidence is there — now build on it."
+        "That's a personal best for {driver}. The lap did what it needed to do — clean, committed, no mistakes where it mattered.",
+        "PB for {driver}. That's the car working and the driving matching it — every sector contributed.",
+        "New personal best from {driver}. That's the result of getting the setup right and then actually executing on it.",
+        "Personal best lap for {driver} and it looked like one. The confidence is there — time to build on it."
       ],
       "cooldownMinutes": 5
     },
@@ -371,7 +371,7 @@
       "title": "Pit Lane Entry",
       "sentiment": "neutral_narrative",
       "severity": 3,
-      "eventExposition": "Pit entry — coming in for service on lap {value}",
+      "eventExposition": "{driver} into pit entry on lap {value}",
       "sessionTypes": ["race"],
       "description": "Player entered pit lane.",
       "triggers": [
@@ -382,10 +382,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Into the pits. This call has been made — now it's about coming out in the right window.",
-        "Pitting. The tyre situation made this decision and now the race reshapes around where we emerge.",
-        "Pit lane. A good stop is part of the lap time — everything has to go right in these few seconds.",
-        "Coming in for service. This is where the strategy either worked or it didn't. We'll find out in thirty seconds."
+        "{driver} into the pits. The call has been made — now it's about coming out in the right window.",
+        "{driver} pitting. The tyre situation made this decision and now the race reshapes around where the car emerges.",
+        "Pit lane for {driver}. A good stop is part of the lap time — everything has to go right in these few seconds.",
+        "{driver} coming in for service. This is where the strategy either worked or it didn't."
       ],
       "cooldownMinutes": 5
     },
@@ -396,7 +396,7 @@
       "title": "Maximum Cornering Load",
       "sentiment": "car_praise",
       "severity": 2,
-      "eventExposition": "Peak lateral load — {value}G through this corner, near the grip limit",
+      "eventExposition": "Peak lateral load — {value}G through this corner for {driver}",
       "sessionTypes": [],
       "description": "Very high lateral g sustained through a fast corner.",
       "triggers": [
@@ -408,10 +408,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Maximum lateral load through that corner. The grip level in this car is something you have to experience to understand.",
-        "The car is absolutely planted. That's the engineering talking — the grip at this speed is extraordinary.",
-        "Full cornering load. The force through the seat and the wheel in a corner like that is why this car exists.",
-        "That's what the car was built for. Peak lateral G and it just takes it — totally committed."
+        "{value}G lateral through that corner for {driver}. That's near the absolute tyre adhesion limit — the downforce is doing most of the work at this speed.",
+        "{driver} pulling {value}G through the apex. At that load, the suspension geometry and aero balance have to be perfect or the car snaps.",
+        "Peak cornering at {value}G for {driver}. The tyre load is enormous — the contact patches are carrying several times the car's weight through lateral force.",
+        "{driver} through that section at {value}G. That's the aerodynamic platform generating enough downforce to push the tyres well past what mechanical grip alone allows."
       ],
       "cooldownMinutes": 6
     },
@@ -422,7 +422,7 @@
       "title": "FFB Torque Spike",
       "sentiment": "technical_analytical",
       "severity": 3,
-      "eventExposition": "FFB spike — steering torque jumped by {value}Nm, major front-end load event",
+      "eventExposition": "FFB spike — steering torque jumped by {value}Nm for {driver}",
       "sessionTypes": [],
       "description": "Large sudden torque spike through the steering — major kerb or snap load.",
       "triggers": [
@@ -434,10 +434,10 @@
         }
       ],
       "commentaryPrompts": [
-        "The wheel just kicked back hard. That's the FFB telling you exactly what the front tyre just experienced.",
-        "Massive torque spike through the steering there. That's direct communication from the car — the wheel is doing its job.",
-        "That snap through the wheel was significant. That's the value of good FFB — you feel it before you see the car move.",
-        "The wheel fought back on that. Everything that went through the contact patch just came straight to your hands."
+        "The wheel kicked {value}Nm through {driver}'s hands. That torque spike means the front tyres hit something — kerb, bump, or sudden load change at the contact patch.",
+        "{value}Nm torque spike through the steering for {driver}. That level of force feedback indicates a major front-end load event — the suspension is at full compression.",
+        "Steering torque spiked to {value}Nm for {driver}. That's the front tyres reporting a sudden lateral or longitudinal load — the FFB is translating tyre force directly to the wheel.",
+        "{driver} took {value}Nm through the wheel there. At that torque level the steering motor is at peak output — the real-car equivalent would be physically difficult to hold."
       ],
       "cooldownMinutes": 5
     },
@@ -448,7 +448,7 @@
       "title": "Low Fuel",
       "sentiment": "neutral_narrative",
       "severity": 3,
-      "eventExposition": "Low fuel — tank at {value}%, running close to empty this stint",
+      "eventExposition": "Low fuel — {driver}'s tank at {value}%, running close to empty",
       "sessionTypes": ["race"],
       "description": "Fuel level critically low — approaching the end of the stint.",
       "triggers": [
@@ -460,10 +460,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Fuel is getting critical. Every lap from here is a calculation — how much can I push before the tank says no.",
-        "Running low. The car gets lighter but the risk gets higher — this is where the fuel strategy either holds or it doesn't.",
-        "Low fuel and the math is tight. Lift, coast, manage — the pace suffers but finishing matters more than lap times right now.",
-        "The tank is running out. This is the honest part of long-distance racing — you plan for it but it still feels close."
+        "Fuel at {value}% for {driver}. At this level there's maybe two or three laps of full-pace running left before the engine starts to starve.",
+        "{driver} down to {value}% fuel. The car is lighter so the braking and cornering improve, but the engine will cut if this goes to empty.",
+        "Low fuel — {value}% remaining for {driver}. Lift-and-coast into the braking zones is the only way to stretch this to the end of the stint.",
+        "{driver}'s tank reading {value}%. The fuel map needs to change — shorter throttle applications on exit and earlier lifts on the straights to make it last."
       ],
       "cooldownMinutes": 5
     },
@@ -474,7 +474,7 @@
       "title": "Wet Conditions",
       "sentiment": "neutral_narrative",
       "severity": 3,
-      "eventExposition": "Wet track declared — conditions changing, grip levels dropping",
+      "eventExposition": "Wet track declared — conditions changing for {driver}",
       "sessionTypes": [],
       "description": "Track conditions declared wet or rain detected.",
       "triggers": [
@@ -486,10 +486,10 @@
         }
       ],
       "commentaryPrompts": [
-        "It's wet. Every reference point changes, every threshold drops, and the car becomes a completely different puzzle.",
-        "Wet track. This is where the real driving skill separates people — smooth inputs, read the surface, find the grip where it exists.",
-        "Rain conditions. The sim handles this seriously — tyre temp, water distribution, grip levels all in play at once.",
-        "Wet. The braking points move, the apexes move, the whole circuit gets rewritten by water."
+        "It's wet. Every reference point changes for {driver} — every threshold drops, and the car becomes a completely different puzzle.",
+        "Wet track for {driver}. This is where real driving skill separates people — smooth inputs, read the surface, find the grip.",
+        "Rain conditions. The sim handles this seriously — tyre temp, water distribution, grip levels all in play for {driver}.",
+        "Wet out there. The braking points move, the apexes move — the whole circuit gets rewritten by water for {driver}."
       ],
       "cooldownMinutes": 8
     },
@@ -500,7 +500,7 @@
       "title": "Cold Track Conditions",
       "sentiment": "neutral_narrative",
       "severity": 1,
-      "eventExposition": "Cold track surface — {value}°C, low grip conditions, tyres building temperature",
+      "eventExposition": "Cold track surface — {value}°C, {driver} building temperature",
       "sessionTypes": [],
       "description": "Track temperature is very cold — grip is limited.",
       "triggers": [
@@ -512,10 +512,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Cold track and the grip is limited. The tyres need building and rushing them is how you lose it.",
-        "Track temperature is low. Everything feels a step down from normal — pace builds gradually if you're patient.",
-        "It's cold out there. The window for grip is narrow and the car feels different through every corner.",
-        "Cold conditions. The tyres come in slowly and you have to respect that or the session gets away from you."
+        "Track surface at {value}°C for {driver} — well below the optimal tyre window. The rubber needs laps to generate heat and the grip won't be there until it does.",
+        "Cold track at {value}°C for {driver}. The tyre compound needs at least 20-25°C more surface temp to reach peak grip — every corner is on reduced adhesion.",
+        "{value}°C track temperature. At this surface temp, {driver}'s braking distances are longer and the lateral grip limit is lower across every corner.",
+        "Track reading {value}°C for {driver}. Cold tarmac means slower tyre warm-up, longer braking zones, and reduced mechanical grip through the whole lap."
       ],
       "cooldownMinutes": 10
     },
@@ -526,7 +526,7 @@
       "title": "High Tyre Wear",
       "sentiment": "technical_analytical",
       "severity": 2,
-      "eventExposition": "High tyre wear — front left at {value}% life remaining, grip is degrading",
+      "eventExposition": "High tyre wear — {driver}'s front left at {value}% life remaining",
       "sessionTypes": [],
       "description": "Significant tyre wear — car behavior degrading.",
       "triggers": [
@@ -550,10 +550,10 @@
         }
       ],
       "commentaryPrompts": [
-        "The tyres are going. You can feel it in every corner — the grip is leaving and the car is telling you clearly.",
-        "High tyre wear and the car's character is changing. The setup that worked at the start of the stint doesn't work the same way now.",
-        "Degradation is real. Every lap the window shifts and you have to adapt the driving style to what the rubber can still do.",
-        "The tyres have given a lot this stint. Managing what's left to the stop is the whole job right now."
+        "{driver}'s front left is down to {value}% tyre life. The grip drop-off from this point accelerates — the compound is past its effective window.",
+        "Tyre wear at {value}% for {driver}. The rubber has lost enough depth that the thermal performance changes — grip spikes early in a corner and falls off at exit.",
+        "{driver}'s tyres reading {value}% remaining. At this wear level the contact patch is shrinking and the car understeers more on entry and oversteers more on power.",
+        "Down to {value}% on the fronts for {driver}. The braking performance degrades significantly from here — stopping distances grow and the ABS works harder."
       ],
       "cooldownMinutes": 6
     },
@@ -564,7 +564,7 @@
       "title": "Overheating Tyres",
       "sentiment": "technical_analytical",
       "severity": 3,
-      "eventExposition": "Tyre overheating — front temps at {value}°F, past the operating window",
+      "eventExposition": "Tyre overheating — {driver}'s front temps at {value}°F",
       "sessionTypes": [],
       "description": "Tyre temperatures significantly over optimal range.",
       "triggers": [
@@ -582,10 +582,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Tyres are overheating. The grip is going away and there's a physical reason — the compound can't handle this temperature.",
-        "Too hot on the fronts. This is what thermal degradation actually means — the rubber is greasing and the car knows it.",
-        "Temperatures are past the window. Managing this is a real skill — back off, build it back, or accept the pace hit.",
-        "The tyre temps are through the roof and the car is sliding everywhere. This is the sim communicating real physics."
+        "{driver}'s front tyres at {value}°F — well past the optimal operating range. Above this temperature the compound blisters and the grip drops exponentially.",
+        "Front tyres reading {value}°F for {driver}. At this temp the rubber surface is glazing over — the car slides more on entry and the lap times inflate.",
+        "{value}°F on the fronts for {driver}. The tyre model penalises this heavily — degradation rate doubles past the thermal limit and the wear cliff approaches fast.",
+        "{driver}'s tyre temps spiking to {value}°F. The excess heat comes from either too much camber load or too aggressive a driving style — the fronts are paying the price."
       ],
       "cooldownMinutes": 5
     },
@@ -596,7 +596,7 @@
       "title": "Major Braking Zone",
       "sentiment": "excitement_positive",
       "severity": 2,
-      "eventExposition": "Heavy braking — {value}G deceleration into this corner",
+      "eventExposition": "Heavy braking — {value}G deceleration for {driver} into this corner",
       "sessionTypes": [],
       "description": "Extreme longitudinal deceleration — very heavy braking event.",
       "triggers": [
@@ -608,10 +608,10 @@
         }
       ],
       "commentaryPrompts": [
-        "That is a serious braking zone. The deceleration forces in a corner like that are eye-watering in any car.",
-        "Maximum braking right there. From that speed to nothing in that distance — the engineering that makes that possible is remarkable.",
-        "Big braking event. The car is right on the limit of what's physically possible and you can feel every bit of it.",
-        "That stop was aggressive. The balance under braking tells you everything about where this car is set up."
+        "{value}G deceleration for {driver} into that corner. The brake disc temperatures spike by hundreds of degrees in a zone like that.",
+        "{driver} pulling {value}G under braking. At that deceleration, the front axle is carrying nearly all the car's weight — the rear is barely touching the ground.",
+        "{value}G braking event for {driver}. The tyre contact patches are at maximum longitudinal load — the ABS threshold is fractions away.",
+        "Peak braking at {value}G for {driver}. The kinetic energy being converted to heat through the discs in that distance is enormous — the brake temps will show it."
       ],
       "cooldownMinutes": 5
     },
@@ -622,7 +622,7 @@
       "title": "Hot Qualifying Lap",
       "sentiment": "excitement_positive",
       "severity": 3,
-      "eventExposition": "Hot lap — running {value}s ahead of personal best in qualifying",
+      "eventExposition": "Hot lap — {driver} running {value}s ahead of personal best in qualifying",
       "sessionTypes": ["qual"],
       "description": "Running significantly ahead of personal best in qualifying.",
       "triggers": [
@@ -634,10 +634,10 @@
         }
       ],
       "commentaryPrompts": [
-        "This lap is coming together. The delta is positive everywhere — just don't overthink it in the final sector.",
-        "Hot lap in qualifying and the car feels locked in. This is the result of getting every setup decision right.",
-        "The delta says this is the lap. Stay with it, don't brake early, don't run wide — this is what qualifying is for.",
-        "Every sector is contributing to this. The lap is clean — if it holds, this is a result worth having."
+        "This lap is coming together for {driver}. The delta shows {value}s ahead of the personal best — just needs to hold it through the final sector.",
+        "{driver} is {value}s up on the personal best mid-lap. The sector times are all contributing — this could be the qualifying lap.",
+        "The live delta reads {value}s for {driver}. That kind of margin doesn't come from one corner — every braking point and apex is landing.",
+        "{driver} running {value}s ahead of the benchmark. The tyre temps are in the window, the braking zones are nailed — this is a properly committed lap."
       ],
       "cooldownMinutes": 3
     },
@@ -648,7 +648,7 @@
       "title": "iRacing Incident Points",
       "sentiment": "frustration_negative",
       "severity": 4,
-      "eventExposition": "Incident — iRacing added penalty points, now at {value}x total",
+      "eventExposition": "Incident — {driver} picks up penalty points, now at {value}x total",
       "sessionTypes": [],
       "description": "iRacing incident count just increased.",
       "triggers": [
@@ -659,10 +659,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Incident points. iRacing saw that and the Safety Rating is going to reflect it — deserved.",
-        "The incident counter went up. In iRacing that's permanent — every contact is recorded and it matters for your rating.",
-        "That's on the record now. The iRating system doesn't care about context — it logs the incident and moves on.",
-        "Another incident point. The SR implications are real and they don't go away quickly. Need to drive cleaner."
+        "Incident points for {driver}. iRacing saw that and the Safety Rating is going to reflect it.",
+        "The incident counter goes up for {driver}. In iRacing that's permanent — every contact is recorded and it matters.",
+        "That's on {driver}'s record now. The iRating system doesn't care about context — it logs the incident and moves on.",
+        "Another incident point for {driver}. The SR implications are real and they don't go away quickly."
       ],
       "cooldownMinutes": 3
     },
@@ -673,7 +673,7 @@
       "title": "ERS Battery Low",
       "sentiment": "technical_analytical",
       "severity": 2,
-      "eventExposition": "ERS depleted — battery at {value}%, no hybrid boost available",
+      "eventExposition": "ERS depleted — {driver}'s battery at {value}%, no hybrid boost",
       "sessionTypes": [],
       "description": "ERS battery nearly depleted — losing hybrid power.",
       "triggers": [
@@ -685,10 +685,10 @@
         }
       ],
       "commentaryPrompts": [
-        "ERS is almost gone. The performance difference without the hybrid is immediately noticeable on every straight.",
-        "Battery depleted. From here to the next regen zone, everything comes from the internal combustion engine alone.",
-        "The hybrid is out. Managing these depletion windows is a core skill in these cars — it changes the car completely.",
-        "ERS empty and the car feels slower in a very specific way. That's the delta between hybrid and non-hybrid performance."
+        "ERS at {value}% for {driver}. Without the hybrid boost, straight-line speed drops by 15-20 km/h — that's a massive deficit when defending or attacking.",
+        "{driver}'s battery at {value}%. The electric motor provides peak torque at low RPM — losing it means slower corner exits until regen refills the pack.",
+        "ERS depleted to {value}% for {driver}. The car loses its acceleration advantage out of slow corners — the ICE alone can't match the combined power output.",
+        "{driver}'s hybrid at {value}%. The regen zones on this circuit need to refill the battery before the next deployment zone or the lap time drops by over a second."
       ],
       "cooldownMinutes": 5
     },
@@ -699,7 +699,7 @@
       "title": "High Track Temperature",
       "sentiment": "technical_analytical",
       "severity": 1,
-      "eventExposition": "Track surface at {value}°C — high temps accelerating tyre degradation",
+      "eventExposition": "Track surface at {value}°C — high temps for {driver}",
       "sessionTypes": [],
       "description": "Track temperature very high — affects degradation and grip window.",
       "triggers": [
@@ -711,10 +711,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Track temperature is high and the tyres are working in a brutal environment. Degradation is accelerated in these conditions.",
-        "Hot track surface. The rubber goes down fast and the grip window is narrow — this is a proper tyre management challenge.",
-        "Temperatures like this change the whole race. The compounds peak early and fall off hard — every lap is a tradeoff.",
-        "The tarmac is baking. The grip is there early in the stint and then it goes away faster than you'd like."
+        "Track surface at {value}°C for {driver}. At this temperature the tyre wear rate increases significantly — the compound degrades faster and the grip window narrows.",
+        "{value}°C track temp for {driver}. Hot tarmac means the tyres overheat quicker under load — the thermal management becomes the primary challenge every lap.",
+        "Surface reading {value}°C. At this track temperature, {driver}'s tyre pressures build faster and the compound reaches its thermal limit earlier in the stint.",
+        "{value}°C on the track surface. The hot tarmac pushes {driver}'s tyre temps above the ideal window faster — stint length drops and pit strategy may need adjusting."
       ],
       "cooldownMinutes": 8
     },
@@ -725,7 +725,7 @@
       "title": "DRS Open",
       "sentiment": "excitement_positive",
       "severity": 2,
-      "eventExposition": "DRS open — rear wing flap deployed, straight-line speed boost active",
+      "eventExposition": "DRS open — {driver}'s rear wing deployed",
       "sessionTypes": [],
       "description": "DRS rear wing is open — straight-line speed advantage active.",
       "triggers": [
@@ -737,10 +737,10 @@
         }
       ],
       "commentaryPrompts": [
-        "DRS is open. You feel the drag drop away and the car just accelerates differently — it's a real performance delta.",
-        "Rear wing open. The straight-line advantage is genuine and it changes the overtaking calculation on this circuit.",
-        "DRS zone active. Whether that's enough to make the move is the question — the physics are working in your favor right now.",
-        "The wing is open. That speed delta is real and the car knows it — this is where the pass either happens or it doesn't."
+        "DRS is open for {driver}. The drag drops away and the car just accelerates differently — a real performance delta.",
+        "Rear wing open for {driver}. The straight-line advantage is genuine and it changes the overtaking calculation.",
+        "DRS zone active for {driver}. Whether that's enough to make the move is the question — the physics are working in {driver}'s favor.",
+        "The wing is open for {driver}. That speed delta is real — this is where the pass either happens or it doesn't."
       ],
       "cooldownMinutes": 4
     },
@@ -751,7 +751,7 @@
       "title": "Car On The Limit",
       "sentiment": "car_praise",
       "severity": 1,
-      "eventExposition": "Car hooked up — sustained {value}G lateral load, perfectly balanced",
+      "eventExposition": "{driver}'s car hooked up — sustained {value}G lateral load",
       "sessionTypes": [],
       "description": "Sustained high lateral load — car working perfectly through a complex corner.",
       "triggers": [
@@ -763,10 +763,10 @@
         }
       ],
       "commentaryPrompts": [
-        "The car is right at the limit through that section. When it's working this well, you stop thinking and start feeling.",
-        "That's a well-sorted car doing its job. The balance is exactly where you need it — rotation on demand, grip when you ask for it.",
-        "The setup is translating into lap time right there. That kind of trust in the car makes you drive differently.",
-        "Completely hooked up. The car is communicating everything and responding to everything — that's the feeling you're building the session around."
+        "{driver}'s car is sustaining {value}G through that section — right at the mechanical grip limit of the tyres.",
+        "That's a well-sorted car from {driver}. Holding {value}G lateral means the aero balance and tyre pressures are dialled in perfectly.",
+        "{driver} carrying {value}G consistently through the complex. That sustained load only happens when front and rear grip are properly matched.",
+        "Completely hooked up for {driver}. The lateral data shows {value}G sustained — the setup is converting every bit of available grip into cornering speed."
       ],
       "cooldownMinutes": 7
     },
@@ -777,7 +777,7 @@
       "title": "Black Flag",
       "sentiment": "frustration_negative",
       "severity": 5,
-      "eventExposition": "Black flag — disqualified from session",
+      "eventExposition": "Black flag — {driver} disqualified from session",
       "sessionTypes": [],
       "description": "Black flag received — session disqualification.",
       "triggers": [
@@ -788,10 +788,10 @@
         }
       ],
       "commentaryPrompts": [
-        "That's the black flag. The session is done for me — this is the ultimate penalty in iRacing.",
-        "Black flag down. Whatever it was that earned this, it's over now. The race doesn't continue from here.",
-        "Disqualified. That flag means it's done — go to the garage and accept it.",
-        "Black flag and we're out. This is the consequence of whatever led to this point."
+        "That's the black flag for {driver}. The session is done — this is the ultimate penalty in iRacing.",
+        "Black flag down for {driver}. Whatever earned this, it's over now. The race doesn't continue from here.",
+        "{driver} disqualified. That flag means it's done — the garage is the only destination.",
+        "Black flag and {driver} is out. This is the consequence of whatever led to this point."
       ],
       "cooldownMinutes": 10
     },
@@ -802,7 +802,7 @@
       "title": "Aggressive Gear Shift",
       "sentiment": "technical_analytical",
       "severity": 1,
-      "eventExposition": "Aggressive shift — rapid gear change, multiple gears in one corner",
+      "eventExposition": "Aggressive shift from {driver} — rapid gear change into the corner",
       "sessionTypes": [],
       "description": "Rapid multi-gear downshift or upshift event.",
       "triggers": [
@@ -813,10 +813,10 @@
         }
       ],
       "commentaryPrompts": [
-        "Quick downshift sequence there. Multiple gears in rapid succession — that's the aggression the corner demanded.",
-        "Stacked downshift and the car responded. Going from high gear to low quickly like that changes how the car rotates.",
-        "Aggressive gearing decision. The transmission is doing what it needs to do to set up for what's coming next.",
-        "Multi-gear shift and the engine response follows. That sequencing is part of how you manage the rotation into a complex corner."
+        "Quick downshift sequence from {driver} there. Multiple gears in rapid succession — that's the aggression the corner demanded.",
+        "Stacked downshift from {driver} and the car responded. Going from high gear to low quickly changes how the car rotates.",
+        "Aggressive gearing decision from {driver}. The transmission is doing what it needs to set up for what's coming next.",
+        "Multi-gear shift from {driver} and the engine response follows. That sequencing is part of how rotation is managed into complex corners."
       ],
       "cooldownMinutes": 8
     },
@@ -827,7 +827,7 @@
       "title": "Long Stint Distance",
       "sentiment": "neutral_narrative",
       "severity": 2,
-      "eventExposition": "Long stint underway — {value} laps completed, management now critical",
+      "eventExposition": "Long stint — {driver} at {value} laps completed, management critical",
       "sessionTypes": ["race"],
       "description": "Extended stint milestone — driver is deep into long-distance running.",
       "triggers": [
@@ -839,10 +839,10 @@
         }
       ],
       "commentaryPrompts": [
-        "We're deep in the stint now. It's all about management from here — fuel, tyres, and patience.",
-        "This is the marathon part of the race. After fifteen laps it becomes about consistency and smart decisions.",
-        "Long stint mode. The car dynamics are different now with fuel load and tyre wear compounding every lap.",
-        "We're well into it now. The pace has to be sustainable and the strategy has to hold from here to the stop."
+        "{driver} is deep in the stint now. It's all about management from here — fuel, tyres, and patience.",
+        "This is the marathon part of the race for {driver}. After fifteen laps it becomes about consistency and smart decisions.",
+        "Long stint mode for {driver}. The car dynamics are different now with fuel load and tyre wear compounding every lap.",
+        "{driver} is well into it now. The pace has to be sustainable and the strategy has to hold to the stop."
       ],
       "cooldownMinutes": 15
     },
@@ -853,7 +853,7 @@
       "title": "Session Time Running Out",
       "sentiment": "neutral_narrative",
       "severity": 3,
-      "eventExposition": "Time running out — {value} seconds remaining, final laps of the session",
+      "eventExposition": "Time running out — {value} seconds remaining for {driver}",
       "sessionTypes": ["race"],
       "description": "Session time remaining is critically low — final minutes active.",
       "triggers": [
@@ -865,12 +865,142 @@
         }
       ],
       "commentaryPrompts": [
-        "Time's running out. Less than five minutes and every lap counts. The pace has to be maximum now.",
-        "The clock is winding down. This is the final push of the race and it's time to leave everything on the track.",
-        "Running out of time. Whatever position I have now, the gaps have to be managed through to the end.",
-        "The session is almost done. These final minutes are where positions are made and lost — it's go time."
+        "Time's running out for {driver}. Less than five minutes and every lap counts — maximum pace now.",
+        "The clock is winding down on {driver}. This is the final push of the race — time to leave everything on the track.",
+        "Running out of time for {driver}. Whatever position is held now, the gaps have to be managed through to the end.",
+        "The session is almost done for {driver}. These final minutes are where positions are made and lost."
       ],
       "cooldownMinutes": 10
+    },
+
+    {
+      "id": "brake_bias_change",
+      "category": "car_response",
+      "title": "Brake Bias Adjustment",
+      "sentiment": "technical_analytical",
+      "severity": 2,
+      "eventExposition": "{driver} adjusts brake bias to {value}%",
+      "sessionTypes": [],
+      "description": "Driver adjusted brake bias — changing front/rear balance under braking.",
+      "triggers": [
+        {
+          "dataPoint": "BrakeBias",
+          "condition": "change",
+          "thresholdDelta": 0.001,
+          "context": "Brake bias changed — driver adjusted the front/rear balance"
+        }
+      ],
+      "commentaryPrompts": [
+        "{driver} adjusting brake bias there. Moving the balance forward gives more front braking stability; moving it back helps rotation into corners.",
+        "Brake bias change from {driver}. That's a real-time response to how the car is behaving under braking — the car asked for it.",
+        "{driver} moves the brake bias. In a car like this, a small change to the braking balance can completely change the entry to slow corners.",
+        "Brake balance adjustment from {driver}. This is one of the most impactful in-car changes — it directly affects how the car turns in under braking."
+      ],
+      "cooldownMinutes": 5
+    },
+
+    {
+      "id": "tc_setting_change",
+      "category": "car_response",
+      "title": "Traction Control Adjusted",
+      "sentiment": "technical_analytical",
+      "severity": 2,
+      "eventExposition": "{driver} changes TC level to {value}",
+      "sessionTypes": [],
+      "description": "Driver changed traction control level — more or less electronic intervention.",
+      "triggers": [
+        {
+          "dataPoint": "TractionControlSetting",
+          "condition": "change",
+          "thresholdDelta": 0.5,
+          "context": "TC level changed — driver adjusted intervention level"
+        }
+      ],
+      "commentaryPrompts": [
+        "{driver} changes the traction control level. Dialing it up means more protection on corner exit but slower acceleration; dialing it down is faster but riskier.",
+        "TC adjustment from {driver}. That's a conscious decision about how much the car is allowed to slide on exit — more TC costs time, less TC costs consistency.",
+        "{driver} adjusting TC there. Some circuits and corners demand more intervention than others — this is the driver adapting to the track in real time.",
+        "Traction control change from {driver}. This is about finding the right balance between the computer's protection and the driver's confidence on the throttle."
+      ],
+      "cooldownMinutes": 5
+    },
+
+    {
+      "id": "abs_setting_change",
+      "category": "car_response",
+      "title": "ABS Level Adjusted",
+      "sentiment": "technical_analytical",
+      "severity": 2,
+      "eventExposition": "{driver} changes ABS level to {value}",
+      "sessionTypes": [],
+      "description": "Driver changed ABS level — more or less electronic intervention under braking.",
+      "triggers": [
+        {
+          "dataPoint": "AbsSetting",
+          "condition": "change",
+          "thresholdDelta": 0.5,
+          "context": "ABS level changed — driver adjusted braking intervention level"
+        }
+      ],
+      "commentaryPrompts": [
+        "{driver} moves ABS to level {value}. Higher settings trigger the anti-lock earlier in the pedal travel — shorter braking zones but the system intervenes before peak deceleration.",
+        "ABS now at {value} for {driver}. Lower ABS allows the tyres to reach a higher slip ratio before intervening — that means shorter stopping distances but more risk of flat spots.",
+        "{driver} sets ABS to {value}. As the tyres wear and the track rubbers in, the optimal ABS level shifts — the lock-up threshold changes through the stint.",
+        "ABS level {value} for {driver}. This setting determines how close to the tyre's grip limit the brakes can push before the electronics step in and modulate pressure."
+      ],
+      "cooldownMinutes": 5
+    },
+
+    {
+      "id": "arb_front_change",
+      "category": "car_response",
+      "title": "Front ARB Adjusted",
+      "sentiment": "technical_analytical",
+      "severity": 2,
+      "eventExposition": "{driver} adjusts front anti-roll bar to {value}",
+      "sessionTypes": [],
+      "description": "Driver adjusted front anti-roll bar stiffness mid-session.",
+      "triggers": [
+        {
+          "dataPoint": "ArbFront",
+          "condition": "change",
+          "thresholdDelta": 0.5,
+          "context": "Front ARB setting changed — driver adjusted front roll stiffness"
+        }
+      ],
+      "commentaryPrompts": [
+        "{driver} adjusts the front anti-roll bar. Stiffer front ARB reduces body roll in fast corners but can make the front end less responsive in slow turns.",
+        "Front ARB change from {driver}. This directly affects how much the front end rolls in corners — stiffer is more responsive but pushes the front grip limit lower.",
+        "{driver} changing the front ARB there. In a car like the MX-5 or GT3, the anti-roll bars are one of the biggest handling levers available mid-race.",
+        "Front anti-roll bar adjustment from {driver}. Softening it helps put the front tyres to work in tight sections; stiffening it keeps the car stable at speed."
+      ],
+      "cooldownMinutes": 5
+    },
+
+    {
+      "id": "arb_rear_change",
+      "category": "car_response",
+      "title": "Rear ARB Adjusted",
+      "sentiment": "technical_analytical",
+      "severity": 2,
+      "eventExposition": "{driver} adjusts rear anti-roll bar to {value}",
+      "sessionTypes": [],
+      "description": "Driver adjusted rear anti-roll bar stiffness mid-session.",
+      "triggers": [
+        {
+          "dataPoint": "ArbRear",
+          "condition": "change",
+          "thresholdDelta": 0.5,
+          "context": "Rear ARB setting changed — driver adjusted rear roll stiffness"
+        }
+      ],
+      "commentaryPrompts": [
+        "{driver} adjusts the rear anti-roll bar. Stiffer rear ARB adds oversteer — the rear rotates more — while softer makes the car more stable but potentially slower to turn.",
+        "Rear ARB change from {driver}. This is a handling balance adjustment — more rear stiffness means more rotation, less means more rear grip and stability.",
+        "{driver} changing the rear anti-roll bar. If the car is understeering, stiffening the rear can free it up. If the rear is loose, softening it adds grip.",
+        "Rear anti-roll bar at {value} for {driver}. This is the most direct lever for mid-corner balance — it changes how much rear grip transfers during weight shift."
+      ],
+      "cooldownMinutes": 5
     }
 
   ]

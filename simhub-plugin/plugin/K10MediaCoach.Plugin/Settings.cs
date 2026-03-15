@@ -34,5 +34,17 @@ namespace K10MediaCoach.Plugin
         /// Maximum 30 seconds between events. No game session required.
         /// </summary>
         public bool DemoMode { get; set; } = false;
+
+        /// <summary>
+        /// The driver's first name, used for 3rd-person commentary (e.g. "Kevin").
+        /// When both first and last name are set, the engine randomly picks one each time.
+        /// </summary>
+        public string DriverFirstName { get; set; } = "Hal";
+
+        /// <summary>
+        /// The driver's last name, used for 3rd-person commentary (e.g. "Incandenze").
+        /// When both first and last name are set, the engine randomly picks one each time.
+        /// </summary>
+        public string DriverLastName { get; set; } = "Incandenze";
     }
 }

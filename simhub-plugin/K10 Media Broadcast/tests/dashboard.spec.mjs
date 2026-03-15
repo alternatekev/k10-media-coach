@@ -394,6 +394,7 @@ test.describe('Commentary panel', () => {
       'K10MediaCoach.Plugin.CommentaryVisible': 1,
       'K10MediaCoach.Plugin.CommentaryText': 'Watch the rear end through turn 3.',
       'K10MediaCoach.Plugin.CommentaryTopicTitle': 'Oversteer',
+      'K10MediaCoach.Plugin.CommentaryTopicId': 'car_balance_sustained',
       'K10MediaCoach.Plugin.CommentaryCategory': 'car_response',
       'K10MediaCoach.Plugin.CommentarySentimentColor': '#FFFF6F00',
     });
@@ -406,6 +407,7 @@ test.describe('Commentary panel', () => {
       'K10MediaCoach.Plugin.CommentaryVisible': 1,
       'K10MediaCoach.Plugin.CommentaryText': 'Massive lockup into T1.',
       'K10MediaCoach.Plugin.CommentaryTopicTitle': 'Brake Lock',
+      'K10MediaCoach.Plugin.CommentaryTopicId': 'heavy_braking',
       'K10MediaCoach.Plugin.CommentaryCategory': 'hardware',
     });
     await expect(page.locator('#commentaryTitle')).toHaveText('Brake Lock');
@@ -419,6 +421,7 @@ test.describe('Commentary panel', () => {
       'K10MediaCoach.Plugin.CommentaryVisible': 1,
       'K10MediaCoach.Plugin.CommentaryText': 'Test',
       'K10MediaCoach.Plugin.CommentaryTopicTitle': 'Test',
+      'K10MediaCoach.Plugin.CommentaryTopicId': 'spin_catch',
       'K10MediaCoach.Plugin.CommentaryCategory': 'test',
       'K10MediaCoach.Plugin.CommentarySentimentColor': '#FF00FF00',
     });
@@ -428,7 +431,7 @@ test.describe('Commentary panel', () => {
     await updateMockData(page, {
       'K10MediaCoach.Plugin.CommentaryVisible': 0,
     });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
     await expect(page.locator('#commentaryCol')).not.toHaveClass(/visible/);
   });
 });
@@ -851,6 +854,7 @@ test.describe('Settings panel', () => {
       'K10MediaCoach.Plugin.CommentaryVisible': 1,
       'K10MediaCoach.Plugin.CommentaryText': 'Test',
       'K10MediaCoach.Plugin.CommentaryTopicTitle': 'Test',
+      'K10MediaCoach.Plugin.CommentaryTopicId': 'spin_catch',
       'K10MediaCoach.Plugin.CommentaryCategory': 'test',
       'K10MediaCoach.Plugin.CommentarySentimentColor': '#FF00FF00',
     });
