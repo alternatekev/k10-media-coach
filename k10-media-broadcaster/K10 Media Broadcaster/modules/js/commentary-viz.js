@@ -36,8 +36,8 @@
     heavy_braking:         { type: 'line',    label: 'Brake Pressure', unit: '%',    src: 'brake' },
     car_balance_sustained: { type: 'gforce',  label: 'Car Balance',    unit: 'g' },
     rapid_gear_change:     { type: 'line',    label: 'RPM',            unit: '',     src: 'rpm' },
-    wall_contact:          { type: 'counter', label: 'Incidents',      src: 'incidents' },
-    off_track:             { type: 'counter', label: 'Incidents',      src: 'incidents' },
+    wall_contact:          { type: 'incident', label: 'Incidents' },
+    off_track:             { type: 'incident', label: 'Incidents' },
     kerb_hit:              { type: 'gforce',  label: 'Impact',         unit: 'g' },
 
     // ── Hardware ──
@@ -62,7 +62,7 @@
     close_battle:          { type: 'delta',   label: 'Gap',            unit: 's',    src: 'gapAhead' },
     position_gained:       { type: 'grid',    label: 'Grid Position' },
     position_lost:         { type: 'grid',    label: 'Grid Position' },
-    incident_spike:        { type: 'counter', label: 'Incidents',      src: 'incidents' },
+    incident_spike:        { type: 'incident', label: 'Incidents' },
     low_fuel:              { type: 'gauge',   label: 'Fuel',           unit: 'L',    src: 'fuel', min: 0, max: 100 },
     hot_tyres:             { type: 'quad',    label: 'Tyre Temps',     unit: '°C',   src: 'tyreTemp' },
     tyre_wear_high:        { type: 'quad',    label: 'Tyre Wear',      unit: '%',    src: 'tyreWear' },
@@ -74,9 +74,9 @@
     pit_entry:             { type: 'counter', label: 'Laps',           src: 'laps' },
     race_start:            { type: 'grid',    label: 'Grid Position' },
     formation_lap:         { type: 'grid',    label: 'Grid Position' },
-    yellow_flag:           { type: 'counter', label: 'Incidents',      src: 'incidents' },
-    black_flag:            { type: 'counter', label: 'Incidents',      src: 'incidents' },
-    debris_on_track:       { type: 'counter', label: 'Incidents',      src: 'incidents' },
+    yellow_flag:           { type: 'incident', label: 'Incidents' },
+    black_flag:            { type: 'incident', label: 'Incidents' },
+    debris_on_track:       { type: 'incident', label: 'Incidents' },
   };
 
   // ── Latest telemetry snapshot (updated by poll engine) ──
@@ -156,8 +156,9 @@
       case 'bar':     _renderBar(cfg);     break;
       case 'delta':   _renderDelta(cfg);   break;
       case 'quad':    _renderQuad(cfg);    break;
-      case 'counter': _renderCounter(cfg); break;
-      case 'grid':    _renderGrid(cfg);    break;
+      case 'counter':  _renderCounter(cfg);  break;
+      case 'grid':     _renderGrid(cfg);     break;
+      case 'incident': _renderIncident(cfg); break;
     }
   }
 
@@ -575,15 +576,19 @@
   }
 
   // ════════════════════════════════════════════
-  //  GRID — staggered starting-grid visualization
+  //  GRID — dot-strip position display
+  //  Row of dots (one per car), player highlighted,
+  //  ghost position shown with ring outline.
+  //  Mirrors the pre-race grid strip style.
   // ════════════════════════════════════════════
   function _renderGrid(cfg) {
     const pos = Math.round(_getVizValue('position')) || 0;
     if (pos <= 0) return;
     let total = Math.round(_getVizValue('totalCars')) || 0;
-    if (total < pos) total = pos + 4;  // fallback if grid data unavailable
+    if (total < pos) total = pos + 4;
+    const startPos = Math.round(_getVizValue('startPosition')) || 0;
 
-    // Capture ghost position on first render only so it doesn't drift
+    // Capture ghost on first render only
     if (_vizGridGhostPos === 0) {
       const prev = Math.round(_getVizValue('prevPosition'));
       if (prev > 0 && prev !== pos) _vizGridGhostPos = prev;
@@ -593,173 +598,227 @@
     if (!c) return;
     const { ctx, w, h, dpr } = c;
 
-    // ── Dimensions ──
-    const carW = 11 * dpr;
-    const carH = 18 * dpr;
-    const rowGap = 5 * dpr;
-    const rowH = carH + rowGap;
-    const stagger = 20 * dpr;        // horizontal offset from center
-    const midX = w / 2;
+    // ── Layout ──
+    const dotSize = 7 * dpr;
+    const dotGap = 3 * dpr;
+    const dotR = 2 * dpr;           // corner radius
+    const dotsPerRow = Math.floor((w + dotGap) / (dotSize + dotGap));
+    const rows = Math.ceil(total / dotsPerRow);
+    const stripH = rows * (dotSize + dotGap) - dotGap;
+    const startY = Math.max(0, (h * 0.6 - stripH) / 2);  // vertically center in top 60%
 
-    // Visible window centered on the player
-    const maxVisible = Math.max(3, Math.floor(h / rowH));
-    const halfVis = Math.floor(maxVisible / 2);
-    let viewStart = Math.max(1, pos - halfVis);
-    let viewEnd = Math.min(total, viewStart + maxVisible - 1);
-    // Adjust if at edges
-    if (viewEnd - viewStart + 1 < maxVisible && viewStart > 1) {
-      viewStart = Math.max(1, viewEnd - maxVisible + 1);
-    }
+    for (let i = 1; i <= total; i++) {
+      const idx = i - 1;
+      const col = idx % dotsPerRow;
+      const row = Math.floor(idx / dotsPerRow);
+      // Center each row
+      const carsInRow = Math.min(dotsPerRow, total - row * dotsPerRow);
+      const rowW = carsInRow * (dotSize + dotGap) - dotGap;
+      const rowOffX = (w - rowW) / 2;
+      const x = rowOffX + col * (dotSize + dotGap);
+      const y = startY + row * (dotSize + dotGap);
 
-    // ── Track edge markers ──
-    const trackL = midX - stagger - carW * 0.9;
-    const trackR = midX + stagger + carW * 0.9;
-    ctx.beginPath();
-    ctx.moveTo(trackL, 0); ctx.lineTo(trackL, h);
-    ctx.moveTo(trackR, 0); ctx.lineTo(trackR, h);
-    ctx.strokeStyle = 'hsla(0, 0%, 40%, 0.10)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+      const isPlayer = (i === pos);
+      const isGhost = (_vizGridGhostPos > 0 && i === _vizGridGhostPos);
+      const isStart = (startPos > 0 && i === startPos && startPos !== pos);
 
-    // Dashed center line
-    ctx.beginPath();
-    ctx.setLineDash([3 * dpr, 5 * dpr]);
-    ctx.moveTo(midX, 0); ctx.lineTo(midX, h);
-    ctx.strokeStyle = 'hsla(0, 0%, 40%, 0.06)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // ── Draw cars ──
-    for (let p = viewStart; p <= viewEnd; p++) {
-      const rowIdx = p - viewStart;
-      const y = rowIdx * rowH + rowGap / 2;
-      const isLeft = p % 2 === 1;   // odd = left (pole side), even = right
-      const cx = isLeft ? midX - stagger : midX + stagger;
-      const x = cx - carW / 2;
-
-      const isPlayer = (p === pos);
-      const isGhost = (_vizGridGhostPos > 0 && p === _vizGridGhostPos);
-
+      _roundRect(ctx, x, y, dotSize, dotSize, dotR);
       if (isPlayer) {
-        _drawGridCar(ctx, x, y, carW, carH, dpr, 'player', _vizHue);
+        // Player — bright hue-matched fill with glow
+        ctx.fillStyle = `hsla(${_vizHue}, 80%, 55%, 1)`;
+        ctx.fill();
+        ctx.save();
+        ctx.shadowColor = `hsla(${_vizHue}, 90%, 60%, 0.7)`;
+        ctx.shadowBlur = 8 * dpr;
+        _roundRect(ctx, x, y, dotSize, dotSize, dotR);
+        ctx.fillStyle = `hsla(${_vizHue}, 80%, 55%, 0.6)`;
+        ctx.fill();
+        ctx.restore();
       } else if (isGhost) {
-        _drawGridCar(ctx, x, y, carW, carH, dpr, 'ghost', _vizHue);
+        // Ghost (previous position) — dashed outline
+        ctx.fillStyle = `hsla(${_vizHue}, 30%, 20%, 0.3)`;
+        ctx.fill();
+        _roundRect(ctx, x, y, dotSize, dotSize, dotR);
+        ctx.setLineDash([2 * dpr, 2 * dpr]);
+        ctx.strokeStyle = `hsla(${_vizHue}, 55%, 55%, 0.6)`;
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (isStart) {
+        // Start position — dim ring
+        ctx.fillStyle = 'hsla(0, 0%, 25%, 0.4)';
+        ctx.fill();
+        _roundRect(ctx, x, y, dotSize, dotSize, dotR);
+        ctx.strokeStyle = 'hsla(0, 0%, 50%, 0.3)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.stroke();
       } else {
-        _drawGridCar(ctx, x, y, carW, carH, dpr, 'other', _vizHue);
-      }
-
-      // Position number beside the car
-      ctx.fillStyle = isPlayer ? `hsla(${_vizHue}, 70%, 75%, 0.95)` :
-                      isGhost  ? `hsla(${_vizHue}, 40%, 55%, 0.5)` :
-                                 'hsla(0, 0%, 55%, 0.25)';
-      ctx.font = `bold ${7 * dpr}px system-ui, sans-serif`;
-      ctx.textBaseline = 'middle';
-      if (isLeft) {
-        ctx.textAlign = 'right';
-        ctx.fillText(p, x - 4 * dpr, y + carH / 2);
-      } else {
-        ctx.textAlign = 'left';
-        ctx.fillText(p, x + carW + 4 * dpr, y + carH / 2);
+        // Other cars — neutral dim
+        ctx.fillStyle = 'hsla(0, 0%, 30%, 0.45)';
+        ctx.fill();
       }
     }
 
     // ── Value label ──
     if (_vizValueEl) {
-      if (_vizGridGhostPos > 0 && _vizGridGhostPos !== pos) {
-        const delta = _vizGridGhostPos - pos;
-        _vizValueEl.textContent = 'P' + pos + (delta > 0 ? ' \u25B2' + delta : ' \u25BC' + Math.abs(delta));
-        _vizValueEl.style.color = delta > 0 ? 'hsl(145, 60%, 60%)' : 'hsl(0, 60%, 65%)';
+      const change = (_vizGridGhostPos > 0 && _vizGridGhostPos !== pos)
+        ? _vizGridGhostPos - pos
+        : (startPos > 0 ? startPos - pos : 0);
+      if (change !== 0) {
+        _vizValueEl.textContent = 'P' + pos + ' / ' + total + (change > 0 ? ' \u25B2' + change : ' \u25BC' + Math.abs(change));
+        _vizValueEl.style.color = change > 0 ? 'hsl(145, 60%, 60%)' : 'hsl(0, 60%, 65%)';
       } else {
-        _vizValueEl.textContent = 'P' + pos;
+        _vizValueEl.textContent = 'P' + pos + ' / ' + total;
         _vizValueEl.style.color = '';
       }
     }
   }
 
-  // ── Draw a single car shape (top-down, tapered nose) ──
-  function _drawGridCar(ctx, x, y, w, h, dpr, mode, hue) {
-    const noseH = h * 0.28;
-    const noseW = w * 0.52;
-    const noseX = x + (w - noseW) / 2;
-    const r = 2 * dpr;
+  // ════════════════════════════════════════════
+  //  INCIDENT — quad-style incident tracker
+  //  2×2 cells:
+  //    [Count  ] [To Pen ]
+  //    [To DQ  ] [Accrued]  (bar fill)
+  //  Uses _settings.incPenalty / incDQ thresholds.
+  // ════════════════════════════════════════════
 
-    // Car silhouette path — body with tapered front
-    ctx.beginPath();
-    // Start at top-left of nose
-    ctx.moveTo(noseX + noseW * 0.3, y + 1 * dpr);
-    // Nose tip curve
-    ctx.quadraticCurveTo(x + w / 2, y - 1 * dpr, noseX + noseW * 0.7, y + 1 * dpr);
-    // Right nose to right body
-    ctx.lineTo(noseX + noseW, y + noseH);
-    ctx.lineTo(x + w - r, y + noseH);
-    // Right body edge
-    ctx.quadraticCurveTo(x + w, y + noseH, x + w, y + noseH + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    // Bottom edge
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    // Left body edge
-    ctx.lineTo(x, y + noseH + r);
-    ctx.quadraticCurveTo(x, y + noseH, x + r, y + noseH);
-    ctx.lineTo(noseX, y + noseH);
-    ctx.closePath();
+  // Incident severity heatmap: green(0) → amber → red
+  function _incSeverityColor(count, limit) {
+    if (count <= 0)                return { hue: 123, sat: 40 };  // green — clean
+    const pct = count / Math.max(1, limit);
+    if (pct < 0.35)               return { hue: 123, sat: 45 };  // green — comfortable
+    if (pct < 0.55)               return { hue: 60,  sat: 50 };  // yellow — caution
+    if (pct < 0.75)               return { hue: 35,  sat: 65 };  // amber — warning
+    if (pct < 0.90)               return { hue: 15,  sat: 70 };  // orange — danger
+    return                          { hue: 0,   sat: 75 };        // red — critical
+  }
 
-    if (mode === 'player') {
-      // Bright fill
-      ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.95)`;
+  // Remaining-to-threshold heatmap: green(safe) → red(imminent)
+  function _incRemainingColor(remaining) {
+    if (remaining <= 0)  return { hue: 0,   sat: 80 };   // red — at/past limit
+    if (remaining <= 2)  return { hue: 0,   sat: 70 };   // red — critical
+    if (remaining <= 4)  return { hue: 15,  sat: 65 };   // orange
+    if (remaining <= 6)  return { hue: 35,  sat: 55 };   // amber
+    return                 { hue: 123, sat: 40 };          // green — safe
+  }
+
+  function _renderIncident(cfg) {
+    const count = Math.round(_getVizValue('incidents')) || 0;
+    const penLimit = (typeof _settings !== 'undefined' && _settings.incPenalty) || 17;
+    const dqLimit  = (typeof _settings !== 'undefined' && _settings.incDQ) || 25;
+    const toPen = Math.max(0, penLimit - count);
+    const toDQ  = Math.max(0, dqLimit - count);
+
+    const c = _prepCanvas();
+    if (!c) return;
+    const { ctx, w, h, dpr } = c;
+
+    // ── 2×2 quad layout ──
+    const gap = 4 * dpr;
+    const cellW = (w - gap) / 2;
+    const cellH = (h - gap) / 2;
+    const positions = [
+      [0, 0],                    // Count (top-left)
+      [cellW + gap, 0],          // To Penalty (top-right)
+      [0, cellH + gap],          // To DQ (bottom-left)
+      [cellW + gap, cellH + gap] // Accrued bar (bottom-right)
+    ];
+
+    // Accrued fraction as a percentage of DQ limit
+    const accruedPct = Math.min(100, Math.round((count / dqLimit) * 100));
+
+    // Cell data
+    const cells = [
+      { val: '' + count,
+        label: 'COUNT',
+        col: _incSeverityColor(count, dqLimit),
+        intensity: Math.max(0.15, Math.min(0.55, count / dqLimit)) },
+      { val: toPen > 0 ? '' + toPen : 'PEN!',
+        label: 'TO PEN',
+        col: _incRemainingColor(toPen),
+        intensity: toPen <= 0 ? 0.55 : toPen <= 3 ? 0.45 : 0.25 },
+      { val: toDQ > 0 ? '' + toDQ : 'DQ!',
+        label: 'TO DQ',
+        col: _incRemainingColor(toDQ),
+        intensity: toDQ <= 0 ? 0.55 : toDQ <= 3 ? 0.45 : 0.20 },
+      { val: accruedPct + '%',
+        label: 'ACCRUED',
+        col: _incSeverityColor(count, dqLimit),
+        intensity: Math.max(0.10, Math.min(0.40, count / dqLimit * 0.6)) }
+    ];
+
+    for (let i = 0; i < 4; i++) {
+      const [x, y] = positions[i];
+      const cell = cells[i];
+      const hue = cell.col.hue;
+      const sat = cell.col.sat;
+      const intensity = cell.intensity;
+
+      // Cell base fill
+      _roundRect(ctx, x, y, cellW, cellH, 4 * dpr);
+      ctx.fillStyle = `hsla(${hue}, ${sat}%, 12%, 0.6)`;
       ctx.fill();
-      // Glow
-      ctx.save();
-      ctx.shadowColor = `hsla(${hue}, 80%, 55%, 0.65)`;
-      ctx.shadowBlur = 10 * dpr;
-      ctx.fillStyle = `hsla(${hue}, 70%, 55%, 0.6)`;
-      ctx.fill();
-      ctx.restore();
-      // Inner detail lines (cockpit hint)
-      ctx.beginPath();
-      ctx.moveTo(x + w * 0.3, y + noseH + 2 * dpr);
-      ctx.lineTo(x + w * 0.3, y + h * 0.55);
-      ctx.moveTo(x + w * 0.7, y + noseH + 2 * dpr);
-      ctx.lineTo(x + w * 0.7, y + h * 0.55);
-      ctx.strokeStyle = `hsla(${hue}, 60%, 75%, 0.4)`;
-      ctx.lineWidth = 0.5 * dpr;
+
+      // Bottom-right cell: horizontal bar fill instead of radial glow
+      if (i === 3) {
+        const fillW = Math.max(0, (count / dqLimit) * cellW);
+        if (fillW > 0) {
+          ctx.save();
+          _roundRect(ctx, x, y, cellW, cellH, 4 * dpr);
+          ctx.clip();
+          ctx.fillStyle = `hsla(${hue}, ${sat}%, 35%, ${intensity + 0.15})`;
+          ctx.fillRect(x, y, fillW, cellH);
+          ctx.restore();
+        }
+
+        // Penalty marker line
+        const penX = x + (penLimit / dqLimit) * cellW;
+        if (penX > x && penX < x + cellW) {
+          ctx.beginPath();
+          ctx.moveTo(penX, y + 2 * dpr);
+          ctx.lineTo(penX, y + cellH - 2 * dpr);
+          ctx.strokeStyle = `hsla(35, 80%, 55%, ${toPen <= 0 ? 0.3 : 0.6})`;
+          ctx.lineWidth = 1 * dpr;
+          ctx.setLineDash([2 * dpr, 2 * dpr]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      } else {
+        // Heatmap radial glow (other cells)
+        const cx = x + cellW / 2;
+        const cy = y + cellH / 2;
+        const rMax = Math.max(cellW, cellH) * 0.8;
+        const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rMax);
+        radGrad.addColorStop(0, `hsla(${hue}, ${sat}%, 45%, ${intensity})`);
+        radGrad.addColorStop(0.6, `hsla(${hue}, ${sat}%, 30%, ${intensity * 0.4})`);
+        radGrad.addColorStop(1, `hsla(${hue}, ${sat}%, 20%, 0)`);
+        _roundRect(ctx, x, y, cellW, cellH, 4 * dpr);
+        ctx.fillStyle = radGrad;
+        ctx.fill();
+      }
+
+      // Border
+      _roundRect(ctx, x, y, cellW, cellH, 4 * dpr);
+      ctx.strokeStyle = `hsla(${hue}, ${sat}%, 50%, ${0.3 + intensity * 0.5})`;
+      ctx.lineWidth = 1;
       ctx.stroke();
-      // Rear wing accent
-      ctx.beginPath();
-      ctx.moveTo(x + 1 * dpr, y + h - 1 * dpr);
-      ctx.lineTo(x + w - 1 * dpr, y + h - 1 * dpr);
-      ctx.strokeStyle = `hsla(${hue}, 80%, 70%, 0.6)`;
-      ctx.lineWidth = 1.5 * dpr;
-      ctx.stroke();
-    } else if (mode === 'ghost') {
-      // Dim dashed outline, semi-transparent fill
-      ctx.fillStyle = `hsla(${hue}, 35%, 30%, 0.15)`;
-      ctx.fill();
-      ctx.setLineDash([2 * dpr, 2 * dpr]);
-      ctx.strokeStyle = `hsla(${hue}, 50%, 55%, 0.45)`;
-      ctx.lineWidth = 1.5 * dpr;
-      ctx.stroke();
-      ctx.setLineDash([]);
-    } else {
-      // Other cars — neutral dim
-      ctx.fillStyle = 'hsla(0, 0%, 22%, 0.45)';
-      ctx.fill();
-      ctx.strokeStyle = 'hsla(0, 0%, 35%, 0.15)';
-      ctx.lineWidth = 0.5 * dpr;
-      ctx.stroke();
+
+      // Value text
+      ctx.fillStyle = `hsla(${hue}, ${Math.max(sat, 30)}%, 70%, 0.95)`;
+      ctx.font = `bold ${11 * dpr}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const cx2 = x + cellW / 2;
+      const cy2 = y + cellH / 2;
+      ctx.fillText(cell.val, cx2, cy2 - 2 * dpr);
+
+      // Label
+      ctx.fillStyle = `hsla(${hue}, ${Math.round(sat * 0.7)}%, 60%, 0.5)`;
+      ctx.font = `${7 * dpr}px system-ui, sans-serif`;
+      ctx.fillText(cell.label, cx2, cy2 + 10 * dpr);
     }
 
-    // Front wing accent (all cars)
-    ctx.beginPath();
-    ctx.moveTo(noseX + 1 * dpr, y + noseH);
-    ctx.lineTo(noseX + noseW - 1 * dpr, y + noseH);
-    ctx.strokeStyle = mode === 'player' ? `hsla(${hue}, 70%, 70%, 0.5)` :
-                      mode === 'ghost'  ? `hsla(${hue}, 40%, 50%, 0.2)` :
-                                          'hsla(0, 0%, 40%, 0.12)';
-    ctx.lineWidth = 0.8 * dpr;
-    ctx.stroke();
+    if (_vizValueEl) _vizValueEl.textContent = '';
   }
 
   // ════════════════════════════════════════════

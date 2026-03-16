@@ -39,6 +39,7 @@
       mod.classList.add('grid-fadeout');
       document.body.classList.remove('grid-active');
       _gridActive = false;
+      if (window.setGridGL) window.setGridGL(false);
       clearTimeout(_gridFadeTimer);
       _gridFadeTimer = setTimeout(() => {
         mod.classList.remove('grid-fadeout');
@@ -59,6 +60,7 @@
       mod.classList.add('grid-visible');
       document.body.classList.add('grid-active');
       _gridActive = true;
+      if (window.setGridGL) window.setGridGL(true);
     }
 
     // Toggle between info card and lights
@@ -77,6 +79,12 @@
       // Update info card
       document.getElementById('gridCarsGridded').textContent = griddedCars;
       document.getElementById('gridCarsTotal').textContent = totalCars;
+
+      // Mini grid strip — one dot per car, player highlighted in blue
+      const playerPos = isDemo
+        ? (+(p['K10MediaBroadcaster.Plugin.Demo.Position']) || 0)
+        : (+(p['DataCorePlugin.GameData.Position']) || 0);
+      _renderGridStrip(totalCars, griddedCars, playerPos);
 
       const stEl = document.getElementById('gridStartType');
       stEl.textContent = startType === 'standing' ? 'Standing Start' : 'Rolling Start';
@@ -120,6 +128,29 @@
 
     _gridPrevSessionState = sessionState;
     _gridLightsPhase = lightsPhase;
+  }
+
+  // ── Mini grid strip: one dot per grid slot, player highlighted ──
+  let _gridStripLastHtml = '';
+  function _renderGridStrip(total, gridded, playerPos) {
+    const container = document.getElementById('gridStrip');
+    if (!container) return;
+    if (total <= 0) { container.innerHTML = ''; _gridStripLastHtml = ''; return; }
+
+    // Build dots — only rebuild DOM when content changes
+    let html = '';
+    for (let i = 1; i <= total; i++) {
+      const isPlayer = (i === playerPos);
+      const isGridded = (i <= gridded);
+      let cls = 'grid-dot';
+      if (isPlayer) cls += ' player';
+      else if (isGridded) cls += ' gridded';
+      html += '<div class="' + cls + '"></div>';
+    }
+    if (html !== _gridStripLastHtml) {
+      container.innerHTML = html;
+      _gridStripLastHtml = html;
+    }
   }
 
   function updateStartLights(phase) {

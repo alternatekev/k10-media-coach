@@ -42,11 +42,11 @@
     const penEl = document.getElementById('incToPen');
     const dqEl  = document.getElementById('incToDQ');
     if (penEl) {
-      penEl.textContent = toPen > 0 ? toPen + 'x' : 'PENALTY';
+      penEl.textContent = toPen > 0 ? toPen : 'PENALTY';
       penEl.className = 'inc-thresh-val' + (toPen === 0 ? ' thresh-hit' : toPen <= 3 ? ' thresh-crit' : toPen <= 6 ? ' thresh-near' : '');
     }
     if (dqEl) {
-      dqEl.textContent = toDQ > 0 ? toDQ + 'x' : 'DQ';
+      dqEl.textContent = toDQ > 0 ? toDQ : 'DQ';
       dqEl.className = 'inc-thresh-val' + (toDQ === 0 ? ' thresh-hit' : toDQ <= 3 ? ' thresh-crit' : toDQ <= 6 ? ' thresh-near' : '');
     }
 

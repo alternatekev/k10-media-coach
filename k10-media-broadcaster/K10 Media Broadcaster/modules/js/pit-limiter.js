@@ -4,6 +4,8 @@
   //  PIT LIMITER
   // ═══════════════════════════════════════════════════════════════
   let _wasInPit = false;
+  let _bonkersActive = false;
+  let _sparkTimer = null;
 
   function updatePitLimiter(p, isDemo) {
     const pre = isDemo ? 'K10MediaBroadcaster.Plugin.Demo.DS.' : 'K10MediaBroadcaster.Plugin.DS.';
@@ -37,20 +39,93 @@
         }
       }
 
-      // Warning flash when pit limiter is NOT enabled
-      if (!pitLimiterOn) {
-        banner.classList.add('pit-warning');
-        if (labelEl) labelEl.textContent = 'PIT LIMITER OFF';
-      } else {
+      // ── State priority: BONKERS > WARNING > NORMAL ──
+      const isSpeeding = pitLimitKmh > 0 && speedKmh > pitLimitKmh;
+
+      if (isSpeeding) {
+        // BONKERS — actually over the speed limit (regardless of limiter state)
+        banner.classList.add('pit-bonkers');
         banner.classList.remove('pit-warning');
+        if (labelEl) labelEl.textContent = 'SPEEDING';
+        if (!_bonkersActive) _startBonkersSparks(banner);
+        if (window.setBonkersGL) window.setBonkersGL(true);
+      } else if (!pitLimiterOn) {
+        // WARNING — limiter off but not yet over limit
+        banner.classList.add('pit-warning');
+        banner.classList.remove('pit-bonkers');
+        if (labelEl) labelEl.textContent = 'PIT LIMITER OFF';
+        if (_bonkersActive) _stopBonkersSparks(banner);
+        if (window.setBonkersGL) window.setBonkersGL(false);
+      } else {
+        // NORMAL — limiter on, all good
+        banner.classList.remove('pit-warning', 'pit-bonkers');
         if (labelEl) labelEl.textContent = 'Pit Limiter';
+        if (_bonkersActive) _stopBonkersSparks(banner);
+        if (window.setBonkersGL) window.setBonkersGL(false);
       }
     } else {
-      banner.classList.remove('pit-visible', 'pit-warning');
+      banner.classList.remove('pit-visible', 'pit-warning', 'pit-bonkers');
       document.body.classList.remove('pit-mode');
       if (labelEl) labelEl.textContent = 'Pit Limiter';
+      if (_bonkersActive) _stopBonkersSparks(banner);
+      if (window.setBonkersGL) window.setBonkersGL(false);
     }
     _wasInPit = inPitLane;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  BONKERS SPARK PARTICLE SYSTEM
+  //  Reusable — call _startBonkersSparks(container) on any element
+  // ═══════════════════════════════════════════════════════════════
+
+  function _startBonkersSparks(container) {
+    if (_bonkersActive) return;
+    _bonkersActive = true;
+    const inner = container.querySelector('.pit-inner');
+    if (!inner) return;
+    _sparkTimer = setInterval(() => {
+      if (!_bonkersActive) return;
+      // Burst of 3-5 sparks per tick
+      const count = 3 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < count; i++) _spawnSpark(inner);
+    }, 40);
+  }
+
+  function _stopBonkersSparks(container) {
+    _bonkersActive = false;
+    if (_sparkTimer) { clearInterval(_sparkTimer); _sparkTimer = null; }
+    // Remove lingering sparks
+    const inner = container.querySelector('.pit-inner');
+    if (inner) inner.querySelectorAll('.pit-spark').forEach(s => s.remove());
+  }
+
+  function _spawnSpark(parent) {
+    const spark = document.createElement('div');
+    spark.className = 'pit-spark';
+
+    // Random direction — bias upward and outward
+    const angle = -Math.PI * 0.1 + Math.random() * -Math.PI * 0.8; // mostly upward arc
+    const speed = 40 + Math.random() * 80;
+    const dx = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
+    const dy = Math.sin(angle) * speed;
+    const size = 1.5 + Math.random() * 2.5;
+    const hue = Math.random() * 55;               // 0 (red) → 55 (yellow)
+    const life = 300 + Math.random() * 400;        // 300-700ms
+    const brightness = 55 + Math.random() * 15;
+
+    spark.style.cssText =
+      'position:absolute;border-radius:50%;pointer-events:none;z-index:10;' +
+      'width:' + size + 'px;height:' + size + 'px;' +
+      'background:hsl(' + hue + ',100%,' + brightness + '%);' +
+      'box-shadow:0 0 ' + (size * 3) + 'px hsl(' + hue + ',100%,50%),' +
+                 '0 0 ' + (size * 6) + 'px hsla(' + hue + ',100%,50%,0.4);' +
+      'left:' + (50 + (Math.random() - 0.5) * 60) + '%;' +
+      'top:50%;' +
+      '--spark-dx:' + dx + 'px;--spark-dy:' + dy + 'px;' +
+      'animation:pit-spark-fly ' + life + 'ms ease-out forwards;';
+
+    parent.appendChild(spark);
+    setTimeout(() => { if (spark.parentNode) spark.remove(); }, life + 50);
   }
 
   // ═══════════════════════════════════════════════════════════════

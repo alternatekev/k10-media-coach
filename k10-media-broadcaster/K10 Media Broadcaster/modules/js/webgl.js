@@ -1243,6 +1243,468 @@
       }
     };
 
+    /* ════════════════════════════════════════════
+       COMMENTARY TRAIL FX — flowing energy border
+       ════════════════════════════════════════════ */
+    const commGLCtx = initGL('commentaryGlCanvas');
+    let _commTrailActive = false;
+    let _commTrailTime = 0;
+    let _commTrailHue = 200;   // updated via setCommentaryTrailGL
+
+    if (commGLCtx) {
+      const { canvas: cC, gl: cGL } = commGLCtx;
+
+      const commVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      // Trail fragment shader — energy particles tracing the border,
+      // subtle inner ambient shimmer, hue-driven color.
+      const commFS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+
+        uniform float uTime;
+        uniform vec2  uRes;
+        uniform float uIntensity;  // 0-1 fade
+        uniform float uHue;        // 0-360
+
+        // ── Noise ──
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float noise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1,0)), f.x),
+                     mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+        }
+
+        // ── HSL to RGB ──
+        vec3 hsl2rgb(float h, float s, float l) {
+          float c = (1.0 - abs(2.0 * l - 1.0)) * s;
+          float x = c * (1.0 - abs(mod(h / 60.0, 2.0) - 1.0));
+          float m = l - c * 0.5;
+          vec3 rgb;
+          if (h < 60.0)       rgb = vec3(c, x, 0);
+          else if (h < 120.0) rgb = vec3(x, c, 0);
+          else if (h < 180.0) rgb = vec3(0, c, x);
+          else if (h < 240.0) rgb = vec3(0, x, c);
+          else if (h < 300.0) rgb = vec3(x, 0, c);
+          else                rgb = vec3(c, 0, x);
+          return rgb + m;
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          float t = uTime;
+          float inten = uIntensity;
+          float aspect = uRes.x / uRes.y;
+
+          // Rounded-rect SDF (UV-space with aspect correction)
+          vec2 center = vec2(0.5);
+          float cornerR = 0.06;
+          vec2 d = abs(uv - center) - vec2(0.5 - cornerR);
+          // aspect-correct for x
+          d.x *= aspect;
+          float sdf = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - cornerR * aspect;
+
+          // Border band — narrow strip along the edge
+          float borderW = 0.022;
+          float border = smoothstep(borderW, borderW * 0.3, abs(sdf));
+
+          // ── Trail particles: 3 streams at different speeds ──
+          // Parametric angle around the perimeter
+          float angle = atan(uv.y - 0.5, (uv.x - 0.5) * aspect);
+          float a = angle / 6.28318 + 0.5; // normalize 0-1
+
+          float trail1 = pow(max(0.0, sin(a * 12.5663 + t * 3.0)), 16.0);
+          float trail2 = pow(max(0.0, sin(a * 18.8496 - t * 2.2 + 1.0)), 12.0);
+          float trail3 = pow(max(0.0, sin(a * 8.3776  + t * 4.5 + 2.5)), 20.0);
+
+          float trails = (trail1 * 0.7 + trail2 * 0.5 + trail3 * 0.9);
+          trails *= border;
+
+          // ── Flowing shimmer along border ──
+          float shimmer = noise(vec2(a * 8.0 + t * 1.5, t * 0.3)) * 0.5 + 0.5;
+          shimmer *= border * 0.35;
+
+          // ── Subtle inner ambient glow ──
+          float innerDist = smoothstep(0.0, -0.08, sdf);
+          float ambient = innerDist * 0.04 * (0.7 + 0.3 * sin(t * 0.8));
+
+          // ── Color: hue-matched with slight variation on trails ──
+          vec3 baseCol = hsl2rgb(uHue, 0.6, 0.55);
+          vec3 brightCol = hsl2rgb(uHue, 0.7, 0.7);
+          vec3 trailCol = mix(baseCol, brightCol, trails);
+
+          // ── Compose ──
+          float alpha = (trails * 0.6 + shimmer * 0.4 + ambient) * inten;
+          vec3 col = trailCol;
+
+          // Clamp
+          alpha = clamp(alpha, 0.0, 0.65);
+
+          fragColor = vec4(col * alpha, alpha);
+        }`;
+
+      const cvs = createShader(cGL, cGL.VERTEX_SHADER, commVS);
+      const cfs = createShader(cGL, cGL.FRAGMENT_SHADER, commFS);
+      const commProg = (cvs && cfs) ? createProgram(cGL, cvs, cfs) : null;
+
+      if (commProg) {
+        const commPosLoc = cGL.getAttribLocation(commProg, 'aPos');
+        const commUTime = cGL.getUniformLocation(commProg, 'uTime');
+        const commURes = cGL.getUniformLocation(commProg, 'uRes');
+        const commUInten = cGL.getUniformLocation(commProg, 'uIntensity');
+        const commUHue = cGL.getUniformLocation(commProg, 'uHue');
+
+        const commBuf = cGL.createBuffer();
+        cGL.bindBuffer(cGL.ARRAY_BUFFER, commBuf);
+        cGL.bufferData(cGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), cGL.STATIC_DRAW);
+
+        let _commInten = 0;
+
+        window._commTrailFXFrame = function(dt) {
+          if (_commTrailActive) {
+            _commInten = Math.min(1, _commInten + dt * 2.0);  // fade in ~0.5s
+            _commTrailTime += dt;
+          } else {
+            _commInten = Math.max(0, _commInten - dt * 3.0);  // fade out faster
+            if (_commInten <= 0) return;
+          }
+
+          resizeCanvas(cC, cGL);
+          cGL.enable(cGL.BLEND);
+          cGL.blendFunc(cGL.SRC_ALPHA, cGL.ONE);  // additive
+          cGL.clearColor(0, 0, 0, 0);
+          cGL.clear(cGL.COLOR_BUFFER_BIT);
+
+          cGL.useProgram(commProg);
+          cGL.uniform1f(commUTime, _commTrailTime);
+          cGL.uniform2f(commURes, cC.width, cC.height);
+          cGL.uniform1f(commUInten, _commInten);
+          cGL.uniform1f(commUHue, _commTrailHue);
+
+          cGL.bindBuffer(cGL.ARRAY_BUFFER, commBuf);
+          cGL.enableVertexAttribArray(commPosLoc);
+          cGL.vertexAttribPointer(commPosLoc, 2, cGL.FLOAT, false, 0, 0);
+          cGL.drawArrays(cGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    // Public API: toggle commentary trail + set hue
+    window.setCommentaryTrailGL = function(active, hue) {
+      _commTrailActive = active;
+      if (typeof hue === 'number') _commTrailHue = hue;
+      if (active) _commTrailTime = 0;
+    };
+
+    /* ════════════════════════════════════════════
+       BONKERS PIT BANNER FX — fire / energy burst
+       ════════════════════════════════════════════ */
+    const pitGLCtx = initGL('pitGlCanvas');
+    let _bonkersGLActive = false;
+    let _bonkersTime = 0;
+
+    if (pitGLCtx) {
+      const { canvas: pC, gl: pGL } = pitGLCtx;
+
+      const pitVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      const pitFS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+
+        uniform float uTime;
+        uniform vec2  uRes;
+        uniform float uIntensity;  // 0-1, ramps up
+
+        // ── Noise functions ──
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float noise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1,0)), f.x),
+                     mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+        }
+        float fbm(vec2 p) {
+          float v = 0.0, a = 0.5;
+          for (int i = 0; i < 4; i++) {
+            v += a * noise(p);
+            p *= 2.1;
+            a *= 0.5;
+          }
+          return v;
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          vec2 center = vec2(0.5, 0.5);
+          float t = uTime;
+          float inten = uIntensity;
+
+          // Distance from perimeter (0 at edge, 1 at center)
+          float dx = abs(uv.x - 0.5) * 2.0;
+          float dy = abs(uv.y - 0.5) * 2.0;
+          float edgeDist = max(dx, dy);
+          float border = smoothstep(0.7, 1.0, edgeDist);
+
+          // ── Fire layer: fbm-driven flames rising from edges ──
+          vec2 fireUV = uv * vec2(4.0, 3.0);
+          fireUV.y -= t * 2.5;                    // flames rise
+          float fire = fbm(fireUV + t * 0.8);
+          fire = smoothstep(0.3, 0.7, fire);
+          fire *= border * inten;
+
+          // Fire color: red core → orange → yellow tips
+          vec3 fireCol = mix(vec3(0.9, 0.1, 0.0), vec3(1.0, 0.7, 0.0), fire);
+          fireCol = mix(fireCol, vec3(1.0, 1.0, 0.3), fire * fire);
+
+          // ── Energy arcs: bright streaks along perimeter ──
+          float angle = atan(uv.y - 0.5, uv.x - 0.5);
+          float arc1 = sin(angle * 8.0 + t * 12.0) * 0.5 + 0.5;
+          float arc2 = sin(angle * 5.0 - t * 9.0 + 1.5) * 0.5 + 0.5;
+          float arcMask = smoothstep(0.82, 0.95, edgeDist);
+          float arcs = (pow(arc1, 8.0) + pow(arc2, 6.0) * 0.7) * arcMask * inten;
+          vec3 arcCol = mix(vec3(1.0, 0.3, 0.0), vec3(1.0, 0.9, 0.2), arc1);
+
+          // ── Heat shimmer: distorted inner haze ──
+          float shimmer = noise(uv * 10.0 + t * 3.0) * 0.15;
+          float innerGlow = smoothstep(0.85, 0.5, edgeDist) * shimmer * inten;
+          vec3 shimmerCol = vec3(0.8, 0.2, 0.0) * innerGlow;
+
+          // ── Pulse: whole-surface throb ──
+          float pulse = (sin(t * 15.0) * 0.5 + 0.5) * 0.12 * inten * border;
+
+          // ── Compose ──
+          vec3 col = fireCol * fire * 0.9
+                   + arcCol * arcs * 0.8
+                   + shimmerCol
+                   + vec3(1.0, 0.5, 0.1) * pulse;
+
+          float alpha = fire * 0.7 + arcs * 0.6 + innerGlow + pulse;
+          alpha = clamp(alpha * inten, 0.0, 0.85);
+
+          fragColor = vec4(col * alpha, alpha);
+        }`;
+
+      const pvs = createShader(pGL, pGL.VERTEX_SHADER, pitVS);
+      const pfs = createShader(pGL, pGL.FRAGMENT_SHADER, pitFS);
+      const pitProg = (pvs && pfs) ? createProgram(pGL, pvs, pfs) : null;
+
+      if (pitProg) {
+        const pitPosLoc = pGL.getAttribLocation(pitProg, 'aPos');
+        const pitUTime = pGL.getUniformLocation(pitProg, 'uTime');
+        const pitURes = pGL.getUniformLocation(pitProg, 'uRes');
+        const pitUInten = pGL.getUniformLocation(pitProg, 'uIntensity');
+
+        // Full-screen quad
+        const pitBuf = pGL.createBuffer();
+        pGL.bindBuffer(pGL.ARRAY_BUFFER, pitBuf);
+        pGL.bufferData(pGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), pGL.STATIC_DRAW);
+
+        let _bonkersInten = 0;  // smoothly ramps 0→1
+
+        window._bonkersFXFrame = function(dt) {
+          // Ramp intensity
+          if (_bonkersGLActive) {
+            _bonkersInten = Math.min(1, _bonkersInten + dt * 2.5); // ramp up over 0.4s
+            _bonkersTime += dt;
+          } else {
+            _bonkersInten = Math.max(0, _bonkersInten - dt * 4.0); // ramp down faster
+            if (_bonkersInten <= 0) return;
+          }
+
+          resizeCanvas(pC, pGL);
+          pGL.enable(pGL.BLEND);
+          pGL.blendFunc(pGL.SRC_ALPHA, pGL.ONE);  // additive for fire
+          pGL.clearColor(0, 0, 0, 0);
+          pGL.clear(pGL.COLOR_BUFFER_BIT);
+
+          pGL.useProgram(pitProg);
+          pGL.uniform1f(pitUTime, _bonkersTime);
+          pGL.uniform2f(pitURes, pC.width, pC.height);
+          pGL.uniform1f(pitUInten, _bonkersInten);
+
+          pGL.bindBuffer(pGL.ARRAY_BUFFER, pitBuf);
+          pGL.enableVertexAttribArray(pitPosLoc);
+          pGL.vertexAttribPointer(pitPosLoc, 2, pGL.FLOAT, false, 0, 0);
+          pGL.drawArrays(pGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    // Public API: toggle bonkers WebGL
+    window.setBonkersGL = function(active) {
+      _bonkersGLActive = active;
+      if (active) _bonkersTime = 0;
+    };
+
+    /* ════════════════════════════════════════════
+       GRID MODULE FX — scanning energy border + pulse
+       Activates during formation lap / pre-race grid
+       ════════════════════════════════════════════ */
+    const gridGLCtx = initGL('gridGlCanvas');
+    let _gridGLActive = false;
+    let _gridGLTime = 0;
+
+    if (gridGLCtx) {
+      const { canvas: gC, gl: gGL } = gridGLCtx;
+
+      const gridVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      const gridFS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+
+        uniform float uTime;
+        uniform vec2  uRes;
+        uniform float uIntensity;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float noise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i+vec2(1,0)), f.x),
+                     mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
+        }
+
+        // Rounded-rect SDF
+        float roundedBox(vec2 p, vec2 b, float r) {
+          vec2 d = abs(p) - b + r;
+          return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          float aspect = uRes.x / uRes.y;
+          vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+          float t = uTime;
+          float inten = uIntensity;
+
+          // Rounded rect border matching the info card
+          vec2 boxSize = vec2(aspect * 0.48, 0.44);
+          float r = 0.04;
+          float d = roundedBox(p, boxSize, r);
+
+          // ── Scanning beam: travels along the border perimeter ──
+          float angle = atan(p.y, p.x);
+          float scan1 = sin(angle * 1.0 - t * 2.8) * 0.5 + 0.5;
+          float scan2 = sin(angle * 1.0 + t * 2.0 + 3.14) * 0.5 + 0.5;
+          float scanBeam = pow(scan1, 12.0) + pow(scan2, 10.0) * 0.6;
+
+          // ── Border glow: concentrated on the card edge ──
+          float borderGlow = smoothstep(0.04, 0.0, abs(d)) * 0.6;
+          float outerBloom = smoothstep(0.08, 0.0, d) * smoothstep(-0.02, 0.01, d) * 0.3;
+
+          // ── Corner accents: brighter at the 4 corners ──
+          float cx = abs(p.x) - boxSize.x + r;
+          float cy = abs(p.y) - boxSize.y + r;
+          float cornerDist = length(max(vec2(cx, cy), 0.0));
+          float corner = smoothstep(0.06, 0.0, cornerDist) * 0.5;
+
+          // ── Shimmer noise along border ──
+          float shimmer = noise(vec2(angle * 3.0, t * 4.0)) * 0.3;
+          shimmer *= smoothstep(0.03, 0.0, abs(d));
+
+          // ── Pulse: subtle breathe ──
+          float pulse = (sin(t * 3.0) * 0.5 + 0.5) * 0.15 * smoothstep(0.02, 0.0, abs(d));
+
+          // ── Color: cool blue-cyan racing energy ──
+          vec3 baseCol = vec3(0.15, 0.45, 0.9);   // blue
+          vec3 accentCol = vec3(0.2, 0.7, 1.0);    // cyan
+          vec3 scanCol = mix(baseCol, accentCol, scan1);
+
+          // Compose
+          float alpha = (borderGlow + outerBloom + corner) * inten
+                      + scanBeam * smoothstep(0.04, 0.0, abs(d)) * inten * 0.7
+                      + shimmer * inten
+                      + pulse * inten;
+          alpha = clamp(alpha, 0.0, 0.8);
+
+          vec3 col = scanCol * (borderGlow + scanBeam * 0.5)
+                   + accentCol * (corner + outerBloom)
+                   + vec3(0.3, 0.6, 1.0) * shimmer
+                   + baseCol * pulse;
+
+          fragColor = vec4(col * alpha, alpha);
+        }`;
+
+      const gvs = createShader(gGL, gGL.VERTEX_SHADER, gridVS);
+      const gfs = createShader(gGL, gGL.FRAGMENT_SHADER, gridFS);
+      const gridProg = (gvs && gfs) ? createProgram(gGL, gvs, gfs) : null;
+
+      if (gridProg) {
+        const gridPosLoc = gGL.getAttribLocation(gridProg, 'aPos');
+        const gridUTime = gGL.getUniformLocation(gridProg, 'uTime');
+        const gridURes = gGL.getUniformLocation(gridProg, 'uRes');
+        const gridUInten = gGL.getUniformLocation(gridProg, 'uIntensity');
+
+        const gridBuf = gGL.createBuffer();
+        gGL.bindBuffer(gGL.ARRAY_BUFFER, gridBuf);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gGL.STATIC_DRAW);
+
+        let _gridInten = 0;
+
+        window._gridFXFrame = function(dt) {
+          if (_gridGLActive) {
+            _gridInten = Math.min(1, _gridInten + dt * 2.0);
+            _gridGLTime += dt;
+          } else {
+            _gridInten = Math.max(0, _gridInten - dt * 3.0);
+            if (_gridInten <= 0) return;
+          }
+
+          resizeCanvas(gC, gGL);
+          gGL.enable(gGL.BLEND);
+          gGL.blendFunc(gGL.SRC_ALPHA, gGL.ONE);
+          gGL.clearColor(0, 0, 0, 0);
+          gGL.clear(gGL.COLOR_BUFFER_BIT);
+
+          gGL.useProgram(gridProg);
+          gGL.uniform1f(gridUTime, _gridGLTime);
+          gGL.uniform2f(gridURes, gC.width, gC.height);
+          gGL.uniform1f(gridUInten, _gridInten);
+
+          gGL.bindBuffer(gGL.ARRAY_BUFFER, gridBuf);
+          gGL.enableVertexAttribArray(gridPosLoc);
+          gGL.vertexAttribPointer(gridPosLoc, 2, gGL.FLOAT, false, 0, 0);
+          gGL.drawArrays(gGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    // Public API: toggle grid module WebGL
+    window.setGridGL = function(active) {
+      _gridGLActive = active;
+      if (active) _gridGLTime = 0;
+    };
+
     /* ── Master FX animation loop ── */
     let _lastFXTime = 0;
     function fxLoop(now) {
@@ -1260,6 +1722,9 @@
       if (window._lbEvtFXFrame) window._lbEvtFXFrame(dt);
       if (window._k10LogoFXFrame) window._k10LogoFXFrame(dt);
       if (window._spotterFXFrame) window._spotterFXFrame(dt);
+      if (window._bonkersFXFrame) window._bonkersFXFrame(dt);
+      if (window._commTrailFXFrame) window._commTrailFXFrame(dt);
+      if (window._gridFXFrame) window._gridFXFrame(dt);
       requestAnimationFrame(fxLoop);
     }
     requestAnimationFrame((now) => { _lastFXTime = now; requestAnimationFrame(fxLoop); });

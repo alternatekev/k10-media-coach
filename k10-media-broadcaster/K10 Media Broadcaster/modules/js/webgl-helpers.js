@@ -315,6 +315,8 @@
 
     // Activate data visualization for this topic (hue already overridden for heat)
     if (window.showCommentaryViz) window.showCommentaryViz(resolvedTopic, hue);
+    // Activate WebGL trail effect on commentary border
+    if (window.setCommentaryTrailGL) window.setCommentaryTrailGL(true, hue);
 
     // After layout settles, check if text overflows and set up slow scroll
     requestAnimationFrame(() => { requestAnimationFrame(() => {
@@ -336,6 +338,7 @@
     col.classList.remove('visible');
     dash.style.setProperty('--sentiment-alpha', '0');
     if (window.hideCommentaryViz) window.hideCommentaryViz();
+    if (window.setCommentaryTrailGL) window.setCommentaryTrailGL(false);
   }
 
   // ═══ CYCLING PANELS (rating/position only — fuel/tyres no longer cycle) ═══

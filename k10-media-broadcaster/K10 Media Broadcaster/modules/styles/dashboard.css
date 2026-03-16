@@ -144,6 +144,21 @@
     flex-direction: column;
     justify-content: flex-start;
     transition: background 0.8s ease, border-color 0.8s ease;
+    overflow: visible;
+  }
+  .commentary-gl-canvas {
+    position: absolute;
+    inset: -10px -14px;
+    width: calc(100% + 28px);
+    height: calc(100% + 20px);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: calc(var(--corner-r) + 4px);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .commentary-col.visible .commentary-gl-canvas {
+    opacity: 1;
   }
   .commentary-title {
     font-size: 20px;
@@ -234,7 +249,10 @@
     height: 52px;
   }
   .commentary-viz[data-viz-type="grid"].viz-active {
-    height: 140px;
+    height: 78px;
+  }
+  .commentary-viz[data-viz-type="incident"].viz-active {
+    height: 78px;
   }
   #commentaryVizCanvas {
     position: absolute;

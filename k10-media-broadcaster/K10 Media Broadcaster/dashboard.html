@@ -299,6 +299,7 @@
       <div class="commentary-text-scroll" id="commentaryScroll">
         <div class="commentary-text" id="commentaryText"></div>
       </div>
+      <canvas class="commentary-gl-canvas" id="commentaryGlCanvas"></canvas>
       <div class="commentary-viz" id="commentaryViz">
         <canvas id="commentaryVizCanvas"></canvas>
         <div class="commentary-viz-value" id="commentaryVizValue"></div>
@@ -456,6 +457,7 @@
 
 <!-- COMPONENT: Pit Limiter Banner -->
 <div class="pit-banner" id="pitBanner">
+  <canvas class="pit-gl-canvas" id="pitGlCanvas"></canvas>
   <div class="pit-inner">
     <div class="pit-icon">P</div>
     <div class="pit-label">Pit Limiter</div>
@@ -501,6 +503,9 @@
 
 <!-- COMPONENT: Grid Module (formation lap / pre-race info) -->
 <div class="grid-module" id="gridModule">
+  <canvas class="grid-gl-canvas" id="gridGlCanvas"></canvas>
+  <!-- Countdown badge sits above the info card -->
+  <div class="grid-countdown" id="gridCountdown">—</div>
   <!-- Pre-race info (visible during formation) -->
   <div class="grid-info" id="gridInfo">
     <div class="grid-flag" id="gridFlag">
@@ -509,8 +514,8 @@
       <div class="grid-flag-stripe" id="flagStripe3"></div>
     </div>
     <div class="grid-title">Formation Lap</div>
-    <div class="grid-countdown" id="gridCountdown">—</div>
     <div class="grid-cars"><span id="gridCarsGridded">0</span> <span class="grid-cars-total">/ <span id="gridCarsTotal">0</span> gridded</span></div>
+    <div class="grid-strip" id="gridStrip"></div>
     <div class="grid-start-type" id="gridStartType">Rolling Start</div>
   </div>
   <!-- F1-style start lights (replaces info when lights active) -->

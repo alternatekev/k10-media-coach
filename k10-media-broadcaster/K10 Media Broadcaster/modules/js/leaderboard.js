@@ -72,19 +72,21 @@
       // iRating shorthand
       const irStr = ir > 0 ? (ir >= 1000 ? (ir / 1000).toFixed(1) + 'k' : '' + ir) : '';
 
-      // Update sparkline history
-      if (last > 0) {
+      // Update sparkline history (coerce to number, skip 0/NaN)
+      const lastNum = +last;
+      if (lastNum > 0) {
         if (!_sparkHistory[name]) _sparkHistory[name] = [];
         const h = _sparkHistory[name];
-        if (h.length === 0 || h[h.length - 1] !== last) {
-          h.push(last);
+        if (h.length === 0 || h[h.length - 1] !== lastNum) {
+          h.push(lastNum);
           if (h.length > SPARK_MAX) h.shift();
         }
       }
 
       // Build sparkline SVG inline (mini polyline)
       let sparkSvg = '';
-      const hist = _sparkHistory[name];
+      // Filter out any stale 0s that may have entered the history
+      const hist = _sparkHistory[name] ? _sparkHistory[name].filter(v => v > 0) : null;
       if (hist && hist.length >= 2) {
         const mn = Math.min(...hist), mx = Math.max(...hist);
         const range = mx - mn || 1;
