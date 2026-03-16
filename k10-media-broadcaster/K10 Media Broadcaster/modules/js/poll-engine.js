@@ -254,6 +254,8 @@
     if (absOk) _prevABS = +abs;
 
     // ─── Position / Lap / Best Lap ───
+    // Snapshot previous position BEFORE it gets overwritten (used by grid viz)
+    const _vizSnapPrevPos = _lastPosition;
     const pos = +d('DataCorePlugin.GameData.Position', 'Demo.Position') || 0;
     const lap = +d('DataCorePlugin.GameData.CurrentLap', 'Demo.CurrentLap') || 0;
     const bestLap = +d('DataCorePlugin.GameData.BestLapTime', 'Demo.BestLapTime') || 0;
@@ -506,6 +508,9 @@
         longG: +(v(dsPre + 'LongG') || 0),
         steerTorque: +(v(dsPre + 'SteerTorque') || 0),
         position: pos,
+        prevPosition: _vizSnapPrevPos || 0,
+        startPosition: _startPosition || 0,
+        totalCars: +(v(sessionPre + 'TotalCars')) || 0,
         incidents: +(v(dsPre + 'IncidentCount') || 0),
         lap: lap,
         sessionTime: vs('DataCorePlugin.GameData.RemainingTime') || '',

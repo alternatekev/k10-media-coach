@@ -233,6 +233,9 @@
   .commentary-viz[data-viz-type="delta"].viz-active {
     height: 52px;
   }
+  .commentary-viz[data-viz-type="grid"].viz-active {
+    height: 140px;
+  }
   #commentaryVizCanvas {
     position: absolute;
     top: 0;

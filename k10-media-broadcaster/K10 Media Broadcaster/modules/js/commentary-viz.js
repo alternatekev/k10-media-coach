@@ -18,6 +18,7 @@
   let _vizHue = 0;
   let _vizHistory = [];       // rolling data buffer for live line charts
   const _VIZ_HIST_LEN = 60;  // ~2 seconds of samples at 30fps poll rate
+  let _vizGridGhostPos = 0;   // captured on first grid frame so it doesn't drift
 
   // ── Viz type definitions ──
   // Each topicId maps to a visualization type and configuration.
@@ -59,8 +60,8 @@
 
     // ── Racing experience ──
     close_battle:          { type: 'delta',   label: 'Gap',            unit: 's',    src: 'gapAhead' },
-    position_gained:       { type: 'counter', label: 'Position',       src: 'position' },
-    position_lost:         { type: 'counter', label: 'Position',       src: 'position' },
+    position_gained:       { type: 'grid',    label: 'Grid Position' },
+    position_lost:         { type: 'grid',    label: 'Grid Position' },
     incident_spike:        { type: 'counter', label: 'Incidents',      src: 'incidents' },
     low_fuel:              { type: 'gauge',   label: 'Fuel',           unit: 'L',    src: 'fuel', min: 0, max: 100 },
     hot_tyres:             { type: 'quad',    label: 'Tyre Temps',     unit: '°C',   src: 'tyreTemp' },
@@ -71,8 +72,8 @@
 
     // Catch-all for topics that appear in demo
     pit_entry:             { type: 'counter', label: 'Laps',           src: 'laps' },
-    race_start:            { type: 'counter', label: 'Position',       src: 'position' },
-    formation_lap:         { type: 'counter', label: 'Position',       src: 'position' },
+    race_start:            { type: 'grid',    label: 'Grid Position' },
+    formation_lap:         { type: 'grid',    label: 'Grid Position' },
     yellow_flag:           { type: 'counter', label: 'Incidents',      src: 'incidents' },
     black_flag:            { type: 'counter', label: 'Incidents',      src: 'incidents' },
     debris_on_track:       { type: 'counter', label: 'Incidents',      src: 'incidents' },
@@ -110,6 +111,7 @@
   window.hideCommentaryViz = function() {
     _vizActive = false;
     _vizHistory = [];
+    _vizGridGhostPos = 0;
     if (_vizContainer) _vizContainer.classList.remove('viz-active');
   };
 
@@ -129,6 +131,9 @@
       case 'gapAhead':    return t.gapAhead || 0;
       case 'steerTorque': return t.steerTorque || 0;
       case 'position':    return t.position || 0;
+      case 'prevPosition': return t.prevPosition || 0;
+      case 'startPosition': return t.startPosition || 0;
+      case 'totalCars':   return t.totalCars || 0;
       case 'incidents':   return t.incidents || 0;
       case 'laps':        return t.lap || 0;
       case 'sessionTime': return t.sessionTime || '';
@@ -152,6 +157,7 @@
       case 'delta':   _renderDelta(cfg);   break;
       case 'quad':    _renderQuad(cfg);    break;
       case 'counter': _renderCounter(cfg); break;
+      case 'grid':    _renderGrid(cfg);    break;
     }
   }
 
@@ -566,6 +572,194 @@
     }
 
     if (_vizValueEl) _vizValueEl.textContent = '';
+  }
+
+  // ════════════════════════════════════════════
+  //  GRID — staggered starting-grid visualization
+  // ════════════════════════════════════════════
+  function _renderGrid(cfg) {
+    const pos = Math.round(_getVizValue('position')) || 0;
+    if (pos <= 0) return;
+    let total = Math.round(_getVizValue('totalCars')) || 0;
+    if (total < pos) total = pos + 4;  // fallback if grid data unavailable
+
+    // Capture ghost position on first render only so it doesn't drift
+    if (_vizGridGhostPos === 0) {
+      const prev = Math.round(_getVizValue('prevPosition'));
+      if (prev > 0 && prev !== pos) _vizGridGhostPos = prev;
+    }
+
+    const c = _prepCanvas();
+    if (!c) return;
+    const { ctx, w, h, dpr } = c;
+
+    // ── Dimensions ──
+    const carW = 11 * dpr;
+    const carH = 18 * dpr;
+    const rowGap = 5 * dpr;
+    const rowH = carH + rowGap;
+    const stagger = 20 * dpr;        // horizontal offset from center
+    const midX = w / 2;
+
+    // Visible window centered on the player
+    const maxVisible = Math.max(3, Math.floor(h / rowH));
+    const halfVis = Math.floor(maxVisible / 2);
+    let viewStart = Math.max(1, pos - halfVis);
+    let viewEnd = Math.min(total, viewStart + maxVisible - 1);
+    // Adjust if at edges
+    if (viewEnd - viewStart + 1 < maxVisible && viewStart > 1) {
+      viewStart = Math.max(1, viewEnd - maxVisible + 1);
+    }
+
+    // ── Track edge markers ──
+    const trackL = midX - stagger - carW * 0.9;
+    const trackR = midX + stagger + carW * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(trackL, 0); ctx.lineTo(trackL, h);
+    ctx.moveTo(trackR, 0); ctx.lineTo(trackR, h);
+    ctx.strokeStyle = 'hsla(0, 0%, 40%, 0.10)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Dashed center line
+    ctx.beginPath();
+    ctx.setLineDash([3 * dpr, 5 * dpr]);
+    ctx.moveTo(midX, 0); ctx.lineTo(midX, h);
+    ctx.strokeStyle = 'hsla(0, 0%, 40%, 0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Draw cars ──
+    for (let p = viewStart; p <= viewEnd; p++) {
+      const rowIdx = p - viewStart;
+      const y = rowIdx * rowH + rowGap / 2;
+      const isLeft = p % 2 === 1;   // odd = left (pole side), even = right
+      const cx = isLeft ? midX - stagger : midX + stagger;
+      const x = cx - carW / 2;
+
+      const isPlayer = (p === pos);
+      const isGhost = (_vizGridGhostPos > 0 && p === _vizGridGhostPos);
+
+      if (isPlayer) {
+        _drawGridCar(ctx, x, y, carW, carH, dpr, 'player', _vizHue);
+      } else if (isGhost) {
+        _drawGridCar(ctx, x, y, carW, carH, dpr, 'ghost', _vizHue);
+      } else {
+        _drawGridCar(ctx, x, y, carW, carH, dpr, 'other', _vizHue);
+      }
+
+      // Position number beside the car
+      ctx.fillStyle = isPlayer ? `hsla(${_vizHue}, 70%, 75%, 0.95)` :
+                      isGhost  ? `hsla(${_vizHue}, 40%, 55%, 0.5)` :
+                                 'hsla(0, 0%, 55%, 0.25)';
+      ctx.font = `bold ${7 * dpr}px system-ui, sans-serif`;
+      ctx.textBaseline = 'middle';
+      if (isLeft) {
+        ctx.textAlign = 'right';
+        ctx.fillText(p, x - 4 * dpr, y + carH / 2);
+      } else {
+        ctx.textAlign = 'left';
+        ctx.fillText(p, x + carW + 4 * dpr, y + carH / 2);
+      }
+    }
+
+    // ── Value label ──
+    if (_vizValueEl) {
+      if (_vizGridGhostPos > 0 && _vizGridGhostPos !== pos) {
+        const delta = _vizGridGhostPos - pos;
+        _vizValueEl.textContent = 'P' + pos + (delta > 0 ? ' \u25B2' + delta : ' \u25BC' + Math.abs(delta));
+        _vizValueEl.style.color = delta > 0 ? 'hsl(145, 60%, 60%)' : 'hsl(0, 60%, 65%)';
+      } else {
+        _vizValueEl.textContent = 'P' + pos;
+        _vizValueEl.style.color = '';
+      }
+    }
+  }
+
+  // ── Draw a single car shape (top-down, tapered nose) ──
+  function _drawGridCar(ctx, x, y, w, h, dpr, mode, hue) {
+    const noseH = h * 0.28;
+    const noseW = w * 0.52;
+    const noseX = x + (w - noseW) / 2;
+    const r = 2 * dpr;
+
+    // Car silhouette path — body with tapered front
+    ctx.beginPath();
+    // Start at top-left of nose
+    ctx.moveTo(noseX + noseW * 0.3, y + 1 * dpr);
+    // Nose tip curve
+    ctx.quadraticCurveTo(x + w / 2, y - 1 * dpr, noseX + noseW * 0.7, y + 1 * dpr);
+    // Right nose to right body
+    ctx.lineTo(noseX + noseW, y + noseH);
+    ctx.lineTo(x + w - r, y + noseH);
+    // Right body edge
+    ctx.quadraticCurveTo(x + w, y + noseH, x + w, y + noseH + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    // Bottom edge
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    // Left body edge
+    ctx.lineTo(x, y + noseH + r);
+    ctx.quadraticCurveTo(x, y + noseH, x + r, y + noseH);
+    ctx.lineTo(noseX, y + noseH);
+    ctx.closePath();
+
+    if (mode === 'player') {
+      // Bright fill
+      ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.95)`;
+      ctx.fill();
+      // Glow
+      ctx.save();
+      ctx.shadowColor = `hsla(${hue}, 80%, 55%, 0.65)`;
+      ctx.shadowBlur = 10 * dpr;
+      ctx.fillStyle = `hsla(${hue}, 70%, 55%, 0.6)`;
+      ctx.fill();
+      ctx.restore();
+      // Inner detail lines (cockpit hint)
+      ctx.beginPath();
+      ctx.moveTo(x + w * 0.3, y + noseH + 2 * dpr);
+      ctx.lineTo(x + w * 0.3, y + h * 0.55);
+      ctx.moveTo(x + w * 0.7, y + noseH + 2 * dpr);
+      ctx.lineTo(x + w * 0.7, y + h * 0.55);
+      ctx.strokeStyle = `hsla(${hue}, 60%, 75%, 0.4)`;
+      ctx.lineWidth = 0.5 * dpr;
+      ctx.stroke();
+      // Rear wing accent
+      ctx.beginPath();
+      ctx.moveTo(x + 1 * dpr, y + h - 1 * dpr);
+      ctx.lineTo(x + w - 1 * dpr, y + h - 1 * dpr);
+      ctx.strokeStyle = `hsla(${hue}, 80%, 70%, 0.6)`;
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.stroke();
+    } else if (mode === 'ghost') {
+      // Dim dashed outline, semi-transparent fill
+      ctx.fillStyle = `hsla(${hue}, 35%, 30%, 0.15)`;
+      ctx.fill();
+      ctx.setLineDash([2 * dpr, 2 * dpr]);
+      ctx.strokeStyle = `hsla(${hue}, 50%, 55%, 0.45)`;
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      // Other cars — neutral dim
+      ctx.fillStyle = 'hsla(0, 0%, 22%, 0.45)';
+      ctx.fill();
+      ctx.strokeStyle = 'hsla(0, 0%, 35%, 0.15)';
+      ctx.lineWidth = 0.5 * dpr;
+      ctx.stroke();
+    }
+
+    // Front wing accent (all cars)
+    ctx.beginPath();
+    ctx.moveTo(noseX + 1 * dpr, y + noseH);
+    ctx.lineTo(noseX + noseW - 1 * dpr, y + noseH);
+    ctx.strokeStyle = mode === 'player' ? `hsla(${hue}, 70%, 70%, 0.5)` :
+                      mode === 'ghost'  ? `hsla(${hue}, 40%, 50%, 0.2)` :
+                                          'hsla(0, 0%, 40%, 0.12)';
+    ctx.lineWidth = 0.8 * dpr;
+    ctx.stroke();
   }
 
   // ════════════════════════════════════════════
