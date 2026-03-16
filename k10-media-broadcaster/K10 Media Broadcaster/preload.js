@@ -17,4 +17,10 @@ contextBridge.exposeInMainWorld('k10', {
   // Green screen mode
   getGreenScreenMode: () => ipcRenderer.invoke('get-green-screen-mode'),
   restartApp: () => ipcRenderer.invoke('restart-app'),
+  // Open URL in user's default browser
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  // Discord OAuth2
+  discordConnect: () => ipcRenderer.invoke('discord-connect'),
+  discordDisconnect: () => ipcRenderer.invoke('discord-disconnect'),
+  getDiscordUser: () => ipcRenderer.invoke('get-discord-user'),
 });

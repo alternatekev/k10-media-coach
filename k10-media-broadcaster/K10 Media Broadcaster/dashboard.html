@@ -2994,6 +2994,136 @@
   /* Hidden sections */
   .section-hidden { display: none !important; }
 
+  /* ═══════════════════════════════════════════════
+     CONNECTIONS TAB
+     ═══════════════════════════════════════════════ */
+  .conn-card {
+    background: hsla(0,0%,100%,0.04);
+    border: 1px solid hsla(0,0%,100%,0.08);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .conn-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .conn-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .conn-card-icon.simhub { background: hsla(210, 60%, 50%, 0.2); }
+  .conn-card-icon.discord { background: hsla(235, 86%, 65%, 0.2); }
+  .conn-card-icon svg { width: 18px; height: 18px; }
+  .conn-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: hsla(0,0%,100%,0.9);
+  }
+  .conn-card-subtitle {
+    font-size: 10px;
+    color: hsla(0,0%,100%,0.4);
+    margin-top: 1px;
+  }
+  .conn-card-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .conn-dot.green { background: #4caf50; box-shadow: 0 0 6px rgba(76,175,80,0.4); }
+  .conn-dot.red { background: #f44336; box-shadow: 0 0 6px rgba(244,67,54,0.3); }
+  .conn-dot.orange { background: #ff9800; box-shadow: 0 0 6px rgba(255,152,0,0.3); }
+  .conn-dot.blue { background: #5865F2; box-shadow: 0 0 6px rgba(88,101,242,0.3); }
+  .conn-status-text {
+    font-size: 11px;
+    color: hsla(0,0%,100%,0.7);
+  }
+  .conn-status-text strong { font-weight: 600; color: hsla(0,0%,100%,0.9); }
+  .conn-card-detail {
+    font-size: 10px;
+    color: hsla(0,0%,100%,0.35);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .conn-card-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .conn-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    font-family: var(--ff);
+  }
+  .conn-btn:hover { opacity: 0.85; }
+  .conn-btn:active { transform: scale(0.97); }
+  .conn-btn.discord-btn {
+    background: #5865F2;
+    color: #fff;
+  }
+  .conn-btn.discord-btn:disabled {
+    background: hsla(235, 50%, 45%, 0.5);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .conn-btn.disconnect-btn {
+    background: hsla(0,0%,100%,0.08);
+    color: hsla(0, 75%, 60%, 0.9);
+    border: 1px solid hsla(0, 75%, 60%, 0.2);
+  }
+  .conn-btn.invite-btn {
+    background: hsla(0,0%,100%,0.06);
+    color: hsla(0,0%,100%,0.6);
+    border: 1px solid hsla(0,0%,100%,0.1);
+  }
+  .conn-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+  }
+  .conn-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: hsla(235, 60%, 55%, 0.3);
+    overflow: hidden;
+  }
+  .conn-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .conn-user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: hsla(0,0%,100%,0.85);
+  }
+  .conn-user-id {
+    font-size: 9px;
+    color: hsla(0,0%,100%,0.3);
+    font-variant-numeric: tabular-nums;
+  }
+
 </style>
 </head>
 <body>
@@ -3466,6 +3596,7 @@
     <div class="settings-tabs">
       <div class="settings-tab active" data-tab="sections" onclick="switchSettingsTab(this)">Sections</div>
       <div class="settings-tab" data-tab="layout" onclick="switchSettingsTab(this)">Layout</div>
+      <div class="settings-tab" data-tab="connections" onclick="switchSettingsTab(this)">Connections</div>
       <div class="settings-tab" data-tab="system" onclick="switchSettingsTab(this)">System</div>
     </div>
 
@@ -3556,13 +3687,93 @@
       <div class="settings-row">
         <span class="settings-label">Zoom</span>
         <div class="settings-range-row">
-          <input class="settings-range" id="settingsZoom" type="range" min="100" max="200" step="5" value="165" oninput="updateZoom(this.value)"/>
+          <input class="settings-range" id="settingsZoom" type="range" min="100" max="200" step="5" value="165" oninput="previewZoom(this.value)" onchange="updateZoom(this.value)"/>
           <span class="settings-range-val" id="zoomVal">165%</span>
         </div>
       </div>
     </div>
 
     <!-- ── Tab: System ── -->
+    <!-- ── Tab: Connections ── -->
+    <div class="settings-tab-content" id="settingsTabConnections">
+
+      <!-- SimHub Connection Card -->
+      <div class="conn-card">
+        <div class="conn-card-header">
+          <div class="conn-card-icon simhub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:hsl(210,60%,55%)"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 8h2"/><path d="M15 8h2"/><path d="M7 12h10"/></svg>
+          </div>
+          <div>
+            <div class="conn-card-title">SimHub Plugin</div>
+            <div class="conn-card-subtitle">K10 Media Broadcaster telemetry server</div>
+          </div>
+        </div>
+        <div class="conn-card-status">
+          <div class="conn-dot orange" id="connSimhubDot"></div>
+          <div class="conn-status-text" id="connSimhubText">Connecting...</div>
+        </div>
+        <div class="conn-card-detail" id="connSimhubDetail">
+          URL: <span id="connSimhubUrl">http://localhost:8889/k10mediabroadcaster/</span>
+        </div>
+        <div class="conn-card-actions">
+          <input class="settings-input" id="settingsSimhubUrl" type="text" value="http://localhost:8889/k10mediabroadcaster/" onchange="updateSimhubUrl(this.value)" style="flex:1;"/>
+        </div>
+      </div>
+
+      <!-- Discord Connection Card -->
+      <div class="conn-card">
+        <div class="conn-card-header">
+          <div class="conn-card-icon discord">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="color:#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg>
+          </div>
+          <div>
+            <div class="conn-card-title">Discord</div>
+            <div class="conn-card-subtitle">Connect to the K10 community server</div>
+          </div>
+        </div>
+
+        <!-- Not connected state -->
+        <div id="discordNotConnected">
+          <div class="conn-card-status">
+            <div class="conn-dot red" id="connDiscordDot"></div>
+            <div class="conn-status-text" id="connDiscordText">Not connected</div>
+          </div>
+          <div class="conn-card-detail">
+            Connect your Discord account to join the K10 Media Broadcaster community and unlock future features for authenticated users.
+          </div>
+          <div class="conn-card-actions">
+            <button class="conn-btn discord-btn" id="discordConnectBtn" onclick="connectDiscord()">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg>
+              Connect Discord
+            </button>
+            <button class="conn-btn invite-btn" onclick="openDiscordInvite()">Join Server</button>
+          </div>
+        </div>
+
+        <!-- Connected state -->
+        <div id="discordConnected" style="display:none;">
+          <div class="conn-card-status">
+            <div class="conn-dot green"></div>
+            <div class="conn-status-text"><strong>Connected</strong></div>
+          </div>
+          <div class="conn-user-info">
+            <div class="conn-user-avatar" id="discordAvatarWrap">
+              <img id="discordAvatar" src="" alt="" />
+            </div>
+            <div>
+              <div class="conn-user-name" id="discordDisplayName"></div>
+              <div class="conn-user-id" id="discordUserId"></div>
+            </div>
+          </div>
+          <div class="conn-card-actions">
+            <button class="conn-btn invite-btn" onclick="openDiscordInvite()">Join Server</button>
+            <button class="conn-btn disconnect-btn" onclick="disconnectDiscord()">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <div class="settings-tab-content" id="settingsTabSystem">
       <div class="settings-group-label">Debug</div>
       <div class="settings-row">
@@ -3587,8 +3798,6 @@
       </div>
       <div class="settings-hint" id="greenScreenHint" style="display:none;">Restart required. Window becomes resizable with chroma-key green background.</div>
 
-      <div class="settings-group-label">Connection</div>
-      <div class="settings-row"><span class="settings-label">SimHub URL</span><input class="settings-input" id="settingsSimhubUrl" type="text" value="http://localhost:8889/k10mediabroadcaster/" onchange="updateSimhubUrl(this.value)"/></div>
     </div>
 
     <button class="settings-close" onclick="toggleSettings()">Close Settings</button>
@@ -4654,6 +4863,9 @@
         if (window.k10?.requestInteractive) window.k10.requestInteractive();
       }
     }
+
+    // Also refresh the Connections tab SimHub card in real-time
+    if (typeof updateSimhubConnectionCard === 'function') updateSimhubConnectionCard();
   }
 
   function applyConnBanner() {
@@ -5647,7 +5859,8 @@
     greenScreen: false, showWebGL: true,
     zoom: 165, forceFlag: '', showLeaderboard: true, showDatastream: true, showIncidents: true, showSpotter: true,
     incPenalty: 17, incDQ: 25, secLayout: 'stack', secOffsetX: 0, secOffsetY: 0,
-    secVOppose: true, secHOppose: true
+    secVOppose: true, secHOppose: true,
+    discordUser: null
   };
 
   let _settings = Object.assign({}, _defaultSettings);
@@ -5753,6 +5966,146 @@
     const tabName = tab.dataset.tab;
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.toggle('active', c.id === 'settingsTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)));
+    // Refresh connection status when switching to Connections tab
+    if (tabName === 'connections') updateConnectionsTab();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CONNECTIONS TAB — SimHub & Discord status
+  // ═══════════════════════════════════════════════════════════════
+
+  const DISCORD_GUILD_INVITE = 'https://discord.gg/k10mediabroadcaster';
+  let _discordUser = null;
+  let _discordConnecting = false;
+
+  function updateConnectionsTab() {
+    updateSimhubConnectionCard();
+    updateDiscordConnectionCard();
+  }
+
+  // ── SimHub connection card ──
+  function updateSimhubConnectionCard() {
+    const dot = document.getElementById('connSimhubDot');
+    const text = document.getElementById('connSimhubText');
+    const urlEl = document.getElementById('connSimhubUrl');
+    const urlInput = document.getElementById('settingsSimhubUrl');
+    const currentUrl = window._simhubUrlOverride || SIMHUB_URL;
+
+    if (urlEl) urlEl.textContent = currentUrl;
+    if (urlInput) urlInput.value = currentUrl;
+
+    // Derive state from the existing connection status
+    const connEl = document.getElementById('connStatus');
+    const state = connEl ? (connEl.classList.contains('connected') ? 'connected' :
+                            connEl.classList.contains('disconnected') ? 'disconnected' : 'connecting') : 'connecting';
+
+    if (dot) {
+      dot.className = 'conn-dot ' + (state === 'connected' ? 'green' : state === 'disconnected' ? 'red' : 'orange');
+    }
+    if (text) {
+      if (state === 'connected') text.innerHTML = '<strong>Connected</strong> — receiving telemetry';
+      else if (state === 'disconnected') text.innerHTML = '<strong>Disconnected</strong> — check SimHub is running';
+      else text.innerHTML = 'Connecting...';
+    }
+  }
+
+  // ── Discord connection card ──
+  function updateDiscordConnectionCard() {
+    const notConn = document.getElementById('discordNotConnected');
+    const conn = document.getElementById('discordConnected');
+    if (!notConn || !conn) return;
+
+    if (_discordUser) {
+      notConn.style.display = 'none';
+      conn.style.display = '';
+      const nameEl = document.getElementById('discordDisplayName');
+      const idEl = document.getElementById('discordUserId');
+      const avatarEl = document.getElementById('discordAvatar');
+      if (nameEl) nameEl.textContent = _discordUser.globalName || _discordUser.username;
+      if (idEl) idEl.textContent = _discordUser.id;
+      if (avatarEl && _discordUser.avatar) {
+        avatarEl.src = `https://cdn.discordapp.com/avatars/${_discordUser.id}/${_discordUser.avatar}.png?size=64`;
+        avatarEl.alt = _discordUser.globalName || _discordUser.username;
+      }
+    } else {
+      notConn.style.display = '';
+      conn.style.display = 'none';
+    }
+  }
+
+  async function connectDiscord() {
+    if (_discordConnecting) return;
+    if (!window.k10 || !window.k10.discordConnect) {
+      // Fallback: open invite link directly in browser
+      openDiscordInvite();
+      return;
+    }
+
+    _discordConnecting = true;
+    const btn = document.getElementById('discordConnectBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
+
+    try {
+      const result = await window.k10.discordConnect();
+      if (result && result.success && result.user) {
+        _discordUser = result.user;
+        _settings.discordUser = result.user;
+        saveSettings();
+        updateDiscordConnectionCard();
+      } else {
+        const errMsg = result?.error || 'Connection failed';
+        console.warn('[K10] Discord connect failed:', errMsg);
+        const text = document.getElementById('connDiscordText');
+        if (text) text.innerHTML = '<strong style="color:hsl(0,75%,60%)">Failed</strong> — ' + errMsg;
+        // Reset after 3s
+        setTimeout(() => {
+          if (text) text.innerHTML = 'Not connected';
+        }, 3000);
+      }
+    } catch (err) {
+      console.error('[K10] Discord connect error:', err);
+    } finally {
+      _discordConnecting = false;
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg> Connect Discord'; }
+    }
+  }
+
+  async function disconnectDiscord() {
+    if (window.k10 && window.k10.discordDisconnect) {
+      await window.k10.discordDisconnect();
+    }
+    _discordUser = null;
+    delete _settings.discordUser;
+    saveSettings();
+    updateDiscordConnectionCard();
+  }
+
+  function openDiscordInvite() {
+    if (window.k10 && window.k10.openExternal) {
+      window.k10.openExternal(DISCORD_GUILD_INVITE);
+    } else {
+      window.open(DISCORD_GUILD_INVITE, '_blank');
+    }
+  }
+
+  // Load Discord user on startup
+  async function initDiscordState() {
+    // Try loading from Electron's persisted file first
+    if (window.k10 && window.k10.getDiscordUser) {
+      try {
+        const user = await window.k10.getDiscordUser();
+        if (user && user.id) {
+          _discordUser = user;
+          updateDiscordConnectionCard();
+          return;
+        }
+      } catch (e) { /* ok */ }
+    }
+    // Fallback: check settings
+    if (_settings.discordUser && _settings.discordUser.id) {
+      _discordUser = _settings.discordUser;
+      updateDiscordConnectionCard();
+    }
   }
 
   function toggleSetting(el) {
@@ -6007,6 +6360,10 @@
     }
   }
 
+  function previewZoom(val) {
+    // Only update the label while dragging — don't apply zoom to avoid jarring the settings panel
+    document.getElementById('zoomVal').textContent = Math.max(100, Math.min(200, +val)) + '%';
+  }
   function updateZoom(val) {
     val = Math.max(100, Math.min(200, +val));
     _settings.zoom = val;
@@ -6026,8 +6383,6 @@
     if (inc) inc.style.zoom = scale;
     const rc = document.getElementById('rcBanner');
     if (rc) rc.style.zoom = scale;
-    const sp = document.getElementById('settingsOverlay');
-    if (sp) sp.style.zoom = scale;
   }
 
   function updateForceFlag(val) {
@@ -6097,6 +6452,7 @@
 
   // Load settings on startup
   loadSettings();
+  initDiscordState();
 
   // ═══════════════════════════════════════════════════════════════
   //  DATASTREAM RENDERER
