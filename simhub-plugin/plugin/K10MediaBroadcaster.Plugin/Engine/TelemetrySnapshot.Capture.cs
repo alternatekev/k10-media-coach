@@ -11,6 +11,25 @@ namespace K10MediaBroadcaster.Plugin.Engine
     /// </summary>
     public partial class TelemetrySnapshot
     {
+        // ── Game detection ───────────────────────────────────────────────────────
+        private enum GameId { Unknown, IRacing, ACC, AC, ACEvo, ACRally, LMU, RaceRoom, EAWRC, Forza }
+
+        private static GameId DetectGame(string gameName)
+        {
+            if (string.IsNullOrEmpty(gameName)) return GameId.Unknown;
+            var g = gameName.ToLowerInvariant();
+            if (g.Contains("iracing")) return GameId.IRacing;
+            if (g.Contains("assettocorsacompetizione") || g == "acc") return GameId.ACC;
+            if (g.Contains("assettocorsaevo")) return GameId.ACEvo;
+            if (g.Contains("assettocorsarally")) return GameId.ACRally;
+            if (g.Contains("assettocorsa") || g == "ac") return GameId.AC;
+            if (g.Contains("lemans") || g.Contains("lmu") || g.Contains("rfactor")) return GameId.LMU;
+            if (g.Contains("raceroom") || g == "rrre" || g == "r3e") return GameId.RaceRoom;
+            if (g.Contains("wrc") || g.Contains("eawrc")) return GameId.EAWRC;
+            if (g.Contains("forza")) return GameId.Forza;
+            return GameId.Unknown;
+        }
+
         // ── ERS detection: track whether the car has ever shown ERS activity ────
         private static string _ersDetectCarModel = "";
         private static bool   _sessionHasErs     = false;
@@ -176,22 +195,71 @@ namespace K10MediaBroadcaster.Plugin.Engine
             catch { }
 
             // ── World velocity (for track map dead reckoning) ─────────────────
-            s.VelocityX = GetRaw<float>(pm, "VelocityX");
-            s.VelocityZ = GetRaw<float>(pm, "VelocityZ");
-            s.Yaw       = GetRaw<float>(pm, "Yaw");
+            // iRacing: reads raw directly
+            // Other games: try normalized motion properties if available, else 0
+            GameId detectedGame = DetectGame(s.GameName);
+            if (detectedGame == GameId.IRacing)
+            {
+                s.VelocityX = GetRaw<float>(pm, "VelocityX");
+                s.VelocityZ = GetRaw<float>(pm, "VelocityZ");
+                s.Yaw       = GetRaw<float>(pm, "Yaw");
+            }
+            else
+            {
+                s.VelocityX = GetNorm<float>(d, "VelocityX");
+                s.VelocityZ = GetNorm<float>(d, "VelocityZ");
+                s.Yaw       = GetNorm<float>(d, "Yaw");
+            }
 
-            // ── iRacing-only ─────────────────────────────────────────────────
+            // ── Game-aware driver controls and telemetry ─────────────────────
+            // Steering angle: game-specific raw → iRacing radians, ACC degrees, LMU normalized
+            if (detectedGame == GameId.ACC || detectedGame == GameId.AC || detectedGame == GameId.ACEvo || detectedGame == GameId.ACRally)
+            {
+                // ACC/AC: convert degrees to radians
+                float steerDeg = GetRaw<float>(pm, "Physics.SteerAngle", "DataCorePlugin.GameRawData.");
+                s.SteeringWheelAngle = steerDeg * (float)Math.PI / 180f;
+            }
+            else if (detectedGame == GameId.LMU)
+            {
+                // LMU: mUnfilteredSteering is normalized -1 to 1, leave as ratio
+                s.SteeringWheelAngle = GetRaw<float>(pm, "Telemetry.mUnfilteredSteering", "DataCorePlugin.GameRawData.");
+            }
+            else
+            {
+                // iRacing and others: default to iRacing raw
+                s.SteeringWheelAngle = GetRaw<float>(pm, "SteeringWheelAngle");
+            }
+
+            // Brake bias: game-specific (percentage 0-100)
+            s.BrakeBias = GetGameBrakeBias(pm, detectedGame);
+
+            // Traction control & ABS settings
+            s.TractionControlSetting = GetGameTC(pm, detectedGame);
+            s.AbsSetting = GetGameABS(pm, detectedGame);
+
+            // Steering torque (iRacing-only)
             s.SteeringWheelTorque = GetRaw<float>(pm, "SteeringWheelTorque");
-            s.SteeringWheelAngle  = GetRaw<float>(pm, "SteeringWheelAngle");
-            s.FrameRate           = GetRaw<float>(pm, "FrameRate");
-            s.SessionFlags        = GetRaw<int>(pm, "SessionFlags");
-            s.IncidentCount       = GetRaw<int>(pm, "PlayerCarMyIncidentCount");
-            s.DrsStatus           = GetRaw<int>(pm, "DrsStatus");
-            s.ErsBattery          = GetRaw<float>(pm, "EnergyERSBattery");
-            s.MgukPower           = GetRaw<float>(pm, "PowerMGUK");
-            s.PitLimiterOn        = GetRaw<bool>(pm, "dcPitSpeedLimiterToggle");
-            double pitLimitMs     = GetRaw<float>(pm, "PitSpeedLimit");
-            s.PitSpeedLimitKmh    = pitLimitMs > 0 ? pitLimitMs * 3.6 : 0;
+
+            // Frame rate (iRacing-only)
+            s.FrameRate = GetRaw<float>(pm, "FrameRate");
+
+            // Session flags: game-aware
+            s.SessionFlags = GetGameSessionFlags(pm, detectedGame);
+
+            // Incident count
+            s.IncidentCount = GetGameIncidentCount(pm, detectedGame);
+
+            // DRS status (iRacing-only)
+            s.DrsStatus = GetRaw<int>(pm, "DrsStatus");
+
+            // ERS / Hybrid energy (game-aware)
+            s.ErsBattery = GetGameErsBattery(pm, detectedGame);
+            s.MgukPower = GetRaw<float>(pm, "PowerMGUK"); // MGUK is iRacing-specific
+
+            // Pit limiter (game-aware)
+            s.PitLimiterOn = GetGamePitLimiter(pm, detectedGame);
+            double pitLimitMs = GetRaw<float>(pm, "PitSpeedLimit");
+            s.PitSpeedLimitKmh = pitLimitMs > 0 ? pitLimitMs * 3.6 : 0;
 
             // Track whether this car actually has an ERS system.
             // Non-hybrid cars report 0.0 permanently; reset detection on car change.
@@ -203,10 +271,22 @@ namespace K10MediaBroadcaster.Plugin.Engine
             if (s.ErsBattery > 0.02 || s.MgukPower > 0.0)
                 _sessionHasErs = true;
             s.HasErs = _sessionHasErs;
-            s.PlayerCarIdx        = GetRaw<int>(pm, "PlayerCarIdx");
-            s.CarIdxLapDistPct    = GetRawArray<float>(pm, "CarIdxLapDistPct");
-            s.CarIdxOnPitRoad     = GetRawArray<bool>(pm, "CarIdxOnPitRoad");
-            s.CarIdxLapCompleted  = GetRawArray<int>(pm, "CarIdxLapCompleted");
+
+            // Player car index and multi-car arrays (iRacing-only)
+            if (detectedGame == GameId.IRacing)
+            {
+                s.PlayerCarIdx = GetRaw<int>(pm, "PlayerCarIdx");
+                s.CarIdxLapDistPct = GetRawArray<float>(pm, "CarIdxLapDistPct");
+                s.CarIdxOnPitRoad = GetRawArray<bool>(pm, "CarIdxOnPitRoad");
+                s.CarIdxLapCompleted = GetRawArray<int>(pm, "CarIdxLapCompleted");
+            }
+            else
+            {
+                s.PlayerCarIdx = 0;
+                s.CarIdxLapDistPct = new float[0];
+                s.CarIdxOnPitRoad = new bool[0];
+                s.CarIdxLapCompleted = new int[0];
+            }
 
             // ── iRating / Safety Rating ─────────────────────────────────────
             // Primary: IRacingExtraProperties plugin properties
@@ -276,23 +356,161 @@ namespace K10MediaBroadcaster.Plugin.Engine
 
             // ── In-car adjustments (driver controls) ────────────────────────
             // iRacing raw telemetry: dc* = driver control values
-            s.BrakeBias              = GetRaw<float>(pm, "dcBrakeBias");
-            s.TractionControlSetting = GetRaw<float>(pm, "dcTractionControl");
-            s.AbsSetting             = GetRaw<float>(pm, "dcABS");
+            // Note: BrakeBias, TractionControlSetting, and AbsSetting are already set above
+            // with game-aware logic, so we only set the ARB values here (iRacing-only)
             s.ArbFront               = GetRaw<float>(pm, "dcAntiRollFront");
             s.ArbRear                = GetRaw<float>(pm, "dcAntiRollRear");
 
             return s;
         }
 
+        // ── Game-specific raw data helpers ──────────────────────────────────────
+        private static float GetGameBrakeBias(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                case GameId.AC:
+                case GameId.ACEvo:
+                case GameId.ACRally:
+                    return GetRaw<float>(pm, "Physics.BrakeBias", "DataCorePlugin.GameRawData.") * 100f;
+                case GameId.LMU:
+                    float rearBias = GetRaw<float>(pm, "Telemetry.mRearBrakeBias", "DataCorePlugin.GameRawData.");
+                    return (1f - rearBias) * 100f; // convert rear bias to front bias for display
+                case GameId.RaceRoom:
+                    return GetRaw<float>(pm, "BrakeBias", "DataCorePlugin.GameRawData.") * 100f;
+                case GameId.IRacing:
+                default:
+                    return GetRaw<float>(pm, "dcBrakeBias");
+            }
+        }
+
+        private static float GetGameTC(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                case GameId.AC:
+                case GameId.ACEvo:
+                case GameId.ACRally:
+                    return GetRaw<float>(pm, "Graphics.TC", "DataCorePlugin.GameRawData.");
+                case GameId.LMU:
+                    return GetRaw<float>(pm, "Telemetry.mTractionControl", "DataCorePlugin.GameRawData.");
+                case GameId.RaceRoom:
+                    return GetRaw<float>(pm, "TractionControl", "DataCorePlugin.GameRawData.");
+                case GameId.IRacing:
+                default:
+                    return GetRaw<float>(pm, "dcTractionControl");
+            }
+        }
+
+        private static float GetGameABS(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                case GameId.AC:
+                case GameId.ACEvo:
+                case GameId.ACRally:
+                    return GetRaw<float>(pm, "Graphics.ABS", "DataCorePlugin.GameRawData.");
+                case GameId.RaceRoom:
+                    return GetRaw<float>(pm, "ABS", "DataCorePlugin.GameRawData.");
+                case GameId.IRacing:
+                default:
+                    return GetRaw<float>(pm, "dcABS");
+            }
+        }
+
+        private static int GetGameSessionFlags(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                case GameId.AC:
+                case GameId.ACEvo:
+                case GameId.ACRally:
+                    // Map ACC flags to iRacing bitmask
+                    int accFlag = GetRaw<int>(pm, "Graphics.Flag", "DataCorePlugin.GameRawData.");
+                    // ACC_FLAG_TYPE: 0=none, 1=blue, 2=yellow, 3=black, 4=white, 5=checkered, 6=penalty
+                    int irMask = 0;
+                    if (accFlag == 2) irMask |= 0x02; // yellow
+                    if (accFlag == 1) irMask |= 0x04; // blue
+                    if (accFlag == 3) irMask |= 0x08; // black
+                    if (accFlag == 5) irMask |= 0x01; // checkered
+                    return irMask;
+                case GameId.RaceRoom:
+                    int r3eMask = 0;
+                    if (GetRaw<bool>(pm, "Flags.Yellow", "DataCorePlugin.GameRawData.")) r3eMask |= 0x02;
+                    if (GetRaw<bool>(pm, "Flags.Blue", "DataCorePlugin.GameRawData.")) r3eMask |= 0x04;
+                    if (GetRaw<bool>(pm, "Flags.Black", "DataCorePlugin.GameRawData.")) r3eMask |= 0x08;
+                    return r3eMask;
+                case GameId.IRacing:
+                default:
+                    return GetRaw<int>(pm, "SessionFlags");
+            }
+        }
+
+        private static int GetGameIncidentCount(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                    // ACC doesn't expose incident count directly; use penalties as proxy
+                    return GetRaw<int>(pm, "Graphics.Penalties", "DataCorePlugin.GameRawData.");
+                case GameId.IRacing:
+                default:
+                    return GetRaw<int>(pm, "PlayerCarMyIncidentCount");
+            }
+        }
+
+        private static float GetGameErsBattery(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                    return GetRaw<float>(pm, "Physics.KersCharge", "DataCorePlugin.GameRawData.");
+                case GameId.LMU:
+                    return GetRaw<float>(pm, "Telemetry.mBatteryChargeFraction", "DataCorePlugin.GameRawData.");
+                case GameId.IRacing:
+                default:
+                    return GetRaw<float>(pm, "EnergyERSBattery");
+            }
+        }
+
+        private static bool GetGamePitLimiter(PluginManager pm, GameId game)
+        {
+            switch (game)
+            {
+                case GameId.ACC:
+                case GameId.AC:
+                case GameId.ACEvo:
+                case GameId.ACRally:
+                    return GetRaw<bool>(pm, "Physics.PitLimiterOn", "DataCorePlugin.GameRawData.");
+                case GameId.LMU:
+                    return GetRaw<bool>(pm, "Telemetry.mSpeedLimiter", "DataCorePlugin.GameRawData.");
+                case GameId.IRacing:
+                default:
+                    return GetRaw<bool>(pm, "dcPitSpeedLimiterToggle");
+            }
+        }
+
         private static T Coalesce<T>(T primary, T fallback) where T : IComparable<T>
             => primary.CompareTo(default(T)) != 0 ? primary : fallback;
 
-        private static T GetRaw<T>(PluginManager pm, string name)
+        private static T GetRaw<T>(PluginManager pm, string name, string prefix = null)
         {
             try
             {
-                var val = pm.GetPropertyValue("DataCorePlugin.GameRawData.Telemetry." + name);
+                string fullPath;
+                if (prefix != null)
+                {
+                    fullPath = prefix + name;
+                }
+                else
+                {
+                    fullPath = "DataCorePlugin.GameRawData.Telemetry." + name;
+                }
+                var val = pm.GetPropertyValue(fullPath);
                 if (val is T typed) return typed;
                 if (val is IConvertible) return (T)Convert.ChangeType(val, typeof(T));
             }

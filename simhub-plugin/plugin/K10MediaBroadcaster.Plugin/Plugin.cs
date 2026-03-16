@@ -794,6 +794,7 @@ namespace K10MediaBroadcaster.Plugin
 
                     // ── Game data (live telemetry from snapshot) ──
                     Jp(sb, "DataCorePlugin.GameRunning", s.GameRunning ? 1 : 0);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.GameId", Escape(s.GameName ?? ""));
                     Jp(sb, "DataCorePlugin.GameData.Gear", Escape(s.Gear ?? "N"));
                     Jp(sb, "DataCorePlugin.GameData.Rpms", s.Rpms, ic);
                     Jp(sb, "DataCorePlugin.GameData.CarSettings_MaxRPM", 8000.0, ic); // fallback; snapshot doesn't carry maxRPM
