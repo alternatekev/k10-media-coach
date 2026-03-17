@@ -255,3 +255,32 @@
   padding: 4px 0;
   line-height: 1.4;
 }
+
+.keyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid hsla(0,0%,100%,0.05);
+  font-size: 11px;
+}
+
+.keyRow:last-child {
+  border-bottom: none;
+}
+
+.keyRow kbd {
+  background: hsla(0,0%,100%,0.08);
+  border: 1px solid hsla(0,0%,100%,0.15);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: var(--ff);
+  font-size: 9px;
+  margin: 0 2px;
+}
+
+.keyDesc {
+  color: hsla(0,0%,100%,0.6);
+  flex: 1;
+  text-align: right;
+}

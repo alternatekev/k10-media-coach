@@ -3,7 +3,7 @@ import { useSettings } from '@hooks/useSettings';
 import type { LayoutPosition, SecondaryLayout } from '../../types/settings';
 import styles from './SettingsPanel.module.css';
 
-type TabType = 'sections' | 'layout' | 'system';
+type TabType = 'sections' | 'layout' | 'connections' | 'keys' | 'system';
 
 /**
  * SettingsPanel: Overlay settings UI
@@ -101,6 +101,24 @@ export function SettingsPanel() {
             Layout
           </button>
           <button
+            className={`${styles.tab} ${activeTab === 'connections' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('connections')}
+            role="tab"
+            aria-selected={activeTab === 'connections'}
+            aria-controls="connections-panel"
+          >
+            Connections
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'keys' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('keys')}
+            role="tab"
+            aria-selected={activeTab === 'keys'}
+            aria-controls="keys-panel"
+          >
+            Keys
+          </button>
+          <button
             className={`${styles.tab} ${activeTab === 'system' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('system')}
             role="tab"
@@ -145,6 +163,28 @@ export function SettingsPanel() {
               />
             </div>
           ))}
+
+          <div className={styles.groupLabel}>Effects</div>
+          <div className={styles.row}>
+            <span className={styles.label}>Spotter</span>
+            <button
+              className={`${styles.toggle} ${settings.showSpotter ? styles.toggleOn : ''}`}
+              onClick={() => handleToggle('showSpotter')}
+              role="switch"
+              aria-checked={settings.showSpotter}
+              aria-label="Toggle Spotter"
+            />
+          </div>
+          <div className={styles.row}>
+            <span className={styles.label}>Pit Limiter Animation</span>
+            <button
+              className={`${styles.toggle} ${settings.showBonkers ? styles.toggleOn : ''}`}
+              onClick={() => handleToggle('showBonkers')}
+              role="switch"
+              aria-checked={settings.showBonkers}
+              aria-label="Toggle Pit Limiter Animation"
+            />
+          </div>
         </div>
 
         {/* Layout Tab */}
@@ -197,6 +237,18 @@ export function SettingsPanel() {
               role="switch"
               aria-checked={settings.verticalSwap}
               aria-label="Toggle Vertical Swap"
+            />
+          </div>
+
+          <div className={styles.groupLabel}>Mode</div>
+          <div className={styles.row}>
+            <span className={styles.label}>Rally Mode</span>
+            <button
+              className={`${styles.toggle} ${settings.rallyMode ? styles.toggleOn : ''}`}
+              onClick={() => handleToggle('rallyMode')}
+              role="switch"
+              aria-checked={settings.rallyMode}
+              aria-label="Toggle Rally Mode"
             />
           </div>
 
@@ -268,6 +320,74 @@ export function SettingsPanel() {
           </div>
         </div>
 
+        {/* Connections Tab */}
+        <div
+          id="connections-panel"
+          className={`${styles.tabContent} ${activeTab === 'connections' ? styles.tabContentActive : ''}`}
+          role="tabpanel"
+        >
+          <div className={styles.groupLabel}>SimHub Plugin</div>
+          <div className={styles.row} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+            <span className={styles.label}>SimHub URL</span>
+            <input
+              type="text"
+              className={styles.input}
+              value={settings.simhubUrl}
+              onChange={(e) => handleTextInputChange('simhubUrl', e.target.value)}
+              placeholder="http://localhost:8889/k10mediabroadcaster/"
+              aria-label="SimHub URL"
+            />
+          </div>
+
+          <div className={styles.groupLabel}>Discord</div>
+          <div className={styles.hint}>
+            Discord integration coming soon
+          </div>
+        </div>
+
+        {/* Keys Tab */}
+        <div
+          id="keys-panel"
+          className={`${styles.tabContent} ${activeTab === 'keys' ? styles.tabContentActive : ''}`}
+          role="tabpanel"
+        >
+          <div className={styles.groupLabel}>Window</div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></span>
+            <span className={styles.keyDesc}>Open / Close Settings</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd></span>
+            <span className={styles.keyDesc}>Show / Hide Overlay</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></span>
+            <span className={styles.keyDesc}>Reset Window Position</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></span>
+            <span className={styles.keyDesc}>Toggle Green Screen</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd></span>
+            <span className={styles.keyDesc}>Quit Application</span>
+          </div>
+
+          <div className={styles.groupLabel}>Dashboard</div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd></span>
+            <span className={styles.keyDesc}>Reset Track Map</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd></span>
+            <span className={styles.keyDesc}>Restart Demo</span>
+          </div>
+          <div className={styles.keyRow}>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd></span>
+            <span className={styles.keyDesc}>Toggle React / Original Dashboard</span>
+          </div>
+        </div>
+
         {/* System Tab */}
         <div
           id="system-panel"
@@ -300,19 +420,6 @@ export function SettingsPanel() {
               role="switch"
               aria-checked={settings.greenScreen}
               aria-label="Toggle Green Screen"
-            />
-          </div>
-
-          <div className={styles.groupLabel}>Connection</div>
-          <div className={styles.row} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-            <span className={styles.label}>SimHub URL</span>
-            <input
-              type="text"
-              className={styles.input}
-              value={settings.simhubUrl}
-              onChange={(e) => handleTextInputChange('simhubUrl', e.target.value)}
-              placeholder="http://localhost:8889/k10mediabroadcaster/"
-              aria-label="SimHub URL"
             />
           </div>
         </div>

@@ -72,11 +72,14 @@ namespace K10MediaBroadcaster.Plugin
         /// <summary>Track IDs bundled with the plugin (compiled into git).</summary>
         public List<string> GetBundledTrackIds() => _trackMap.GetBundledTrackIds();
 
-        /// <summary>Track IDs recorded locally but not yet in the bundled set.</summary>
+        /// <summary>Track IDs recorded locally but not yet in the trackmaps directory.</summary>
         public List<string> GetLocalOnlyTrackIds() => _trackMap.GetLocalOnlyTrackIds();
 
         /// <summary>Copy local-only track maps to a destination folder. Returns count copied.</summary>
         public int ExportLocalMapsTo(string destinationDir) => _trackMap.ExportLocalMapsTo(destinationDir);
+
+        /// <summary>Returns the list of directories searched for track map CSVs.</summary>
+        public List<string> GetTrackMapSearchPaths() => _trackMap.GetTrackMapSearchPaths();
 
         // ── IWPFSettingsV2 ────────────────────────────────────────────────────
 
@@ -117,9 +120,9 @@ namespace K10MediaBroadcaster.Plugin
             _engine.LoadFragments(fragmentsPath);
 
             // Initialise track map provider
-            // Detect SimHub install dir from our own assembly location (we're in SimHub\Plugins\)
-            string pluginDir = Path.GetDirectoryName(typeof(Plugin).Assembly.Location) ?? "";
-            string simhubDir = Path.GetDirectoryName(pluginDir) ?? "";
+            // The DLL is output directly into the SimHub root folder (not a Plugins\ subfolder),
+            // so the assembly's directory IS the SimHub directory.
+            string simhubDir = Path.GetDirectoryName(typeof(Plugin).Assembly.Location) ?? "";
             _trackMap.SetSimHubDirectory(simhubDir);
 
             // ── Register dashboard properties ─────────────────────────────────

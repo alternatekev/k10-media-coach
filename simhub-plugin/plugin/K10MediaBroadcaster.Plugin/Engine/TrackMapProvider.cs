@@ -625,51 +625,90 @@ namespace K10MediaBroadcaster.Plugin.Engine
             OpponentData = sb.ToString();
         }
 
-        // ── File I/O: Bundled track maps (k10-media-broadcaster-data/trackmaps/, git-committed) ─
+        // ── File I/O: Track maps directory (CSV files loaded directly at runtime) ────
 
         /// <summary>
-        /// Resolve the k10-media-broadcaster-data/trackmaps/ directory relative to the plugin DLL location.
-        /// This folder is copied alongside the DLL by the post-build target.
+        /// Resolve the trackmaps directory. Checks two locations in order:
+        ///   1. {SimHub}/k10-media-broadcaster-data/trackmaps/  (post-build copy location)
+        ///   2. {SimHub}/trackmaps/  (simple flat folder)
+        /// Returns the first one that exists, or the primary path if neither does.
         /// </summary>
-        private string GetBundledMapsDir()
+        private string GetTrackmapsDir()
         {
             if (string.IsNullOrEmpty(_simhubDir)) return "";
-            return Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps");
+
+            // Primary: nested under k10-media-broadcaster-data
+            string primary = Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps");
+            if (Directory.Exists(primary)) return primary;
+
+            // Fallback: flat trackmaps folder in SimHub root
+            string flat = Path.Combine(_simhubDir, "trackmaps");
+            if (Directory.Exists(flat)) return flat;
+
+            // Return the primary path (will be created on first save)
+            return primary;
         }
 
-        private string GetBundledMapPath(string trackId)
+        /// <summary>
+        /// Returns all directories that may contain track maps (for UI display).
+        /// </summary>
+        public List<string> GetTrackMapSearchPaths()
+        {
+            var paths = new List<string>();
+            if (string.IsNullOrEmpty(_simhubDir)) return paths;
+            paths.Add(Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps"));
+            paths.Add(Path.Combine(_simhubDir, "trackmaps"));
+            paths.Add(GetOwnCacheDir());
+            return paths;
+        }
+
+        private string GetTrackmapPath(string trackId)
         {
             string safe = trackId;
             foreach (char c in Path.GetInvalidFileNameChars())
                 safe = safe.Replace(c, '_');
-            return Path.Combine(GetBundledMapsDir(), safe + ".csv");
+            return Path.Combine(GetTrackmapsDir(), safe + ".csv");
         }
 
         /// <summary>
-        /// Try to load a track map from the bundled dataset folder.
-        /// Uses the same CSV format as the K10 cache (WorldX,WorldZ,LapDistPct).
+        /// Try to load a track map from the trackmaps directory.
+        /// Scans both the primary and flat locations. Uses CSV format (WorldX,WorldZ,LapDistPct).
         /// </summary>
         private bool TryLoadFromBundledMaps(string trackId)
         {
-            string dir = GetBundledMapsDir();
-            if (!Directory.Exists(dir)) return false;
+            if (string.IsNullOrEmpty(_simhubDir)) return false;
 
-            // Exact match first
-            string path = GetBundledMapPath(trackId);
-            if (File.Exists(path))
-                return TryLoadCsvMap(path);
-
-            // Fuzzy match: look for files containing the track ID
-            string tidLower = (trackId ?? "").ToLowerInvariant().Replace(" ", "");
-            if (string.IsNullOrEmpty(tidLower)) return false;
-
-            foreach (string file in Directory.GetFiles(dir, "*.csv"))
+            // Check both possible trackmaps directories
+            string[] dirs = new[]
             {
-                string name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant().Replace(" ", "");
-                if (name.Contains(tidLower) || tidLower.Contains(name))
+                Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps"),
+                Path.Combine(_simhubDir, "trackmaps"),
+            };
+
+            string tidLower = (trackId ?? "").ToLowerInvariant().Replace(" ", "");
+
+            foreach (string dir in dirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+
+                // Exact match first
+                string safe = trackId ?? "";
+                foreach (char c in Path.GetInvalidFileNameChars())
+                    safe = safe.Replace(c, '_');
+                string exactPath = Path.Combine(dir, safe + ".csv");
+                if (File.Exists(exactPath) && TryLoadCsvMap(exactPath))
+                    return true;
+
+                // Fuzzy match: look for files containing the track ID
+                if (string.IsNullOrEmpty(tidLower)) continue;
+                foreach (string file in Directory.GetFiles(dir, "*.csv"))
                 {
-                    if (TryLoadCsvMap(file))
-                        return true;
+                    string name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant().Replace(" ", "");
+                    if (name.Contains(tidLower) || tidLower.Contains(name))
+                    {
+                        if (TryLoadCsvMap(file))
+                            return true;
+                    }
                 }
             }
 
@@ -706,19 +745,17 @@ namespace K10MediaBroadcaster.Plugin.Engine
         }
 
         /// <summary>
-        /// Save a recorded track map to the bundled dataset folder so it can be committed to git.
-        /// This writes alongside the DLL into SimHub's k10-media-broadcaster-data/trackmaps/ folder.
-        /// The post-build ExportToRepo target copies it back to the repo on next build,
-        /// or it can be manually copied.
+        /// Save a recorded track map to the trackmaps directory as a CSV file.
+        /// These CSV files are loaded directly at runtime — no recompilation needed.
         /// </summary>
         private void SaveToBundledMaps(string trackId)
         {
             try
             {
-                string dir = GetBundledMapsDir();
+                string dir = GetTrackmapsDir();
                 if (string.IsNullOrEmpty(dir)) return;
                 Directory.CreateDirectory(dir);
-                string path = GetBundledMapPath(trackId);
+                string path = GetTrackmapPath(trackId);
 
                 var sb = new StringBuilder(_samples.Count * 40);
                 foreach (var s in _samples)
@@ -740,24 +777,38 @@ namespace K10MediaBroadcaster.Plugin.Engine
         }
 
         /// <summary>
-        /// Returns a list of all track IDs that have bundled maps (for diagnostics / UI).
+        /// Returns a list of all track IDs that have maps in the trackmaps directory.
         /// </summary>
         public List<string> GetBundledTrackIds()
         {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var ids = new List<string>();
-            string dir = GetBundledMapsDir();
-            if (!Directory.Exists(dir)) return ids;
 
-            foreach (string file in Directory.GetFiles(dir, "*.csv"))
-                ids.Add(Path.GetFileNameWithoutExtension(file));
+            // Scan all trackmaps directories
+            string[] dirs = string.IsNullOrEmpty(_simhubDir) ? new string[0] : new[]
+            {
+                Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps"),
+                Path.Combine(_simhubDir, "trackmaps"),
+            };
+
+            foreach (string dir in dirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (string file in Directory.GetFiles(dir, "*.csv"))
+                {
+                    string name = Path.GetFileNameWithoutExtension(file);
+                    if (seen.Add(name))
+                        ids.Add(name);
+                }
+            }
 
             ids.Sort(StringComparer.OrdinalIgnoreCase);
             return ids;
         }
 
         /// <summary>
-        /// Returns track IDs that exist in the local K10 cache but NOT in the bundled dataset.
-        /// These are tracks recorded locally that haven't been compiled into the plugin yet.
+        /// Returns track IDs that exist only in the local K10 cache (recorded during gameplay)
+        /// but not yet in the trackmaps directory.
         /// </summary>
         public List<string> GetLocalOnlyTrackIds()
         {
@@ -765,18 +816,24 @@ namespace K10MediaBroadcaster.Plugin.Engine
             string cacheDir = GetOwnCacheDir();
             if (!Directory.Exists(cacheDir)) return localOnly;
 
-            var bundled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            string bundledDir = GetBundledMapsDir();
-            if (Directory.Exists(bundledDir))
+            var inDir = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string[] dirs = string.IsNullOrEmpty(_simhubDir) ? new string[0] : new[]
             {
-                foreach (string file in Directory.GetFiles(bundledDir, "*.csv"))
-                    bundled.Add(Path.GetFileNameWithoutExtension(file));
+                Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps"),
+                Path.Combine(_simhubDir, "trackmaps"),
+            };
+
+            foreach (string dir in dirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (string file in Directory.GetFiles(dir, "*.csv"))
+                    inDir.Add(Path.GetFileNameWithoutExtension(file));
             }
 
             foreach (string file in Directory.GetFiles(cacheDir, "*.csv"))
             {
                 string name = Path.GetFileNameWithoutExtension(file);
-                if (!bundled.Contains(name))
+                if (!inDir.Contains(name))
                     localOnly.Add(name);
             }
 
@@ -785,7 +842,7 @@ namespace K10MediaBroadcaster.Plugin.Engine
         }
 
         /// <summary>
-        /// Copies all local-only track maps (not already bundled) to the specified directory.
+        /// Copies all local-only track maps (not already in trackmaps dir) to the specified directory.
         /// Returns the number of files copied.
         /// </summary>
         public int ExportLocalMapsTo(string destinationDir)
@@ -795,12 +852,18 @@ namespace K10MediaBroadcaster.Plugin.Engine
             string cacheDir = GetOwnCacheDir();
             if (!Directory.Exists(cacheDir)) return 0;
 
-            var bundled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            string bundledDir = GetBundledMapsDir();
-            if (Directory.Exists(bundledDir))
+            var inDir = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string[] dirs = string.IsNullOrEmpty(_simhubDir) ? new string[0] : new[]
             {
-                foreach (string file in Directory.GetFiles(bundledDir, "*.csv"))
-                    bundled.Add(Path.GetFileNameWithoutExtension(file));
+                Path.Combine(_simhubDir, "k10-media-broadcaster-data", "trackmaps"),
+                Path.Combine(_simhubDir, "trackmaps"),
+            };
+
+            foreach (string dir in dirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+                foreach (string file in Directory.GetFiles(dir, "*.csv"))
+                    inDir.Add(Path.GetFileNameWithoutExtension(file));
             }
 
             Directory.CreateDirectory(destinationDir);
@@ -809,7 +872,7 @@ namespace K10MediaBroadcaster.Plugin.Engine
             foreach (string file in Directory.GetFiles(cacheDir, "*.csv"))
             {
                 string name = Path.GetFileNameWithoutExtension(file);
-                if (bundled.Contains(name)) continue;
+                if (inDir.Contains(name)) continue;
 
                 string dest = Path.Combine(destinationDir, Path.GetFileName(file));
                 File.Copy(file, dest, true);

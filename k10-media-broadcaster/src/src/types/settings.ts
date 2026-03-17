@@ -37,6 +37,8 @@ export interface OverlaySettings {
   showDatastream: boolean;
   showIncidents: boolean;
   showWebGL: boolean;
+  showSpotter: boolean;
+  showBonkers: boolean;
 
   // ═══ Connection ═══
   simhubUrl: string;
@@ -88,6 +90,8 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   showDatastream: true,
   showIncidents: true,
   showWebGL: true,
+  showSpotter: true,
+  showBonkers: true,
 
   simhubUrl: 'http://localhost:8889/k10mediabroadcaster/',
 

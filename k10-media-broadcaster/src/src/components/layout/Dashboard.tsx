@@ -167,10 +167,12 @@ export default function Dashboard() {
       </div>
       <PitLimiterBanner />
       <RaceEndScreen />
-      <SpotterPanel
-        posClasses={secLayout.classes.spotter}
-        panelStyle={secLayout.panelStyle}
-      />
+      {settings.showSpotter !== false && (
+        <SpotterPanel
+          posClasses={secLayout.classes.spotter}
+          panelStyle={secLayout.panelStyle}
+        />
+      )}
       <GridModule />
       <SettingsPanel />
     </>

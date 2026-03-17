@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -119,15 +121,24 @@ namespace K10MediaBroadcaster.Plugin
         {
             try
             {
+                // Show the trackmaps folder path
+                var searchPaths = _plugin.GetTrackMapSearchPaths();
+                string activePath = "(not resolved)";
+                foreach (var p in searchPaths)
+                {
+                    if (Directory.Exists(p)) { activePath = p; break; }
+                }
+                TrackMapsDirLabel.Text = $"Folder: {activePath}";
+
                 var bundled = _plugin.GetBundledTrackIds();
                 BundledTracksList.Text = bundled.Count > 0
                     ? string.Join("\n", bundled) + $"\n\n({bundled.Count} track{(bundled.Count == 1 ? "" : "s")})"
-                    : "(none)";
+                    : "(none — add CSV files to the trackmaps folder)";
 
                 var local = _plugin.GetLocalOnlyTrackIds();
                 LocalTracksList.Text = local.Count > 0
                     ? string.Join("\n", local) + $"\n\n({local.Count} track{(local.Count == 1 ? "" : "s")})"
-                    : "(none — all local tracks are already compiled)";
+                    : "(none)";
 
                 ExportTracksBtn.IsEnabled = local.Count > 0;
             }
@@ -146,28 +157,66 @@ namespace K10MediaBroadcaster.Plugin
 
         private void ExportTracks_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new WinForms.FolderBrowserDialog
+            try
             {
-                Description = "Select the trackmaps folder in your repo (e.g. k10-media-broadcaster-data\\trackmaps)",
-                ShowNewFolderButton = true
-            };
+                // Copy recorded tracks directly to the trackmaps folder
+                var searchPaths = _plugin.GetTrackMapSearchPaths();
+                string destDir = null;
+                // Use the first existing trackmaps dir, or the primary path
+                foreach (var p in searchPaths)
+                {
+                    // Skip the cache dir (last entry) — we want to copy TO the trackmaps folder
+                    if (p.Contains("PluginsData")) continue;
+                    if (Directory.Exists(p)) { destDir = p; break; }
+                }
+                if (destDir == null && searchPaths.Count > 0) destDir = searchPaths[0];
 
-            if (dlg.ShowDialog() == WinForms.DialogResult.OK)
+                if (string.IsNullOrEmpty(destDir))
+                {
+                    ExportStatusLabel.Text = "Could not determine trackmaps folder.";
+                    return;
+                }
+
+                int count = _plugin.ExportLocalMapsTo(destDir);
+                ExportStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x6f, 0xcf, 0x6f));
+                ExportStatusLabel.Text = count > 0
+                    ? $"Copied {count} track map{(count == 1 ? "" : "s")} to {destDir}"
+                    : "No new tracks to copy.";
+                RefreshTrackLists();
+            }
+            catch (Exception ex)
             {
-                try
+                ExportStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0xcf, 0x6f, 0x6f));
+                ExportStatusLabel.Text = $"Export failed: {ex.Message}";
+            }
+        }
+
+        private void OpenTrackmapsFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var searchPaths = _plugin.GetTrackMapSearchPaths();
+                string openPath = null;
+                foreach (var p in searchPaths)
                 {
-                    int count = _plugin.ExportLocalMapsTo(dlg.SelectedPath);
-                    ExportStatusLabel.Text = count > 0
-                        ? $"Saved {count} track map{(count == 1 ? "" : "s")} to {dlg.SelectedPath}"
-                        : "No new tracks to export.";
-                    RefreshTrackLists();
+                    if (p.Contains("PluginsData")) continue;
+                    if (Directory.Exists(p)) { openPath = p; break; }
                 }
-                catch (Exception ex)
+                if (openPath == null && searchPaths.Count > 0)
                 {
-                    ExportStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(
-                        System.Windows.Media.Color.FromRgb(0xcf, 0x6f, 0x6f));
-                    ExportStatusLabel.Text = $"Export failed: {ex.Message}";
+                    openPath = searchPaths[0];
+                    Directory.CreateDirectory(openPath);
                 }
+                if (!string.IsNullOrEmpty(openPath))
+                    Process.Start("explorer.exe", openPath);
+            }
+            catch (Exception ex)
+            {
+                ExportStatusLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0xcf, 0x6f, 0x6f));
+                ExportStatusLabel.Text = $"Failed to open folder: {ex.Message}";
             }
         }
 
