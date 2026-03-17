@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './PitLimiterBanner.module.css';
 
 const DEFAULT_PIT_SPEED_LIMIT_KMH = 72; // ~45 mph
 
@@ -24,17 +23,27 @@ export default function PitLimiterBanner() {
   }, [telemetry.isInPitLane]);
 
   const isOverLimit = useMemo(() => {
-    return isVisible && telemetry.isInPitLane && !telemetry.pitLimiterOn;
-  }, [isVisible, telemetry.pitLimiterOn]);
+    return isVisible && speedMph > pitSpeedLimitMph;
+  }, [isVisible, speedMph, pitSpeedLimitMph]);
+
+  const bannerClasses = ['pit-banner'];
+  if (isVisible) {
+    bannerClasses.push('pit-active');
+  }
+  if (isOverLimit) {
+    bannerClasses.push('pit-warn');
+  }
 
   return (
-    <div className={`${styles['pit-banner']} ${isVisible ? styles['pit-visible'] : ''} ${isOverLimit ? styles['pit-flash'] : ''}`}>
-      <div className={styles['pit-inner']}>
-        <div className={styles['pit-icon']}>P</div>
-        <span className={styles['pit-label']}>Pit Limiter</span>
-        <span className={`${styles['pit-speed']} ${isOverLimit ? styles['pit-speed-over'] : ''}`}>
-          {speedMph.toFixed(0)} mph / {pitSpeedLimitMph.toFixed(0)} mph limit
-        </span>
+    <div className={bannerClasses.join(' ')} id="pitBanner">
+      <canvas className="pit-gl-canvas" id="pitGlCanvas"></canvas>
+      <div className="pit-inner">
+        <div className="pit-icon">P</div>
+        <div className="pit-label">Pit Limiter</div>
+        <div className="pit-speed">{speedMph.toFixed(0)} mph</div>
+        <div className="pit-limit" style={{ fontSize: '11px', fontWeight: '600', color: 'hsla(0,0%,100%,0.45)', marginLeft: '4px' }}>
+          Limit: {pitSpeedLimitMph.toFixed(0)} mph
+        </div>
       </div>
     </div>
   );

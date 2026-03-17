@@ -19,10 +19,10 @@ export default defineConfig({
     outDir: path.resolve(__dirname, '../K10 Media Broadcaster'),
     emptyOutDir: false,
     rollupOptions: {
-      input: path.resolve(__dirname, 'dashboard.html'),
+      input: path.resolve(__dirname, 'dashboard-react.html'),
       output: {
-        entryFileNames: 'dashboard.js',
-        assetFileNames: 'dashboard.[ext]',
+        entryFileNames: 'dashboard-react.js',
+        assetFileNames: 'dashboard-react.[ext]',
       },
     },
   },

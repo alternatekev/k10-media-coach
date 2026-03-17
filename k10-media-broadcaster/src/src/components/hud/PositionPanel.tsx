@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { fmtLap } from '@lib/formatters';
-import styles from './PositionPanel.module.css';
 
 export default function PositionPanel() {
   const { telemetry } = useTelemetry();
@@ -32,56 +31,54 @@ export default function PositionPanel() {
   const posIndicatorColor = posDelta > 0 ? 'var(--red)' : posDelta < 0 ? 'var(--green)' : 'var(--text-dim)';
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.cycleSizer}>
-        <div className={styles.posLayout}>
-          <div className={styles.posNumber}>
-            <span className={styles.skewAccent}>P{telemetry.position}</span>
-            <div className={styles.posDelta} style={{ color: posIndicatorColor }}>
+    <div className="panel cycle-container rating-pos-block" id="cycleRatingPos">
+      <div className="cycle-sizer">
+        <div className="pos-layout">
+          <div className="pos-number">
+            <span className="skew-accent">P—</span>
+            <div className="pos-delta" style={{ color: posIndicatorColor }}>
               {posIndicator}
             </div>
           </div>
-          <div className={styles.posMeta}>
-            <div className={styles.posMetaRow}>
-              Lap <span className={styles.val}>{telemetry.currentLap}</span>
+          <div className="pos-meta">
+            <div className="pos-meta-row">
+              Lap <span className="val">{telemetry.currentLap > 0 ? telemetry.currentLap : '—'}</span>
             </div>
-            <div className={`${styles.posMetaRow} ${styles.bestRow}`}>
-              <span className={`${styles.val} ${styles.purple}`}>
-                {fmtLap(telemetry.bestLapTime)}
-              </span>
+            <div className="pos-meta-row best-row">
+              <span className="val purple">{fmtLap(telemetry.bestLapTime)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Page A: Rating */}
-      <div className={`${styles.cyclePage} ${activePage === 'rating' ? styles.active : styles.inactive}`}>
-        <div className={styles.ratingRow}>
-          <div className={styles.ratingItem}>
-            <div className={styles.panelLabel}>iRating</div>
-            <div className={styles.ratingValue}>{telemetry.iRating}</div>
-            <div className={styles.ratingDelta}>—</div>
-            <div className={styles.irBarContainer}>
-              <div className={styles.irBarTrack}>
+      <div className={`cycle-page ${activePage === 'rating' ? 'active' : 'inactive'}`} id="ratingPage">
+        <div className="rating-row">
+          <div className="rating-item">
+            <div className="panel-label">iRating</div>
+            <div className="rating-value">{telemetry.iRating > 0 ? telemetry.iRating : '—'}</div>
+            <div className="rating-delta">—</div>
+            <div className="ir-bar-container">
+              <div className="ir-bar-track">
                 <div
-                  className={styles.irBarFill}
+                  className="ir-bar-fill"
                   style={{ width: `${iRatingPercent}%` }}
                 />
-                <div className={styles.irBarTicks}>
-                  <div className={styles.irBarTick} style={{ left: '20%' }} />
-                  <div className={styles.irBarTickLabel} style={{ left: '20%' }}>
+                <div className="ir-bar-ticks">
+                  <div className="ir-bar-tick" style={{ left: '20%' }} />
+                  <div className="ir-bar-tick-label" style={{ left: '20%' }}>
                     1k
                   </div>
-                  <div className={styles.irBarTick} style={{ left: '40%' }} />
-                  <div className={styles.irBarTickLabel} style={{ left: '40%' }}>
+                  <div className="ir-bar-tick" style={{ left: '40%' }} />
+                  <div className="ir-bar-tick-label" style={{ left: '40%' }}>
                     2k
                   </div>
-                  <div className={styles.irBarTick} style={{ left: '60%' }} />
-                  <div className={styles.irBarTickLabel} style={{ left: '60%' }}>
+                  <div className="ir-bar-tick" style={{ left: '60%' }} />
+                  <div className="ir-bar-tick-label" style={{ left: '60%' }}>
                     3k
                   </div>
-                  <div className={styles.irBarTick} style={{ left: '80%' }} />
-                  <div className={styles.irBarTickLabel} style={{ left: '80%' }}>
+                  <div className="ir-bar-tick" style={{ left: '80%' }} />
+                  <div className="ir-bar-tick-label" style={{ left: '80%' }}>
                     4k
                   </div>
                 </div>
@@ -89,17 +86,17 @@ export default function PositionPanel() {
             </div>
           </div>
 
-          <div className={styles.ratingItem}>
-            <div className={styles.panelLabel}>Safety</div>
-            <div className={styles.ratingValue} style={{ fontSize: '14px' }}>
-              {telemetry.safetyRating.toFixed(2)}
+          <div className="rating-item">
+            <div className="panel-label">Safety</div>
+            <div className="rating-value" style={{ fontSize: '14px' }}>
+              {telemetry.safetyRating > 0 ? telemetry.safetyRating.toFixed(2) : '—'}
             </div>
-            <div className={styles.ratingDelta}>—</div>
-            <div className={styles.srPieContainer}>
-              <svg className={styles.srPieSvg} viewBox="0 0 40 40">
-                <circle className={styles.srPieBg} cx="20" cy="20" r="15" />
+            <div className="rating-delta">—</div>
+            <div className="sr-pie-container">
+              <svg className="sr-pie-svg" viewBox="0 0 40 40">
+                <circle className="sr-pie-bg" cx="20" cy="20" r="15" />
                 <circle
-                  className={styles.srPieFill}
+                  className="sr-pie-fill"
                   cx="20"
                   cy="20"
                   r="15"
@@ -114,35 +111,33 @@ export default function PositionPanel() {
       </div>
 
       {/* Page B: Position */}
-      <div className={`${styles.cyclePage} ${activePage === 'position' ? styles.active : styles.inactive}`}>
-        <div className={styles.posLayout}>
-          <div className={styles.posNumber}>
-            <span className={styles.skewAccent}>P{telemetry.position}</span>
-            <div className={styles.posDelta} style={{ color: posIndicatorColor }}>
+      <div className={`cycle-page ${activePage === 'position' ? 'active' : 'inactive'}`} id="positionPage">
+        <div className="pos-layout">
+          <div className="pos-number">
+            <span className="skew-accent">P—</span>
+            <div className="pos-delta" style={{ color: posIndicatorColor }}>
               {posIndicator}
             </div>
           </div>
-          <div className={styles.posMeta}>
-            <div className={styles.posMetaRow}>
-              Lap <span className={styles.val}>{telemetry.currentLap}</span>
+          <div className="pos-meta">
+            <div className="pos-meta-row">
+              Lap <span className="val">{telemetry.currentLap > 0 ? telemetry.currentLap : '—'}</span>
             </div>
-            <div className={`${styles.posMetaRow} ${styles.bestRow}`}>
-              <span className={`${styles.val} ${styles.purple}`}>
-                {fmtLap(telemetry.bestLapTime)}
-              </span>
+            <div className="pos-meta-row best-row">
+              <span className="val purple">{fmtLap(telemetry.bestLapTime)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Cycle dots */}
-      <div className={styles.cycleDots}>
+      <div className="cycle-dots">
         <div
-          className={`${styles.cycleDot} ${activePage === 'rating' ? styles.active : ''}`}
+          className={`cycle-dot ${activePage === 'rating' ? 'active' : ''}`}
           onClick={() => setActivePage('rating')}
         />
         <div
-          className={`${styles.cycleDot} ${activePage === 'position' ? styles.active : ''}`}
+          className={`cycle-dot ${activePage === 'position' ? 'active' : ''}`}
           onClick={() => setActivePage('position')}
         />
       </div>

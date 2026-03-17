@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './FuelPanel.module.css';
 
 /**
  * Fuel Panel HUD Component
@@ -36,36 +35,36 @@ export function FuelPanel() {
   }, [estimatedLaps, telemetry.fuelRemainingLaps]);
 
   return (
-    <div className={styles['fuel-block']}>
-      <div className={styles['panel-label']}>Fuel</div>
+    <div className="panel fuel-block">
+      <div className="panel-label">Fuel</div>
 
-      <div className={styles['fuel-remaining']}>
+      <div className="fuel-remaining">
         {telemetry.fuelLiters > 0 ? telemetry.fuelLiters.toFixed(1) : '—'}
-        <span className={styles['unit']}>L</span>
+        <span className="unit">L</span>
       </div>
 
-      <div className={styles['fuel-bar-outer']}>
+      <div className="fuel-bar-outer">
         <div
-          className={`${styles['fuel-bar-inner']} ${styles[barState]}`}
+          className={`fuel-bar-inner ${barState}`}
           style={{ width: `${fuelPercent}%` }}
         />
       </div>
 
-      <div className={styles['fuel-stats']}>
+      <div className="fuel-stats">
         <span>
-          Avg <span className={styles['val']}>
+          Avg <span className="val">
             {telemetry.fuelPerLap > 0 ? telemetry.fuelPerLap.toFixed(2) : '—'}
           </span> L/lap
         </span>
         <span>
-          Est <span className={styles['val']}>
+          Est <span className="val">
             {estimatedLaps > 0 ? estimatedLaps : '—'}
           </span> laps
         </span>
       </div>
 
       {showPitSuggestion && (
-        <div className={styles['fuel-pit-suggest']}>
+        <div className="fuel-pit-suggest">
           PIT FOR FUEL
         </div>
       )}

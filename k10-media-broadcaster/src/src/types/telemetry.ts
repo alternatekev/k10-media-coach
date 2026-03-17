@@ -220,6 +220,7 @@ export interface ParsedTelemetry {
 
   // Brake / TC / ABS
   brakeBias: number;
+  tractionControl: number;
   tc: number;
   abs: number;
 
@@ -300,6 +301,9 @@ export interface ParsedTelemetry {
   startType: string;
   lightsPhase: number;
   trackCountry: string;
+
+  // Grid countdown
+  gridCountdown: number;
 
   // Demo mode flag
   demoMode: boolean;

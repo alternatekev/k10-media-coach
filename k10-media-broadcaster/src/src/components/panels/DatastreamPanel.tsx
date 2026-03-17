@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './DatastreamPanel.module.css';
 
 /**
  * Track the last 40 G-force samples for drawing trails
@@ -108,49 +107,19 @@ function GForceDiamond({
     ctx.fillText(`${totalG.toFixed(1)}G`, centerX, 2);
   }, [latG, longG, samples, peakG]);
 
-  return <canvas ref={canvasRef} width={64} height={64} className={styles.dsGforceCanvas} />;
+  return <canvas ref={canvasRef} width={128} height={128} id="dsGforceCanvas" />;
 }
 
-/**
- * Yaw rate bar: centered bar that extends left or right
- */
-function YawRateBar({ yawRate }: { yawRate: number }) {
-  const percent = Math.max(-100, Math.min(100, yawRate * 10)); // Scale and clamp
-
-  return (
-    <div className={styles.dsBar}>
-      <div className={styles.dsBarCenter} />
-      {percent < 0 ? (
-        <div
-          className={styles.dsBarFill}
-          style={{
-            left: '50%',
-            width: `${Math.abs(percent)}%`,
-            background: 'linear-gradient(to left, rgba(0, 255, 0, 0.4), rgba(0, 255, 0, 0))',
-          }}
-        />
-      ) : (
-        <div
-          className={styles.dsBarFill}
-          style={{
-            left: '50%',
-            width: `${percent}%`,
-            background: 'linear-gradient(to right, rgba(0, 255, 0, 0.4), rgba(0, 255, 0, 0))',
-          }}
-        />
-      )}
-    </div>
-  );
+interface DatastreamPanelProps {
+  posClasses?: string;
+  panelStyle?: React.CSSProperties;
 }
 
-export default function DatastreamPanel() {
+export default function DatastreamPanel({ posClasses, panelStyle }: DatastreamPanelProps) {
   const { telemetry } = useTelemetry();
 
   const [gforceSamples, setGforceSamples] = useState<GForceSample[]>([]);
   const [peakG, setPeakG] = useState(0);
-  const [fpsMeter, setFpsMeter] = useState(0);
-  const lastFrameTimeRef = useRef(performance.now());
-  const fpsQueueRef = useRef<number[]>([]);
 
   // Update G-force samples
   useEffect(() => {
@@ -170,99 +139,63 @@ export default function DatastreamPanel() {
     setPeakG((prev) => Math.max(prev, totalG));
   }, [telemetry.latG, telemetry.longG]);
 
-  // FPS counter
-  useEffect(() => {
-    const now = performance.now();
-    const frameTime = now - lastFrameTimeRef.current;
-    lastFrameTimeRef.current = now;
-
-    if (frameTime > 0) {
-      const fps = 1000 / frameTime;
-      fpsQueueRef.current.push(fps);
-
-      // Keep rolling average of last 30 frames
-      if (fpsQueueRef.current.length > 30) {
-        fpsQueueRef.current.shift();
-      }
-
-      const avgFps = fpsQueueRef.current.reduce((a, b) => a + b, 0) / fpsQueueRef.current.length;
-      setFpsMeter(Math.round(avgFps));
-    }
-  }, []);
+  const deltaClass = telemetry.lapDelta < 0 ? 'ds-ahead' : telemetry.lapDelta > 0 ? 'ds-behind' : 'ds-neutral';
 
   return (
-    <div className={`${styles.datastreamPanel} ${styles.dsTopRight}`}>
-      <div className={styles.dsInner}>
-        {/* G-Force Section */}
-        <div className={styles.dsGforce}>
-          <GForceDiamond
-            latG={telemetry.latG}
-            longG={telemetry.longG}
-            samples={gforceSamples}
-            peakG={peakG}
-          />
-          <div className={styles.dsValues}>
-            <div className={styles.dsValueItem}>
-              <div className={styles.dsLabel}>Lat</div>
-              <div className={styles.dsValue}>{telemetry.latG.toFixed(2)}</div>
+    <div className={`datastream-panel ${posClasses || 'ds-bottom ds-left'}`} id="datastreamPanel" style={panelStyle}>
+      <div className="ds-inner">
+        <div className="ds-header">Datastream</div>
+        <div className="ds-gforce">
+          <div className="ds-gforce-diamond">
+            <GForceDiamond
+              latG={telemetry.latG}
+              longG={telemetry.longG}
+              samples={gforceSamples}
+              peakG={peakG}
+            />
+          </div>
+          <div className="ds-gforce-vals">
+            <div className="ds-row" style={{ border: 'none', padding: '0' }}>
+              <span className="ds-label">Lat</span>
+              <span className="ds-value" id="dsLatG">{telemetry.latG.toFixed(2)}g</span>
             </div>
-            <div className={styles.dsValueItem}>
-              <div className={styles.dsLabel}>Long</div>
-              <div className={styles.dsValue}>{telemetry.longG.toFixed(2)}</div>
+            <div className="ds-row" style={{ border: 'none', padding: '0' }}>
+              <span className="ds-label">Long</span>
+              <span className="ds-value" id="dsLongG">{telemetry.longG.toFixed(2)}g</span>
+            </div>
+            <div className="ds-row" style={{ border: 'none', padding: '0' }}>
+              <span className="ds-label">Peak</span>
+              <span className="ds-value" id="dsPeakG" style={{ color: 'var(--text-dim)' }}>{peakG.toFixed(2)}g</span>
             </div>
           </div>
         </div>
-
-        {/* Yaw Rate Section */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>Yaw Rate</div>
-          <YawRateBar yawRate={telemetry.yawRate} />
-          <div className={styles.dsValue}>{telemetry.yawRate.toFixed(1)}°/s</div>
+        <div className="ds-row">
+          <span className="ds-label">Yaw</span>
+          <span className="ds-value">{telemetry.yawRate.toFixed(2)} r/s</span>
         </div>
-
-        {/* Steer Torque */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>Steer Torque</div>
-          <div className={styles.dsValue}>{telemetry.steerTorque.toFixed(1)}Nm</div>
+        <div className="ds-yaw-bar">
+          <div className="ds-yaw-fill" style={{
+            width: `${Math.max(0, Math.min(100, 50 + telemetry.yawRate * 5))}%`
+          }}></div>
         </div>
-
-        {/* Lap Delta */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>Lap Delta</div>
-          <div className={`${styles.dsValue} ${
-            telemetry.lapDelta < 0 ? styles.dsNegative :
-            telemetry.lapDelta > 0 ? styles.dsPositive :
-            styles.dsNeutral
-          }`}>
-            {telemetry.lapDelta > 0 ? '+' : ''}{telemetry.lapDelta.toFixed(3)}s
-          </div>
+        <canvas className="ds-yaw-trail" width="200" height="28"></canvas>
+        <div className="ds-row">
+          <span className="ds-label">FFB</span>
+          <span className="ds-value">{telemetry.steerTorque.toFixed(1)} Nm</span>
         </div>
-
-        {/* Track Temp */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>Track Temp</div>
-          <div className={styles.dsValue}>{telemetry.trackTemp.toFixed(0)}°C</div>
+        <div className="ds-row">
+          <span className="ds-label">Delta</span>
+          <span className={`ds-value ${deltaClass}`} id="dsDelta">
+            {telemetry.lapDelta >= 0 ? '+' : ''}{telemetry.lapDelta.toFixed(3)}
+          </span>
         </div>
-
-        {/* ABS / TC Indicators */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>ABS</div>
-          <div className={`${styles.dsValue} ${telemetry.absActive ? styles.dsPositive : styles.dsNeutral}`}>
-            {telemetry.absActive ? 'ACTIVE' : 'OFF'}
-          </div>
+        <div className="ds-row">
+          <span className="ds-label">Track</span>
+          <span className="ds-value">{telemetry.trackTemp > 0 ? telemetry.trackTemp.toFixed(0) + '°C' : '—°C'}</span>
         </div>
-
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>TC</div>
-          <div className={`${styles.dsValue} ${telemetry.tcActive ? styles.dsPositive : styles.dsNeutral}`}>
-            {telemetry.tcActive ? 'ACTIVE' : 'OFF'}
-          </div>
-        </div>
-
-        {/* FPS Meter */}
-        <div className={styles.dsItem}>
-          <div className={styles.dsLabel}>FPS</div>
-          <div className={styles.dsValue}>{fpsMeter}</div>
+        <div className="ds-row">
+          <span className="ds-label">FPS</span>
+          <span className="ds-value" style={{ color: 'var(--text-dim)' }} id="dsFPS">—</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { fmtGap } from '@lib/formatters';
-import styles from './GapsPanel.module.css';
 
 export default function GapsPanel() {
   const { telemetry } = useTelemetry();
@@ -33,7 +32,7 @@ export default function GapsPanel() {
 
   // Determine flag state and styling
   const flagState = telemetry.flagState.toLowerCase();
-  const isFlagActive = flagState && flagState !== 'green' && flagState !== 'none';
+  const isFlagActive = flagState && flagState !== 'green' && flagState !== 'none' && flagState !== '';
 
   // Flag label and context based on flag type
   const getFlagDisplay = () => {
@@ -61,38 +60,43 @@ export default function GapsPanel() {
 
   const flagDisplay = getFlagDisplay();
 
+  // Build flag class name
+  const flagClassName = isFlagActive
+    ? `flag-${flagState}`
+    : '';
+
   return (
-    <div className={`${styles.panel} ${isFlagActive ? `${styles.flagActive} ${styles[`flag${flagState.charAt(0).toUpperCase() + flagState.slice(1)}`]}` : ''}`}>
-      <div className={`${styles.gapItem} ${flashAhead ? styles.flash : ''}`}>
-        <div className={styles.gapNormal}>
-          <div className={styles.panelLabel}>Ahead</div>
-          <div className={`${styles.gapTime} ${styles.ahead}`}>
+    <div className={`panel gaps-block ${flagClassName}`.trim()} id="gapsBlock">
+      <div className={`gap-item ${flashAhead ? 'flash' : ''}`.trim()}>
+        <div className="gap-normal">
+          <div className="panel-label">Ahead</div>
+          <div className="gap-time ahead">
             {fmtGap(telemetry.gapAhead) || '—'}
           </div>
-          <div className={styles.gapDriver}>{telemetry.driverAhead || '—'}</div>
-          <div className={styles.gapIr}>
+          <div className="gap-driver">{telemetry.driverAhead || '—'}</div>
+          <div className="gap-ir">
             {telemetry.irAhead > 0 ? `iR: ${telemetry.irAhead}` : ''}
           </div>
         </div>
       </div>
 
-      <div className={`${styles.gapItem} ${flashBehind ? styles.flash : ''}`}>
-        <div className={styles.gapNormal}>
-          <div className={styles.panelLabel}>Behind</div>
-          <div className={`${styles.gapTime} ${styles.behind}`}>
+      <div className={`gap-item ${flashBehind ? 'flash' : ''}`.trim()}>
+        <div className="gap-normal">
+          <div className="panel-label">Behind</div>
+          <div className="gap-time behind">
             {fmtGap(telemetry.gapBehind) || '—'}
           </div>
-          <div className={styles.gapDriver}>{telemetry.driverBehind || '—'}</div>
-          <div className={styles.gapIr}>
+          <div className="gap-driver">{telemetry.driverBehind || '—'}</div>
+          <div className="gap-ir">
             {telemetry.irBehind > 0 ? `iR: ${telemetry.irBehind}` : ''}
           </div>
         </div>
       </div>
 
-      {/* Flag overlay */}
-      <div className={styles.flagOverlay}>
-        <div className={styles.flagLabel}>{flagDisplay.label}</div>
-        <div className={styles.flagContext}>{flagDisplay.context}</div>
+      <canvas className="flag-gl gl-overlay" id="flagGlCanvas"></canvas>
+      <div className="flag-overlay" id="flagOverlay">
+        <div className="flag-label" id="flagLabel1">{flagDisplay.label}</div>
+        <div className="flag-context" id="flagCtx1">{flagDisplay.context}</div>
       </div>
     </div>
   );

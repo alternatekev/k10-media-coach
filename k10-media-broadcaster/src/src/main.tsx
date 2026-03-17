@@ -1,6 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+
+// Import original dashboard CSS files (global, not modules) to guarantee
+// pixel-perfect visual parity with dashboard.html
+import './styles/original/base.css'
+import './styles/original/dashboard.css'
+import './styles/original/leaderboard.css'
+import './styles/original/datastream.css'
+import './styles/original/effects.css'
+import './styles/original/settings.css'
+import './styles/original/connections.css'
+import './styles/original/rally.css'
+
+// React-specific overrides and keyframe animations
 import './styles/globals.css'
 
 // Error boundary for catching render errors

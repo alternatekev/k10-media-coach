@@ -1,13 +1,17 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { useSettings } from '@hooks/useSettings';
-import styles from './IncidentsPanel.module.css';
 
-export default function IncidentsPanel() {
+interface IncidentsPanelProps {
+  posClasses?: string;
+  panelStyle?: React.CSSProperties;
+}
+
+export default function IncidentsPanel({ posClasses, panelStyle }: IncidentsPanelProps) {
   const { telemetry } = useTelemetry();
   const { settings } = useSettings();
 
-  const [flashKey, setFlashKey] = useState<number>(0);
+  const [_flashKey, setFlashKey] = useState<number>(0);
   const [prevIncidents, setPrevIncidents] = useState<number>(0);
 
   // Trigger flash animation when incident count increments
@@ -18,71 +22,45 @@ export default function IncidentsPanel() {
     setPrevIncidents(telemetry.incidentCount);
   }, [telemetry.incidentCount, prevIncidents]);
 
-  // Determine incident level (0-5)
-  const incidentLevel = useMemo(() => {
-    const count = telemetry.incidentCount;
-    if (count === 0) return 0;
-    if (count <= 2) return 1;
-    if (count <= 4) return 2;
-    if (count <= 6) return 3;
-    if (count <= 9) return 4;
-    return 5;
-  }, [telemetry.incidentCount]);
+  // Calculate fill width
+  const fillWidth = useMemo(() => {
+    const dqLimit = settings.incidentDQLimit || 20;
+    return (telemetry.incidentCount / dqLimit * 100);
+  }, [telemetry.incidentCount, settings.incidentDQLimit]);
 
-  // Calculate thresholds
-  const remainingPenalty = useMemo(() => {
-    return Math.max(0, settings.incPenalty - telemetry.incidentCount);
-  }, [telemetry.incidentCount, settings.incPenalty]);
-
-  const remainingDQ = useMemo(() => {
-    return Math.max(0, settings.incDQ - telemetry.incidentCount);
-  }, [telemetry.incidentCount, settings.incDQ]);
-
-  // Determine threshold severity
-  const getPenaltyThreshClass = (remaining: number): string => {
-    if (remaining === 0) return styles['thresh-hit'] || '';
-    if (remaining <= 2) return styles['thresh-crit'] || '';
-    if (remaining <= 4) return styles['thresh-near'] || '';
-    return '';
-  };
-
-  const getDQThreshClass = (remaining: number): string => {
-    if (remaining === 0) return styles['thresh-hit'] || '';
-    if (remaining <= 2) return styles['thresh-crit'] || '';
-    if (remaining <= 4) return styles['thresh-near'] || '';
-    return '';
-  };
+  // Calculate marker positions
+  const penaltyMarkerPos = useMemo(() => {
+    const dqLimit = settings.incidentDQLimit || 20;
+    const penaltyLimit = settings.incidentPenaltyLimit || 10;
+    return (penaltyLimit / dqLimit * 100);
+  }, [settings.incidentDQLimit, settings.incidentPenaltyLimit]);
 
   return (
-    <div className={`${styles['incidents-panel']} ${styles[`inc-level-${incidentLevel}`]}`}>
-      <div className={`${styles['inc-count']} ${flashKey > 0 ? styles['inc-flash'] : ''}`} key={flashKey}>
-        {telemetry.incidentCount}
-      </div>
-
-      {remainingPenalty === 0 && (
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--red)', marginTop: '4px' }}>
-          PENALTY
+    <div className={`incidents-panel ${posClasses || 'inc-bottom inc-left'}`} id="incidentsPanel" style={panelStyle}>
+      <canvas className="inc-gl-canvas" id="incGlCanvas"></canvas>
+      <div className="inc-inner">
+        <div className="inc-label">Incidents</div>
+        <div className="inc-value-row">
+          <span className="inc-count">{telemetry.incidentCount}</span>
+          <span className="inc-x">x</span>
         </div>
-      )}
-
-      {remainingDQ === 0 && (
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--red)', marginTop: '4px' }}>
-          DQ
+        <div className="inc-progress">
+          <div className="inc-bar-track">
+            <div className="inc-bar-fill" style={{ width: `${fillWidth}%` }}></div>
+            <div className="inc-bar-marker inc-marker-pen" style={{ left: `${penaltyMarkerPos}%` }}></div>
+            <div className="inc-bar-marker inc-marker-dq" style={{ left: '100%' }}></div>
+          </div>
         </div>
-      )}
-
-      <div className={styles['inc-thresh']}>
-        <span className={styles['inc-thresh-label']}>Penalty</span>
-        <span className={`${styles['inc-thresh-val']} ${getPenaltyThreshClass(remainingPenalty)}`}>
-          {remainingPenalty}
-        </span>
-      </div>
-
-      <div className={styles['inc-thresh']}>
-        <span className={styles['inc-thresh-label']}>DQ</span>
-        <span className={`${styles['inc-thresh-val']} ${getDQThreshClass(remainingDQ)}`}>
-          {remainingDQ}
-        </span>
+        <div className="inc-thresholds">
+          <div className="inc-thresh-row">
+            <span>Penalty in</span>
+            <span className="inc-thresh-val">{telemetry.gameRunning ? Math.max(0, (settings.incidentPenaltyLimit || 10) - telemetry.incidentCount) : '—'}</span>
+          </div>
+          <div className="inc-thresh-row">
+            <span>DQ in</span>
+            <span className="inc-thresh-val">{telemetry.gameRunning ? Math.max(0, (settings.incidentDQLimit || 20) - telemetry.incidentCount) : '—'}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

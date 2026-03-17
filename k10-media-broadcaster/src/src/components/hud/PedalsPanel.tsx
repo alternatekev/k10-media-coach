@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { fmtPercent } from '@lib/formatters';
-import styles from './PedalsPanel.module.css';
 
 const HISTORY_LENGTH = 20;
 
@@ -28,58 +27,59 @@ export default function PedalsPanel() {
 
   return (
     <div
-      className={styles.panel}
+      className="panel pedals-area"
+      id="pedalsArea"
       style={{ '--thr-glow': telemetry.throttleRaw } as React.CSSProperties}
     >
-      <div className={styles.pedalLabelsRow}>
-        <div className={styles.pedalLabelGroup}>
-          <div className={styles.pedalChannelLabelThrottle}>THR</div>
-          <div className={styles.pedalPct} style={{ color: 'var(--green)' }}>
+      <canvas className="gl-overlay" id="pedalsGlCanvas"></canvas>
+
+      <div className="pedal-labels-row">
+        <div className="pedal-label-group">
+          <div className="pedal-channel-label throttle">THROTTLE</div>
+          <div className="pedal-pct" style={{ color: 'var(--green)' }}>
             {fmtPercent(telemetry.throttleRaw)}
           </div>
         </div>
-        <div className={styles.pedalLabelGroup}>
-          <div className={styles.pedalChannelLabelBrake}>BRK</div>
-          <div className={styles.pedalPct} style={{ color: 'var(--red)' }}>
+        <div className="pedal-label-group">
+          <div className="pedal-channel-label brake">BRAKE</div>
+          <div className="pedal-pct" style={{ color: 'var(--red)' }}>
             {fmtPercent(telemetry.brakeRaw)}
           </div>
         </div>
-        <div className={styles.pedalLabelGroup}>
-          <div className={styles.pedalChannelLabelClutch}>CLT</div>
-          <div className={styles.pedalPct} style={{ color: 'var(--blue)' }}>
+        <div className="pedal-label-group" id="clutchLabelGroup">
+          <div className="pedal-channel-label clutch">CLUTCH</div>
+          <div className="pedal-pct" style={{ color: 'var(--blue)' }}>
             {fmtPercent(telemetry.clutchRaw)}
           </div>
         </div>
       </div>
 
-      <div className={styles.pedalVizStack}>
-        <div className={styles.pedalVizLayerThrottle}>
+      <div className="pedal-viz-stack">
+        <div className="pedal-viz-layer throttle-layer" id="throttleHist">
           {throttleHist.map((value, i) => (
             <div
               key={i}
-              className={styles.pedalBar}
               style={{ height: `${value * 100}%` }}
             />
           ))}
         </div>
-        <div className={styles.pedalVizLayerBrake}>
+        <div className="pedal-viz-layer brake-layer" id="brakeHist">
           {brakeHist.map((value, i) => (
             <div
               key={i}
-              className={styles.pedalBar}
               style={{ height: `${value * 100}%` }}
             />
           ))}
         </div>
-        <div className={styles.pedalVizLayerClutch}>
+        <div className="pedal-viz-layer clutch-layer" id="clutchHist">
           {clutchHist.map((value, i) => (
             <div
               key={i}
-              className={styles.pedalBar}
               style={{ height: `${value * 100}%` }}
             />
           ))}
         </div>
+        <canvas className="pedal-trace-canvas" id="pedalTraceCanvas" width={240} height={80}></canvas>
       </div>
     </div>
   );

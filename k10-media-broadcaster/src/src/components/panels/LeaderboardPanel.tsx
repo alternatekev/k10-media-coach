@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './LeaderboardPanel.module.css';
 
 /**
  * Leaderboard entry format from JSON: [pos, name, irating, bestLap, lastLap, gapToPlayer, inPit, isPlayer]
@@ -21,27 +20,7 @@ interface DriverLapHistory {
 }
 
 /**
- * Abbreviate iRating: 1500 -> "1.5k", 1000 -> "1.0k"
- */
-function abbreviateIRating(ir: number): string {
-  if (ir >= 1000) {
-    return (ir / 1000).toFixed(1) + 'k';
-  }
-  return ir.toString();
-}
-
-/**
- * Format lap time in seconds to MM:SS.sss or similar
- */
-function formatLapTime(seconds: number): string {
-  if (seconds <= 0 || !isFinite(seconds)) return '—';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toFixed(3).padStart(6, '0')}`;
-}
-
-/**
- * Format gap to player: negative = ahead (green), positive = behind (red)
+ * Format gap to player: negative = ahead, positive = behind
  */
 function formatGap(gap: number): string {
   if (gap === 0) return '—';
@@ -50,51 +29,12 @@ function formatGap(gap: number): string {
   return sign + gap.toFixed(3);
 }
 
-/**
- * Simple SVG sparkline for last 12 lap times
- */
-function LapSparkline({ lapTimes }: { lapTimes: number[] }) {
-  if (lapTimes.length === 0) {
-    return <svg className={styles.lbSpark} />;
-  }
-
-  // Use last 12 laps
-  const data = lapTimes.slice(-12);
-  const minLap = Math.min(...data);
-  const maxLap = Math.max(...data);
-  const range = maxLap - minLap || minLap;
-
-  // Normalize to 0-1
-  const normalized = data.map((t) => (range > 0 ? (t - minLap) / range : 0.5));
-
-  // SVG viewBox: 44x14
-  // Points: 44px wide, split evenly among laps
-  const width = 44;
-  const height = 14;
-  const pointSpacing = width / Math.max(data.length - 1, 1);
-
-  const points = normalized
-    .map((n, i) => `${i * pointSpacing},${height - n * height}`)
-    .join(' ');
-
-  return (
-    <svg
-      className={styles.lbSpark}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
+interface LeaderboardPanelProps {
+  posClasses?: string;
+  panelStyle?: React.CSSProperties;
 }
 
-export default function LeaderboardPanel() {
+export default function LeaderboardPanel({ posClasses, panelStyle }: LeaderboardPanelProps) {
   const { telemetry } = useTelemetry();
 
   const [startPosition, setStartPosition] = useState<number | null>(null);
@@ -141,69 +81,42 @@ export default function LeaderboardPanel() {
 
   if (!leaderboard.length) {
     return (
-      <div className={styles.leaderboardPanel}>
-        <div style={{ padding: '8px', fontSize: '10px', color: 'var(--text-dim)' }}>
-          No leaderboard data
+      <div className={`leaderboard-panel ${posClasses || 'lb-bottom lb-left'}`} id="leaderboardPanel" style={panelStyle}>
+        <div className="lb-inner">
+          <div className="lb-header">Relative</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`${styles.leaderboardPanel} ${styles.lbTopLeft}`}>
-      <div className={styles.lbScroll}>
-        {leaderboard.map((entry: LeaderboardRawEntry) => {
-          const [pos, name, irating, bestLap, lastLap, gapToPlayer, inPit, isPlayer] = entry;
-          const isPlayerRow = isPlayer > 0;
-          const isP1 = pos === 1;
-          const isInPit = inPit > 0;
+    <div className={`leaderboard-panel ${posClasses || 'lb-bottom lb-left'}`} id="leaderboardPanel" style={panelStyle}>
+      <div className="lb-inner">
+        <canvas className="lb-gl gl-overlay" id="lbPlayerGlCanvas"></canvas>
+        <canvas className="lb-gl gl-overlay" id="lbEventGlCanvas"></canvas>
+        <div className="lb-header">Relative</div>
+        <div id="lbRows">
+          {leaderboard.map((entry: LeaderboardRawEntry) => {
+            const [pos, name, _irating, _bestLap, _lastLap, gapToPlayer, inPit, isPlayer] = entry;
+            const isPlayerRow = isPlayer > 0;
+            const isInPit = inPit > 0;
 
-          // Determine position relative to start
-          let positionClass = '';
-          if (startPosition !== null && !isPlayerRow) {
-            if (pos < startPosition) {
-              positionClass = styles.lbAhead || '';
-            } else if (pos > startPosition) {
-              positionClass = styles.lbBehind || '';
-            }
-          }
+            const rowClasses = ['lb-row'];
+            if (isPlayerRow) rowClasses.push('lb-player');
+            if (isInPit) rowClasses.push('lb-pit');
 
-          // Determine lap quality
-          let lapClass = '';
-          if (lastLap > 0) {
-            if (bestLap > 0 && Math.abs(lastLap - bestLap) < 0.001) {
-              lapClass = styles.lapPb || '';
-            } else if (bestLap > 0 && lastLap < bestLap * 1.02) {
-              lapClass = styles.lapFast || '';
-            } else {
-              lapClass = styles.lapSlow || '';
-            }
-          }
-
-          const gapClass = gapToPlayer < 0 ? styles.gapAhead : styles.gapBehind;
-
-          const lapHistory = lapHistoryRef.current.get(pos) || { lastLaps: [] };
-
-          return (
-            <div
-              key={`${pos}-${name}`}
-              className={`
-                ${styles.lbRow}
-                ${isPlayerRow ? styles.lbPlayer : ''}
-                ${isP1 ? styles.lbP1 : ''}
-                ${positionClass}
-                ${isInPit ? styles.lbPit : ''}
-              `}
-            >
-              <div className={styles.lbPos}>{pos}</div>
-              <div className={styles.lbName}>{name}</div>
-              <div className={`${styles.lbLap} ${lapClass}`}>{formatLapTime(lastLap)}</div>
-              <div className={styles.lbIr}>{abbreviateIRating(irating)}</div>
-              <div className={`${styles.lbGap} ${gapClass}`}>{formatGap(gapToPlayer)}</div>
-              <LapSparkline lapTimes={lapHistory.lastLaps} />
-            </div>
-          );
-        })}
+            return (
+              <div key={`${pos}-${name}`} className={rowClasses.join(' ')}>
+                <span className="lb-pos">{pos}</span>
+                <span className="lb-name">{name}</span>
+                <span className="lb-gap">{formatGap(gapToPlayer)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="race-timeline" id="raceTimeline">
+        <canvas className="rt-canvas" id="rtCanvas" width="310" height="9"></canvas>
       </div>
     </div>
   );

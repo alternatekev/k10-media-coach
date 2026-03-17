@@ -1,6 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './RaceControlBanner.module.css';
 
 interface FlagInfo {
   title: string;
@@ -21,7 +20,7 @@ export default function RaceControlBanner() {
       return {
         title: 'CAUTION',
         detail: 'Full course yellow — hold position',
-        flagClass: styles['rc-flag-yellow'] || '',
+        flagClass: 'rc-yellow',
       };
     }
 
@@ -29,7 +28,7 @@ export default function RaceControlBanner() {
       return {
         title: 'RED FLAG',
         detail: 'Session stopped — return to pits',
-        flagClass: styles['rc-flag-red'] || '',
+        flagClass: 'rc-red',
       };
     }
 
@@ -37,7 +36,7 @@ export default function RaceControlBanner() {
       return {
         title: 'CHECKERED FLAG',
         detail: 'Race complete — cool down lap',
-        flagClass: styles['rc-flag-checkered'] || '',
+        flagClass: 'rc-checkered',
       };
     }
 
@@ -45,7 +44,7 @@ export default function RaceControlBanner() {
       return {
         title: 'BLACK FLAG',
         detail: 'Penalty — report to pit lane immediately',
-        flagClass: styles['rc-flag-black'] || '',
+        flagClass: 'rc-black',
       };
     }
 
@@ -84,11 +83,21 @@ export default function RaceControlBanner() {
     return null;
   }
 
+  const bannerClasses = ['rc-banner', flagInfo.flagClass];
+  if (isVisible) {
+    bannerClasses.push('rc-active');
+  }
+
   return (
-    <div className={`${styles['rc-banner']} ${isVisible ? styles['rc-visible'] : ''} ${flagInfo.flagClass}`}>
-      <div className={styles['rc-inner']}>
-        <div className={styles['rc-title']}>{flagInfo.title}</div>
-        <div className={styles['rc-detail']}>{flagInfo.detail}</div>
+    <div className={bannerClasses.join(' ')} id="rcBanner">
+      <div className="rc-inner">
+        <svg className="rc-icon" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" fill="none"/>
+        </svg>
+        <div className="rc-content">
+          <div className="rc-title">RACE CONTROL</div>
+          <div className="rc-detail">{flagInfo.detail}</div>
+        </div>
       </div>
     </div>
   );

@@ -68,6 +68,7 @@ function parseTelemetry(raw: TelemetryProps): ParsedTelemetry {
 
     // Brake / TC / ABS
     brakeBias: v('DataCorePlugin.GameRawData.Telemetry.dcBrakeBias', 'Demo.BrakeBias') || 0,
+    tractionControl: v('DataCorePlugin.GameRawData.Telemetry.dcTractionControl', 'Demo.TC') || 0,
     tc: v('DataCorePlugin.GameRawData.Telemetry.dcTractionControl', 'Demo.TC') || 0,
     abs: v('DataCorePlugin.GameRawData.Telemetry.dcABS', 'Demo.ABS') || 0,
 
@@ -148,6 +149,7 @@ function parseTelemetry(raw: TelemetryProps): ParsedTelemetry {
     startType: v('K10MediaBroadcaster.Plugin.Grid.StartType', 'Demo.Grid.StartType') || '',
     lightsPhase: v('K10MediaBroadcaster.Plugin.Grid.LightsPhase', 'Demo.Grid.LightsPhase') || 0,
     trackCountry: v('K10MediaBroadcaster.Plugin.Grid.TrackCountry', 'Demo.Grid.TrackCountry') || '',
+    gridCountdown: 0,
 
     // Demo mode flag
     demoMode,

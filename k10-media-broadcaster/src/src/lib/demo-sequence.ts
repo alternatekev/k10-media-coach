@@ -37,7 +37,7 @@ const BASE: ParsedTelemetry = {
   fuelRemainingLaps: 25,
   tyreTempFL: 70, tyreTempFR: 70, tyreTempRL: 70, tyreTempRR: 70,
   tyreWearFL: 1.0, tyreWearFR: 1.0, tyreWearRL: 1.0, tyreWearRR: 1.0,
-  brakeBias: 52.5, tc: 4, abs: 3,
+  brakeBias: 52.5, tractionControl: 4, tc: 4, abs: 3,
   position: 8,
   gapAhead: 0,
   gapBehind: 0,
@@ -76,6 +76,7 @@ const BASE: ParsedTelemetry = {
   sessionState: '0',
   griddedCars: 0, totalCars: 24, paceMode: '', startType: 'rolling',
   lightsPhase: 0, trackCountry: 'US',
+  gridCountdown: 0,
   demoMode: true,
 };
 

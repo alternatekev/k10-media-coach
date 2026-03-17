@@ -76,7 +76,7 @@ export const MFR_BRAND_COLORS: Record<string, { h: number; s: number; l: number 
   subaru: { h: 240, s: 100, l: 50 }, // blue
   hyundai: { h: 0, s: 0, l: 100 }, // white
   ducati: { h: 0, s: 100, l: 50 }, // red
-  unknown: { h: 0, s: 0, l: 70 }, // gray
+  unknown: { h: 0, s: 0, l: 12 }, // dark gray – matches original _defaultLogoBg hsla(0,0%,12%,1)
 };
 
 /**

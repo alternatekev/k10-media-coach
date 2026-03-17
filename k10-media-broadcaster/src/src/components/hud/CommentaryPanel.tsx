@@ -1,18 +1,14 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './CommentaryPanel.module.css';
 
 /**
  * Parse color string (e.g., "#FF5733" or "rgb(255, 87, 51)") to HSL values
  * for dynamic background tinting.
  */
-function getBackgroundColorFromHex(hex: string): string {
-  if (!hex) return 'transparent';
+function getHueFromColor(hex: string): number {
+  if (!hex) return 0;
 
-  // Simple hex to RGB conversion
-  let r = 0,
-    g = 0,
-    b = 0;
+  let r = 0, g = 0, b = 0;
 
   if (hex.startsWith('#')) {
     const cleanHex = hex.slice(1);
@@ -27,20 +23,17 @@ function getBackgroundColorFromHex(hex: string): string {
     }
   }
 
-  // Convert RGB to HSL
+  // Convert RGB to HSL to get hue
   r /= 255;
   g /= 255;
   b /= 255;
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0,
-    s = 0,
-    l = (max + min) / 2;
+  let h = 0;
 
   if (max !== min) {
     const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
     switch (max) {
       case r:
@@ -55,11 +48,7 @@ function getBackgroundColorFromHex(hex: string): string {
     }
   }
 
-  h = Math.round(h * 360);
-  s = Math.round(s * 100);
-  l = Math.round(l * 100);
-
-  return `hsla(${h}, ${s}%, ${l}%, 0.12)`;
+  return Math.round(h * 360);
 }
 
 export default function CommentaryPanel() {
@@ -74,25 +63,33 @@ export default function CommentaryPanel() {
     }
   }, [telemetry.commentaryText, telemetry.commentaryVisible]);
 
-  const backgroundColor = useMemo(() => {
-    if (!telemetry.commentaryColor) return 'transparent';
-    return getBackgroundColorFromHex(telemetry.commentaryColor);
+  const commentaryHue = useMemo(() => {
+    if (!telemetry.commentaryColor) return 0;
+    return getHueFromColor(telemetry.commentaryColor);
   }, [telemetry.commentaryColor]);
 
   const isVisible = telemetry.commentaryVisible;
+  const height = isVisible ? commentaryHue : 0;
 
   return (
     <div
-      className={`${styles.commentaryCol} ${isVisible ? styles.visible : ''}`}
-      style={{
-        backgroundColor,
-      }}
+      className={`commentary-col ${isVisible ? 'visible' : ''}`.trim()}
+      id="commentaryCol"
+      style={{ '--commentary-h': height } as React.CSSProperties}
     >
-      <div className={styles.commentaryInner}>
-        <div className={styles.commentaryTitle}>{telemetry.commentaryTitle}</div>
-        <div className={`${styles.commentaryScroll} ${autoScroll ? styles.autoScroll : ''}`}>
-          <div className={styles.commentaryText}>{telemetry.commentaryText}</div>
+      <div className="commentary-inner" id="commentaryInner">
+        <div className="commentary-icon" id="commentaryIcon"></div>
+        <div className="commentary-title" id="commentaryTitle">{telemetry.commentaryTitle}</div>
+        <div className={`commentary-text-scroll ${autoScroll ? 'auto-scroll' : ''}`.trim()} id="commentaryScroll">
+          <div className="commentary-text" id="commentaryText">{telemetry.commentaryText}</div>
         </div>
+        <canvas className="commentary-gl-canvas" id="commentaryGlCanvas"></canvas>
+        <div className="commentary-viz" id="commentaryViz">
+          <canvas id="commentaryVizCanvas"></canvas>
+          <div className="commentary-viz-value" id="commentaryVizValue"></div>
+          <div className="commentary-viz-label" id="commentaryVizLabel"></div>
+        </div>
+        <div className="commentary-meta" id="commentaryMeta"></div>
       </div>
     </div>
   );

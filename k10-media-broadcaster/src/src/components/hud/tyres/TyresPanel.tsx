@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { getTyreTempClass } from '@lib/formatters';
-import styles from './TyresPanel.module.css';
 
 interface TyreData {
   label: string;
@@ -35,25 +34,25 @@ export function TyresPanel() {
   ]);
 
   return (
-    <div className={styles['tyres-block']}>
-      <div className={styles['panel-label']}>Tyres °F</div>
+    <div className="panel tyres-block">
+      <div className="panel-label">Tyres °F</div>
 
-      <div className={styles['tyre-grid']}>
+      <div className="tyre-grid">
         {tyres.map((tyre) => (
-          <div key={tyre.label} className={styles['tyre-item']}>
-            <div className={styles['tyre-label']}>
+          <div key={tyre.label}>
+            <div className="tyre-label">
               {tyre.label}
             </div>
 
             <div
-              className={`${styles['tyre-cell']} ${styles[getTyreTempClass(tyre.temp)]}`}
+              className={`tyre-cell ${getTyreTempClass(tyre.temp)}`}
             >
               {tyre.temp > 0 ? Math.round(tyre.temp) : '—'}
             </div>
 
-            <div className={styles['tyre-wear-bar']}>
+            <div className="tyre-wear-bar">
               <div
-                className={styles['tyre-wear-fill']}
+                className="tyre-wear-fill"
                 style={{ width: `${Math.min(tyre.wear * 100, 100)}%` }}
               />
             </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
 import { fmtLap, fmtIRating } from '@lib/formatters';
-import styles from './RaceEndScreen.module.css';
 
 export default function RaceEndScreen() {
   const { telemetry } = useTelemetry();
@@ -29,53 +28,30 @@ export default function RaceEndScreen() {
     return 'midpack';
   }, [isDNF, telemetry.position]);
 
-  // Determine main title and tint
+  // Determine main title
   const titleInfo = useMemo(() => {
     if (isDNF) {
-      return {
-        title: 'TOUGH BREAK',
-        subtitle: 'Every lap is a lesson. Regroup and go again.',
-        tintClass: styles['tint-purple'],
-      };
+      return { title: 'TOUGH BREAK', subtitle: 'Every lap is a lesson. Regroup and go again.' };
     }
 
     if (finishType === 'podium') {
       if (telemetry.position === 1) {
-        return {
-          title: 'VICTORY!',
-          subtitle: null,
-          tintClass: styles['tint-gold'],
-        };
+        return { title: 'VICTORY!', subtitle: null };
       } else {
-        return {
-          title: 'PODIUM FINISH!',
-          subtitle: null,
-          tintClass:
-            telemetry.position === 2
-              ? styles['tint-silver']
-              : styles['tint-bronze'],
-        };
+        return { title: 'PODIUM!', subtitle: null };
       }
     }
 
     if (finishType === 'strong') {
-      return {
-        title: 'STRONG FINISH',
-        subtitle: null,
-        tintClass: styles['tint-green'],
-      };
+      return { title: 'STRONG FINISH', subtitle: null };
     }
 
-    return {
-      title: 'RACE COMPLETE',
-      subtitle: null,
-      tintClass: styles['tint-neutral'],
-    };
+    return { title: 'RACE COMPLETE', subtitle: null };
   }, [isDNF, finishType, telemetry.position]);
 
   // Check for clean race badge
   const isCleanRace = useMemo(() => {
-    return telemetry.incidentCount <= 4;
+    return telemetry.incidentCount === 0;
   }, [telemetry.incidentCount]);
 
   // Trigger visibility on checkered flag
@@ -122,79 +98,56 @@ export default function RaceEndScreen() {
   }
 
   return (
-    <div
-      className={`${styles['race-end-screen']} ${isVisible ? styles.visible : ''} ${titleInfo.tintClass}`}
-      onClick={handleDismiss}
-    >
-      {/* Backdrop blur overlay */}
-      <div className={styles.backdrop} />
-
-      {/* Confetti particles (podium only) */}
-      {finishType === 'podium' && (
-        <div className={styles['confetti-container']}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className={styles['confetti-particle']}
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${i * 0.05}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Content */}
-      <div className={styles.content}>
-        {/* Main position number */}
-        <div className={styles['position-number']}>
+    <div className="race-end-screen" id="raceEndScreen" onClick={handleDismiss}>
+      <div className="race-end-bg"></div>
+      <div className="re-confetti" id="reConfetti">
+        {finishType === 'podium' && Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: `${Math.random() * 100}%`,
+              top: '-10px',
+              width: '8px',
+              height: '8px',
+              backgroundColor: ['#FFD700', '#C0C0C0', '#CD7F32'][i % 3],
+              animation: `fall ${2 + Math.random() * 2}s linear forwards`,
+              animationDelay: `${i * 0.05}s`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="race-end-content" id="raceEndContent">
+        <div className="re-position">
           {!isDNF && telemetry.position > 0 ? `P${telemetry.position}` : '—'}
         </div>
-
-        {/* Title and subtitle */}
-        <div className={styles['title-block']}>
-          <h1 className={styles.title}>{titleInfo.title}</h1>
+        <div className="re-title-block">
+          <h1 className="re-title">{titleInfo.title}</h1>
           {titleInfo.subtitle && (
-            <p className={styles.subtitle}>{titleInfo.subtitle}</p>
+            <p className="re-subtitle">{titleInfo.subtitle}</p>
           )}
         </div>
-
-        {/* Clean race badge */}
         {isCleanRace && (
-          <div className={styles['clean-badge']}>
-            <span>✓</span> CLEAN RACE
-          </div>
+          <div className="re-clean-badge"><span>✓</span> CLEAN RACE</div>
         )}
-
-        {/* Stats grid */}
-        <div className={styles['stats-grid']}>
-          <div className={styles['stat-item']}>
-            <div className={styles['stat-label']}>POSITION</div>
-            <div className={styles['stat-value']}>
-              {!isDNF && telemetry.position > 0
-                ? `P${telemetry.position}`
-                : 'DNF'}
+        <div className="re-stats">
+          <div className="re-stat">
+            <div className="re-stat-label">POSITION</div>
+            <div className="re-stat-val">
+              {!isDNF && telemetry.position > 0 ? `P${telemetry.position}` : 'DNF'}
             </div>
           </div>
-
-          <div className={styles['stat-item']}>
-            <div className={styles['stat-label']}>INCIDENTS</div>
-            <div className={styles['stat-value']}>{telemetry.incidentCount}</div>
+          <div className="re-stat">
+            <div className="re-stat-label">INCIDENTS</div>
+            <div className="re-stat-val">{telemetry.incidentCount}</div>
           </div>
-
-          <div className={styles['stat-item']}>
-            <div className={styles['stat-label']}>BEST LAP</div>
-            <div className={styles['stat-value']}>
-              {fmtLap(telemetry.bestLapTime)}
-            </div>
+          <div className="re-stat">
+            <div className="re-stat-label">BEST LAP</div>
+            <div className="re-stat-val">{fmtLap(telemetry.bestLapTime)}</div>
           </div>
-
-          <div className={styles['stat-item']}>
-            <div className={styles['stat-label']}>iRATING</div>
-            <div className={styles['stat-value']}>
-              {fmtIRating(telemetry.iRating)}
-            </div>
+          <div className="re-stat">
+            <div className="re-stat-label">iRATING</div>
+            <div className="re-stat-val">{fmtIRating(telemetry.iRating)}</div>
           </div>
         </div>
       </div>

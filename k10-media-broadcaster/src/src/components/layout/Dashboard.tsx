@@ -1,26 +1,13 @@
 /**
- * Main Dashboard layout — composes all HUD components in the correct grid.
+ * Main Dashboard layout — mirrors dashboard.html exactly.
  *
- * Grid structure (RTL flow, default):
- *   ┌─────────────────────────────────────────┬──────────┐
- *   │ main-row                                │ comment  │
- *   │  ┌──────┬──────┬──────┬──────┬────┬───┐ │ col      │
- *   │  │Fuel  │Ctrls │Maps  │Pos   │Tach│Logo│          │
- *   │  │Tyres │Pedal │      │Gaps  │    │    │          │
- *   │  └──────┴──────┴──────┴──────┴────┴───┘ │          │
- *   ├─────────────────────────────────────────┤          │
- *   │ timer-row                               │          │
- *   └─────────────────────────────────────────┴──────────┘
- *
- * Secondary panels (leaderboard, datastream, incidents, spotter) are
- * fixed-positioned on the opposite side of the viewport from the HUD.
- *
- * Overlay banners (race control, pit limiter) are full-width fixed at
- * top/bottom of viewport.
+ * Uses the SAME class names and DOM structure as the original
+ * so that the original CSS files apply without modification.
  */
+import { useEffect } from 'react'
 import { useSettings } from '@hooks/useSettings'
 import { useTelemetry } from '@hooks/useTelemetry'
-import '../../styles/dashboard.css'
+import { useSecondaryLayout } from '@hooks/useSecondaryLayout'
 
 // HUD components
 import { Tachometer } from '@components/hud/tachometer/Tachometer'
@@ -32,6 +19,8 @@ import PositionPanel from '@components/hud/PositionPanel'
 import GapsPanel from '@components/hud/GapsPanel'
 import LogoPanel from '@components/hud/LogoPanel'
 import CommentaryPanel from '@components/hud/CommentaryPanel'
+import TrackMaps from '@components/hud/TrackMaps'
+import TimerRow from '@components/hud/TimerRow'
 
 // Secondary panels
 import LeaderboardPanel from '@components/panels/LeaderboardPanel'
@@ -43,6 +32,7 @@ import SpotterPanel from '@components/panels/SpotterPanel'
 import RaceControlBanner from '@components/overlays/RaceControlBanner'
 import PitLimiterBanner from '@components/overlays/PitLimiterBanner'
 import RaceEndScreen from '@components/overlays/RaceEndScreen'
+import GridModule from '@components/overlays/GridModule'
 import { SettingsPanel } from '@components/settings/SettingsPanel'
 
 const LAYOUT_MAP: Record<string, string> = {
@@ -57,41 +47,42 @@ const LAYOUT_MAP: Record<string, string> = {
 export default function Dashboard() {
   const { settings } = useSettings()
   const { telemetry } = useTelemetry()
+  const secLayout = useSecondaryLayout(settings)
 
   const sessionNum = parseInt(telemetry.sessionState) || 0
-  const isIdle = !telemetry.gameRunning || sessionNum <= 1
+  const isIdle = !telemetry.demoMode && (!telemetry.gameRunning || sessionNum <= 1)
+  const inPitLane = telemetry.isInPitLane
 
   // Zoom: CSS zoom applied to the root dashboard wrapper
-  const zoomScale = (settings.zoom || 165) / 100
+  const zoomScale = secLayout.zoomScale
 
-  // Idle state: show only K10 logo at 50% size/opacity, anchored to layout position
-  if (isIdle) {
-    const pos = settings.layoutPosition || 'top-right'
-    const anchorStyle: Record<string, string> = {
-      position: 'fixed',
-      transform: 'scale(0.5)',
-      transformOrigin: pos.replace('-', ' '),
-      opacity: '0.5',
-      pointerEvents: 'none',
+  // Apply body classes and --dash-zoom CSS variable via effect
+  useEffect(() => {
+    const bodyClasses: string[] = []
+    if (isIdle) bodyClasses.push('idle-state')
+    if (inPitLane) bodyClasses.push('pit-mode')
+    if (settings.greenScreen) bodyClasses.push('opaque-mode')
+    if (settings.rallyMode) bodyClasses.push('game-rally')
+    // Secondary layout mode class
+    bodyClasses.push('sec-' + (settings.secLayout || 'stack'))
+
+    document.body.className = bodyClasses.join(' ')
+    document.documentElement.style.setProperty('--dash-zoom', String(zoomScale))
+
+    return () => {
+      document.body.className = ''
+      document.documentElement.style.removeProperty('--dash-zoom')
     }
-    if (pos.startsWith('top')) anchorStyle.top = '10px'
-    else anchorStyle.bottom = '100px'
-    if (pos.endsWith('right')) anchorStyle.right = '10px'
-    else if (pos.endsWith('left')) anchorStyle.left = '10px'
-    else { anchorStyle.left = '50%'; anchorStyle.transform = 'translateX(-50%) scale(0.5)' }
-
-    return (
-      <>
-        <div style={anchorStyle as any}>
-          <LogoPanel idleMode />
-        </div>
-        <SettingsPanel />
-      </>
-    )
-  }
+  }, [isIdle, inPitLane, settings.greenScreen, settings.rallyMode, settings.secLayout, zoomScale])
 
   const layoutClass = LAYOUT_MAP[settings.layoutPosition] || 'layout-tr'
-  const flowClass = `flow-${settings.layoutFlow || 'rtl'}`
+
+  // Auto-resolve flow direction: corner positions determine flow automatically
+  const pos = settings.layoutPosition || 'top-right'
+  let resolvedFlow = settings.layoutFlow || 'ltr'
+  if (pos.includes('right')) resolvedFlow = 'rtl'
+  else if (pos.includes('left')) resolvedFlow = 'ltr'
+  const flowClass = `flow-${resolvedFlow}`
   const vswapClass = settings.verticalSwap ? 'vswap' : ''
 
   const dashClasses = [
@@ -102,81 +93,86 @@ export default function Dashboard() {
   ].filter(Boolean).join(' ')
 
   return (
-    <div className="k10-zoom-root" style={{ zoom: zoomScale }}>
+    <>
       {/* ── Main HUD Dashboard ── */}
-      <div className={dashClasses} id="dashboard">
-        {/* Main row: all HUD columns */}
+      <div className={dashClasses} id="dashboard" style={{ zoom: zoomScale }}>
+
         <div className="main-row">
           <div className="main-area">
 
             {/* COL: Fuel (top) + Tyres (bottom) */}
-            {(settings.showFuel || settings.showTyres) && (
-              <div className="fuel-tyres-col">
-                {settings.showFuel && <FuelPanel />}
-                {settings.showTyres && <TyresPanel />}
-              </div>
-            )}
+            <div className="fuel-tyres-col">
+              {settings.showFuel !== false && <FuelPanel />}
+              {settings.showTyres !== false && <TyresPanel />}
+            </div>
 
-            {/* COL: Controls + Pedals */}
-            {(settings.showControls || settings.showPedals) && (
-              <div className="controls-pedals-block">
-                {settings.showControls && <ControlsPanel />}
-                {settings.showPedals && <PedalsPanel />}
-              </div>
-            )}
+            {/* COL: Controls + Layered Pedals */}
+            <div className="controls-pedals-block">
+              {settings.showControls !== false && <ControlsPanel />}
+              {settings.showPedals !== false && <PedalsPanel />}
+            </div>
 
-            {/* COL: Maps — placeholder for TrackMap component */}
-            {settings.showMaps && (
-              <div className="maps-col">
-                <div className="panel map-panel">
-                  <svg className="map-svg" viewBox="0 0 100 100">
-                    <path className="map-track" d="" />
-                    <circle className="map-player" cx="50" cy="50" r="4" />
-                  </svg>
-                </div>
-                <div className="panel map-zoom-panel">
-                  <svg className="map-zoom-svg" viewBox="0 0 100 100">
-                    <path className="map-track" d="" style={{ strokeWidth: 1.5 }} />
-                    <circle className="map-player" cx="50" cy="50" r="2" />
-                  </svg>
-                </div>
-              </div>
-            )}
+            {/* COL: Maps stacked */}
+            {settings.showMaps !== false && <TrackMaps />}
 
             {/* COL: Position/Rating + Gaps */}
-            {settings.showPosition && (
-              <div className="pos-gaps-col">
-                <PositionPanel />
-                <GapsPanel />
-              </div>
-            )}
+            <div className="pos-gaps-col">
+              {settings.showPosition !== false && <PositionPanel />}
+              <GapsPanel />
+            </div>
 
             {/* COL: Tachometer */}
-            {settings.showTacho && <Tachometer />}
+            {settings.showTacho !== false && <Tachometer />}
 
             {/* COL: Logo (two stacked squares) */}
-            {(settings.showK10Logo || settings.showCarLogo) && <LogoPanel />}
-          </div>
-        </div>
+            <LogoPanel />
 
-        {/* Timer row — placeholder for RaceTimer component */}
-        <div className="timer-row" />
+          </div>{/* /main-area */}
+        </div>{/* /main-row */}
 
-        {/* Commentary column */}
-        {settings.showCommentary && <CommentaryPanel />}
-      </div>
+        {/* ROW: Race Timer */}
+        <TimerRow />
 
-      {/* ── Secondary Panels (fixed-positioned, opposite side) ── */}
-      {settings.showLeaderboard && <LeaderboardPanel />}
-      {settings.showDatastream && <DatastreamPanel />}
-      {settings.showIncidents && <IncidentsPanel />}
-      <SpotterPanel />
+        {/* COMMENTARY — spans both rows */}
+        {settings.showCommentary !== false && <CommentaryPanel />}
 
-      {/* ── Full-width Overlay Banners ── */}
+        <div className="conn-status connecting" id="connStatus" />
+
+      </div>{/* /dashboard */}
+
+      {/* ── Secondary Panels (fixed-positioned, zoomed) ── */}
+      {settings.showLeaderboard !== false && (
+        <LeaderboardPanel
+          posClasses={secLayout.classes.leaderboard}
+          panelStyle={secLayout.panelStyle}
+        />
+      )}
+      {settings.showDatastream !== false && (
+        <DatastreamPanel
+          posClasses={secLayout.classes.datastream}
+          panelStyle={secLayout.panelStyle}
+        />
+      )}
+      {settings.showIncidents !== false && (
+        <IncidentsPanel
+          posClasses={secLayout.classes.incidents}
+          panelStyle={secLayout.panelStyle}
+        />
+      )}
+
+      {/* ── Overlay Components ── */}
       <RaceControlBanner />
+      <div className="idle-logo" id="idleLogo">
+        <img src="images/branding/logomark.png" alt="K10" />
+      </div>
       <PitLimiterBanner />
       <RaceEndScreen />
+      <SpotterPanel
+        posClasses={secLayout.classes.spotter}
+        panelStyle={secLayout.panelStyle}
+      />
+      <GridModule />
       <SettingsPanel />
-    </div>
+    </>
   )
 }

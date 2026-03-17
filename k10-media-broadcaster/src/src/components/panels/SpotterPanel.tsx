@@ -1,19 +1,23 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useTelemetry } from '@hooks/useTelemetry';
-import styles from './SpotterPanel.module.css';
 
-type SpotterSeverity = 'danger' | 'warn' | 'clear' | null;
+type SpotterSeverity = 'warn' | 'clear' | 'info' | null;
 
-interface SpotterState {
+interface SpotterMessage {
   message: string;
   severity: SpotterSeverity;
+  id: number;
 }
 
-export default function SpotterPanel() {
+interface SpotterPanelProps {
+  posClasses?: string;
+  panelStyle?: React.CSSProperties;
+}
+
+export default function SpotterPanel({ posClasses, panelStyle }: SpotterPanelProps) {
   const { telemetry } = useTelemetry();
-  const [message, setMessage] = useState<SpotterState>({ message: '', severity: null });
-  const [messageKey, setMessageKey] = useState<number>(0);
-  const [hideTimer, setHideTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [messages, setMessages] = useState<SpotterMessage[]>([]);
+  const [nextId, setNextId] = useState(0);
 
   // Generate spotter message based on gap data
   const spotterState = useMemo(() => {
@@ -26,7 +30,7 @@ export default function SpotterPanel() {
       if (timeGap < 0.5) {
         return {
           message: `Closing — ${timeGap.toFixed(1)}s behind`,
-          severity: 'danger' as SpotterSeverity,
+          severity: 'warn' as SpotterSeverity,
         };
       } else if (timeGap < 1.5) {
         return {
@@ -41,12 +45,12 @@ export default function SpotterPanel() {
       if (gapAhead < 0.5) {
         return {
           message: `Car right — ${gapAhead.toFixed(1)}s`,
-          severity: 'danger' as SpotterSeverity,
+          severity: 'warn' as SpotterSeverity,
         };
       } else if (gapAhead < 1.5) {
         return {
           message: `Car right — ${gapAhead.toFixed(1)}s`,
-          severity: 'warn' as SpotterSeverity,
+          severity: 'info' as SpotterSeverity,
         };
       }
     }
@@ -65,12 +69,12 @@ export default function SpotterPanel() {
       if (timeGap < 0.5) {
         return {
           message: `Car left — ${timeGap.toFixed(1)}s`,
-          severity: 'danger' as SpotterSeverity,
+          severity: 'warn' as SpotterSeverity,
         };
       } else if (timeGap < 1.5) {
         return {
           message: `Car left — ${timeGap.toFixed(1)}s`,
-          severity: 'warn' as SpotterSeverity,
+          severity: 'info' as SpotterSeverity,
         };
       }
     }
@@ -94,45 +98,54 @@ export default function SpotterPanel() {
     return { message: '', severity: null };
   }, [telemetry.gapAhead, telemetry.gapBehind]);
 
-  // Update message when state changes
+  // Update messages when state changes
   useEffect(() => {
     if (spotterState.severity !== null) {
-      // Only update if message actually changed
-      if (spotterState.message !== message.message) {
-        setMessage(spotterState);
-        setMessageKey((prev) => prev + 1);
+      // Add new message
+      const newMessage: SpotterMessage = {
+        message: spotterState.message,
+        severity: spotterState.severity,
+        id: nextId,
+      };
 
-        // Clear any existing hide timer
-        if (hideTimer) {
-          clearTimeout(hideTimer);
-        }
+      setMessages((prev) => {
+        const updated = [newMessage, ...prev];
+        // Keep max 3 messages
+        return updated.slice(0, 3);
+      });
 
-        // Set new hide timer (4 seconds)
-        const timer = setTimeout(() => {
-          setMessage({ message: '', severity: null });
-        }, 4000);
+      setNextId((prev) => prev + 1);
 
-        setHideTimer(timer);
-      }
+      // Set timer to remove this message after 5 seconds
+      const timer = setTimeout(() => {
+        setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
+      }, 5000);
+
+      return () => clearTimeout(timer);
     }
-  }, [spotterState, message.message, hideTimer]);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (hideTimer) {
-        clearTimeout(hideTimer);
-      }
-    };
-  }, [hideTimer]);
-
-  const severityClass = message.severity ? styles[`sp-${message.severity}`] : '';
-  const isActive = message.severity !== null;
+  }, [spotterState, nextId]);
 
   return (
-    <div className={styles['spotter-panel']} key={messageKey}>
-      <div className={`${styles['sp-inner']} ${isActive ? styles['sp-active'] : ''} ${severityClass}`}>
-        {message.message}
+    <div className={`spotter-panel ${posClasses || 'sp-top sp-left'}`} id="spotterPanel" style={panelStyle}>
+      <canvas className="sp-gl-canvas" id="spotterGlCanvas"></canvas>
+      <div className="sp-stack" id="spotterStack">
+        {messages.map((msg, index) => {
+          let opacityClass = '';
+          if (index === 1) {
+            opacityClass = 'style-opacity-55';
+          } else if (index === 2) {
+            opacityClass = 'style-opacity-30';
+          }
+
+          const severityClass = msg.severity ? `sp-${msg.severity}` : '';
+          const classes = `sp-inner sp-active ${severityClass} ${opacityClass}`.trim();
+
+          return (
+            <div key={msg.id} className={classes}>
+              <div className="sp-text">{msg.message}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

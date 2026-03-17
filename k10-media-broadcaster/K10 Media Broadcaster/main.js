@@ -62,6 +62,11 @@ function saveBounds(bounds) {
 let overlayWindow = null;
 let settingsMode = false;
 let greenScreenMode = false;
+let useReactDashboard = false;
+
+function getDashboardFile() {
+  return useReactDashboard ? 'dashboard-react.html' : 'dashboard.html';
+}
 
 function createOverlay() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -70,6 +75,8 @@ function createOverlay() {
   // Check if green screen mode is enabled in saved settings
   const settings = loadSettingsSync();
   greenScreenMode = settings.greenScreen === true;
+  useReactDashboard = settings.useReactDashboard === true;
+  console.log(`[K10] Dashboard: ${getDashboardFile()}`);
 
   const mode = greenScreenMode ? 'green-screen' : 'transparent';
   console.log(`[K10] Window mode: ${mode}`);
@@ -111,7 +118,7 @@ function createOverlay() {
     overlayWindow.on('resized', () => saveBounds(overlayWindow.getBounds()));
 
     // Green screen windows are always interactive (no click-through)
-    overlayWindow.loadFile(path.join(__dirname, 'dashboard.html'));
+    overlayWindow.loadFile(path.join(__dirname, getDashboardFile()));
     overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 
     // Inject opaque-mode class after page loads
@@ -147,7 +154,7 @@ function createOverlay() {
     });
 
     overlayWindow.setIgnoreMouseEvents(true, { forward: true });
-    overlayWindow.loadFile(path.join(__dirname, 'dashboard.html'));
+    overlayWindow.loadFile(path.join(__dirname, getDashboardFile()));
     overlayWindow.setAlwaysOnTop(true, 'screen-saver');
   }
 
@@ -159,7 +166,7 @@ function createOverlay() {
     if (details.reason === 'crashed' || details.reason === 'killed') {
       setTimeout(() => {
         if (overlayWindow && !overlayWindow.isDestroyed()) {
-          overlayWindow.loadFile(path.join(__dirname, 'dashboard.html'));
+          overlayWindow.loadFile(path.join(__dirname, getDashboardFile()));
         }
       }, 2000);
     }
@@ -167,7 +174,7 @@ function createOverlay() {
 
   overlayWindow.webContents.on('unresponsive', () => {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
-      overlayWindow.loadFile(path.join(__dirname, 'dashboard.html'));
+      overlayWindow.loadFile(path.join(__dirname, getDashboardFile()));
     }
   });
 }
@@ -206,6 +213,7 @@ app.whenReady().then(() => {
   console.log('[K10]   Ctrl+Shift+G = toggle green-screen mode (restarts app)');
   console.log('[K10]   Ctrl+Shift+H = hide/show overlay');
   console.log('[K10]   Ctrl+Shift+R = reset window position/size');
+  console.log('[K10]   Ctrl+Shift+T = toggle React/original dashboard (restarts)');
   console.log('[K10]   Ctrl+Shift+Q = quit');
   createOverlay();
 
@@ -246,6 +254,17 @@ app.whenReady().then(() => {
     saveSettingsSync(settings);
     const mode = settings.greenScreen ? 'green-screen' : 'transparent';
     console.log(`[K10] Toggling to ${mode} mode — restarting...`);
+    app.relaunch();
+    app.exit(0);
+  });
+
+  globalShortcut.register('CommandOrControl+Shift+T', () => {
+    // Toggle between original dashboard and React version — restarts app
+    const settings = loadSettingsSync();
+    settings.useReactDashboard = !settings.useReactDashboard;
+    saveSettingsSync(settings);
+    const label = settings.useReactDashboard ? 'React' : 'original';
+    console.log(`[K10] Switching to ${label} dashboard — restarting...`);
     app.relaunch();
     app.exit(0);
   });
@@ -306,6 +325,19 @@ ipcMain.handle('save-settings', async (event, settings) => {
 // ── IPC: Green screen mode query ──
 ipcMain.handle('get-green-screen-mode', async () => {
   return greenScreenMode;
+});
+
+// ── IPC: Dashboard mode query ──
+ipcMain.handle('get-dashboard-mode', async () => {
+  return useReactDashboard ? 'react' : 'original';
+});
+
+ipcMain.handle('toggle-dashboard-mode', async () => {
+  const settings = loadSettingsSync();
+  settings.useReactDashboard = !settings.useReactDashboard;
+  saveSettingsSync(settings);
+  app.relaunch();
+  app.exit(0);
 });
 
 // ── IPC: Restart app (used after toggling green screen mode) ──

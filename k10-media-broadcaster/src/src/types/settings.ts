@@ -48,9 +48,14 @@ export interface OverlaySettings {
 
   // ═══ Effects ═══
   greenScreen: boolean;
+  rallyMode: boolean;
 
   // ═══ Zoom & Scale ═══
   zoom: number;
+
+  // ═══ Incident Thresholds (component-facing aliases) ═══
+  incidentPenaltyLimit: number;
+  incidentDQLimit: number;
 
   // ═══ Demo / Testing ═══
   forceFlag: string;
@@ -91,6 +96,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   verticalSwap: false,
 
   greenScreen: false,
+  rallyMode: false,
 
   zoom: 165,
 
@@ -98,6 +104,8 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
 
   incPenalty: 17,
   incDQ: 25,
+  incidentPenaltyLimit: 17,
+  incidentDQLimit: 25,
 
   secLayout: 'stack',
   secOffsetX: 0,
