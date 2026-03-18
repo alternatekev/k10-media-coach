@@ -23,28 +23,22 @@
   function rtColor(sample) {
     if (sample.checkered) return null; // handled separately
     if (sample.p1) {
-      // P1 gold — brighter the further they climbed
       const heat = Math.min(Math.abs(sample.delta), 5);
-      const alpha = 0.26 + heat * 0.11;  // 0.26 → 0.81
-      const lit   = 58 + heat * 4;       // 58 → 78
-      return 'hsla(42, 72%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+      const lit  = 58 + heat * 4;
+      return 'hsl(42, 72%, ' + lit + '%)';
     }
     const d = sample.delta;
-    if (d === 0) return 'hsla(210, 42%, 54%, 0.24)';
+    if (d === 0) return 'hsl(210, 42%, 54%)';
     if (d < 0) {
-      // Gained positions — green, brighter with more positions gained
       const heat = Math.min(Math.abs(d), 5);
-      const alpha = 0.22 + heat * 0.12;   // 1 pos: 0.34, 2: 0.46, 3: 0.58 ...
-      const sat   = 38 + heat * 8;        // 46 → 78
-      const lit   = 46 + heat * 5;        // 51 → 71
-      return 'hsla(145, ' + sat + '%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+      const sat  = 38 + heat * 8;
+      const lit  = 46 + heat * 5;
+      return 'hsl(145, ' + sat + '%, ' + lit + '%)';
     }
-    // Lost positions — red, brighter with more positions lost
     const heat = Math.min(d, 5);
-    const alpha = 0.22 + heat * 0.12;
-    const sat   = 38 + heat * 8;
-    const lit   = 48 + heat * 5;
-    return 'hsla(0, ' + sat + '%, ' + lit + '%, ' + alpha.toFixed(2) + ')';
+    const sat  = 38 + heat * 8;
+    const lit  = 48 + heat * 5;
+    return 'hsl(0, ' + sat + '%, ' + lit + '%)';
   }
 
   function updateRaceTimeline(position, currentLap, flagState, incidentCount, isInPit) {

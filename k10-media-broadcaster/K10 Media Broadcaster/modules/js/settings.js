@@ -80,6 +80,17 @@
     // Sync layout rally toggle (will be updated again when Discord state loads)
     const layoutRallyToggle = document.getElementById('layoutRallyToggle');
     if (layoutRallyToggle) layoutRallyToggle.classList.toggle('on', _rallyModeEnabled);
+
+    // Leaderboard settings
+    const lbFocusSelect = document.getElementById('settingsLbFocus');
+    if (lbFocusSelect) lbFocusSelect.value = _settings.lbFocus || 'me';
+    const lbMaxSelect = document.getElementById('settingsLbMaxRows');
+    if (lbMaxSelect) lbMaxSelect.value = String(_settings.lbMaxRows || 5);
+    const lbExpandToggle = document.getElementById('lbExpandToggle');
+    if (lbExpandToggle) lbExpandToggle.classList.toggle('on', _settings.lbExpandToFill === true);
+
+    // Datastream field toggles
+    applyDsFieldToggles();
   }
 
   function _collapseParentColumns() {
@@ -112,6 +123,48 @@
     document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.toggle('active', c.id === 'settingsTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)));
     // Refresh connection status when switching to Connections tab
     if (tabName === 'connections') updateConnectionsTab();
+  }
+
+  // ── Leaderboard settings ──
+
+  function updateLbFocus(value) {
+    _settings.lbFocus = value;
+    _lbLastJson = ''; // force re-render
+    saveSettings();
+  }
+
+  function updateLbMaxRows(value) {
+    _settings.lbMaxRows = Math.max(1, Math.min(40, +value || 5));
+    _lbLastJson = '';
+    saveSettings();
+  }
+
+  function toggleLbExpand(el) {
+    const isOn = el.classList.contains('on');
+    el.classList.toggle('on', !isOn);
+    _settings.lbExpandToFill = !isOn;
+    _lbLastJson = '';
+    saveSettings();
+  }
+
+  // ── Datastream field toggles ──
+
+  function toggleDsSetting(el) {
+    const key = el.dataset.key;
+    if (!key) return;
+    const isOn = el.classList.contains('on');
+    _settings[key] = !isOn;
+    el.classList.toggle('on', !isOn);
+    applyDsFieldToggles();
+    saveSettings();
+  }
+
+  function applyDsFieldToggles() {
+    document.querySelectorAll('[data-ds-field]').forEach(el => {
+      const key = el.dataset.dsField;
+      const show = _settings[key] !== false;
+      el.style.display = show ? '' : 'none';
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════

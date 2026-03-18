@@ -21,25 +21,70 @@
     if (_pollFrame <= 3) console.log('[K10 LB] raw type:', typeof raw, 'isArray:', Array.isArray(raw), 'length:', raw ? raw.length : 0, 'sample:', raw ? JSON.stringify(raw).slice(0, 200) : 'null');
     if (!raw || !Array.isArray(raw) || raw.length === 0) return;
 
-    // Dedupe: skip render if data hasn't changed
-    const json = JSON.stringify(raw);
+    // Dedupe: skip render if data hasn't changed (+ settings version)
+    const settingsKey = (_settings.lbFocus || 'me') + '|' + (_settings.lbMaxRows || 5) + '|' + (_settings.lbExpandToFill ? '1' : '0');
+    const json = JSON.stringify(raw) + '|' + settingsKey;
     if (json === _lbLastJson) return;
     _lbLastJson = json;
 
     const container = document.getElementById('lbRows');
     if (!container) return;
 
+    // ── Focus + row limit logic ──
+    const focusMode = _settings.lbFocus || 'me';
+    let maxRows = _settings.lbMaxRows || 5;
+
+    // Expand to fill: calculate max rows that fit on screen
+    if (_settings.lbExpandToFill) {
+      const lbPanel = document.getElementById('leaderboardPanel');
+      const rowH = 22; // approximate row height in px
+      const headerH = 28; // lb-header + timeline + padding
+      const avail = (window.innerHeight || 600) - headerH - 60; // 60px margin for other modules
+      // Check for collision with incidents panel on the same vertical edge
+      const inc = document.getElementById('incidentsPanel');
+      let incReserve = 0;
+      if (inc && !inc.classList.contains('section-hidden')) {
+        const incRect = inc.getBoundingClientRect();
+        const lbRect = lbPanel ? lbPanel.getBoundingClientRect() : null;
+        // If they share similar vertical space, reduce available height
+        if (lbRect && ((incRect.top < lbRect.bottom && incRect.bottom > lbRect.top))) {
+          incReserve = 0; // no horizontal collision, don't reduce
+        }
+      }
+      maxRows = Math.max(3, Math.floor((avail - incReserve) / rowH));
+    }
+
     // Entry format: [pos, name, irating, bestLap, lastLap, gapToPlayer, inPit, isPlayer]
-    // Find the session-best lap across ALL drivers (lowest bestLap > 0)
+    // Find player index and session best
+    let playerIdx = -1;
     let sessionBest = Infinity;
-    for (const e of raw) {
-      const b = +e[3];
+    for (let i = 0; i < raw.length; i++) {
+      if (raw[i][7]) playerIdx = i;
+      const b = +raw[i][3];
       if (b > 0 && b < sessionBest) sessionBest = b;
     }
     if (sessionBest === Infinity) sessionBest = 0;
 
+    // Slice visible entries based on focus mode
+    let visible;
+    if (focusMode === 'lead') {
+      // Show from P1, up to maxRows
+      visible = raw.slice(0, maxRows);
+    } else {
+      // Center on player
+      if (playerIdx < 0) {
+        visible = raw.slice(0, maxRows);
+      } else {
+        const half = Math.floor(maxRows / 2);
+        let start = Math.max(0, playerIdx - half);
+        let end = start + maxRows;
+        if (end > raw.length) { end = raw.length; start = Math.max(0, end - maxRows); }
+        visible = raw.slice(start, end);
+      }
+    }
+
     let html = '';
-    for (const entry of raw) {
+    for (const entry of visible) {
       const [pos, name, ir, best, last, gap, pit, isPlayer] = entry;
       const classes = ['lb-row'];
       if (isPlayer) {

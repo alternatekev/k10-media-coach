@@ -3,10 +3,9 @@
      ═══════════════════════════════════════════════ */
   .controls-pedals-block {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: var(--gap);
     flex-shrink: 0;
-    width: 170px;
   }
 
   .car-controls {

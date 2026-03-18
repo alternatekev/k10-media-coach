@@ -342,6 +342,15 @@
     height: 100%;
   }
 
+  /* ── Stacked column blocks ── */
+  .fuel-tyres-col,
+  .controls-pedals-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    flex-shrink: 0;
+  }
+
   /* ── CYCLING ── */
   .cycle-container { position: relative; overflow: hidden; }
   .cycle-page {

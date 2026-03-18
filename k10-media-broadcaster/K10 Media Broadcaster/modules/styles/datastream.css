@@ -28,10 +28,10 @@
   .datastream-panel.section-hidden { display: none; }
   .datastream-panel.ds-bottom { bottom: 28px; }
   .datastream-panel.ds-top { top: 10px; }
-  .datastream-panel.ds-right { right: 326px; }   /* leaderboard (310) + 16px gap */
-  .datastream-panel.ds-left { left: 326px; }     /* same offset from left */
-  .datastream-panel.ds-center-right { right: 172px; }  /* half LB + gap from center */
-  .datastream-panel.ds-center-left { left: 172px; }
+  .datastream-panel.ds-right { right: 314px; }   /* leaderboard (310) + 4px gap */
+  .datastream-panel.ds-left { left: 314px; }
+  .datastream-panel.ds-center-right { right: 162px; }
+  .datastream-panel.ds-center-left { left: 162px; }
 
   .ds-inner {
     background: hsla(0, 0%, 5%, 0.90);
@@ -151,10 +151,10 @@
   .incidents-panel.section-hidden { display: none; }
   .incidents-panel.inc-bottom { bottom: 28px; }
   .incidents-panel.inc-top { top: 10px; }
-  .incidents-panel.inc-right { right: 532px; }   /* DS left edge(526) + 6px gap */
-  .incidents-panel.inc-left { left: 532px; }
-  .incidents-panel.inc-center-right { right: 378px; }
-  .incidents-panel.inc-center-left { left: 378px; }
+  .incidents-panel.inc-right { right: 10px; }
+  .incidents-panel.inc-left { left: 10px; }
+  .incidents-panel.inc-center-right { right: 10px; }
+  .incidents-panel.inc-center-left { left: 10px; }
 
   .inc-gl-canvas {
     position: absolute;

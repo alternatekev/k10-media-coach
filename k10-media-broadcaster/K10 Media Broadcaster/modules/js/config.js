@@ -320,26 +320,26 @@ const _demoModels = {
 const _defaultLogoBg = 'hsla(0, 0%, 12%, 1.0)';
 
 const _mfrBrandColors = {
-  bmw:         'hsla(204, 100%, 45%, 0.85)',
-  mclaren:     'hsla(24, 100%, 52%, 0.85)',
-  mazda:       'hsla(0, 90%, 44%, 0.85)',
-  nissan:      'hsla(0, 85%, 50%, 0.85)',
-  dallara:     'hsla(210, 85%, 48%, 0.85)',
-  ferrari:     'hsla(0, 90%, 48%, 0.85)',
-  porsche:     'hsla(0, 0%, 50%, 0.80)',
-  audi:        'hsla(0, 0%, 50%, 0.80)',
-  mercedes:    'hsla(175, 65%, 42%, 0.82)',
-  lamborghini: 'hsla(48, 90%, 48%, 0.82)',
-  chevrolet:   'hsla(40, 62%, 38%, 0.85)',
-  ford:        'hsla(237, 100%, 28%, 0.85)',
-  toyota:      'hsla(0, 85%, 48%, 0.85)',
-  hyundai:     'hsla(216, 85%, 45%, 0.85)',
-  cadillac:    'hsla(0, 0%, 50%, 0.80)',
-  astonmartin: 'hsla(155, 70%, 38%, 0.85)',
-  lotus:       'hsla(57, 100%, 50%, 0.85)',
-  ligier:      'hsla(204, 78%, 40%, 0.85)',
-  fia:         'hsla(228, 73%, 21%, 0.85)',
-  radical:     'hsla(43, 82%, 57%, 0.85)'
+  bmw:         'hsla(204, 100%, 45%, 0.65)',
+  mclaren:     'hsla(24, 100%, 52%, 0.65)',
+  mazda:       'hsla(0, 90%, 44%, 0.65)',
+  nissan:      'hsla(0, 85%, 50%, 0.65)',
+  dallara:     'hsla(210, 85%, 48%, 0.65)',
+  ferrari:     'hsla(0, 90%, 48%, 0.65)',
+  porsche:     'hsla(0, 0%, 50%, 0.60)',
+  audi:        'hsla(0, 0%, 50%, 0.60)',
+  mercedes:    'hsla(175, 65%, 42%, 0.62)',
+  lamborghini: 'hsla(48, 90%, 48%, 0.62)',
+  chevrolet:   'hsla(40, 62%, 38%, 0.65)',
+  ford:        'hsla(237, 100%, 28%, 0.65)',
+  toyota:      'hsla(0, 85%, 48%, 0.65)',
+  hyundai:     'hsla(216, 85%, 45%, 0.65)',
+  cadillac:    'hsla(0, 0%, 50%, 0.60)',
+  astonmartin: 'hsla(155, 70%, 38%, 0.65)',
+  lotus:       'hsla(57, 100%, 50%, 0.65)',
+  ligier:      'hsla(204, 78%, 40%, 0.65)',
+  fia:         'hsla(228, 73%, 21%, 0.65)',
+  radical:     'hsla(43, 82%, 57%, 0.65)'
 };
 
 const _mfrMap = {
@@ -454,10 +454,21 @@ const _defaultSettings = {
   layoutPosition: 'top-right', layoutFlow: 'ltr', verticalSwap: false,
   greenScreen: false, showWebGL: true, showBonkers: true,
   zoom: 165, forceFlag: '', showLeaderboard: true, showDatastream: true, showIncidents: true, showSpotter: true,
-  incPenalty: 17, incDQ: 25, secLayout: 'stack', secOffsetX: 0, secOffsetY: 0,
+  incPenalty: 17, incDQ: 25, secLayout: 'row', secOffsetX: 0, secOffsetY: 0,
   secVOppose: true, secHOppose: true,
   discordUser: null,
-  rallyMode: false
+  rallyMode: false,
+  // Leaderboard
+  lbFocus: 'me',        // 'me' = center on player, 'lead' = show from P1
+  lbMaxRows: 5,         // max visible opponent rows
+  lbExpandToFill: false, // override lbMaxRows to fill available screen space
+  // Datastream field toggles
+  dsShowGforce: true,
+  dsShowYaw: true,
+  dsShowFfb: true,
+  dsShowDelta: true,
+  dsShowTrackTemp: true,
+  dsShowFps: true
 };
 
 let _settings = Object.assign({}, _defaultSettings);

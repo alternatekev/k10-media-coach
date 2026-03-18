@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // K10 Media Broadcaster — Remote Dashboard Server
-// LAN-accessible HTTP server that serves the dashboards and
-// proxies SimHub telemetry so iPads/tablets only need one URL.
+// LAN-accessible HTTP server that serves dashboard.html and
+// proxies SimHub telemetry so any browser on the network can
+// view the dashboard with a single URL.
 // ═══════════════════════════════════════════════════════════════
 
 const http = require('http');
@@ -12,6 +13,7 @@ const os   = require('os');
 // ── Constants ────────────────────────────────────────────────
 const DEFAULT_PORT = 9090;
 const SIMHUB_DEFAULT = 'http://localhost:8889';
+const DASHBOARD_FILE = 'dashboard.html';
 
 const MIME = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
@@ -20,10 +22,6 @@ const MIME = {
   '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp',
   '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.woff': 'font/woff',
   '.ttf': 'font/ttf', '.map': 'application/json',
-};
-
-const DASHBOARD_MAP = {
-  build: 'dashboard-react.html',
 };
 
 // ── State ────────────────────────────────────────────────────
@@ -46,11 +44,9 @@ function getLanAddress() {
 
 // ── Proxy a request to the SimHub plugin ─────────────────────
 function proxyToSimhub(req, res) {
-  // Forward everything after /k10mediabroadcaster/ to SimHub
   const target = `${_simhubBase}${req.url}`;
 
   const proxyReq = http.get(target, { timeout: 3000 }, (proxyRes) => {
-    // Forward status + headers
     res.writeHead(proxyRes.statusCode, {
       'Content-Type': proxyRes.headers['content-type'] || 'application/json',
       'Access-Control-Allow-Origin': '*',
@@ -72,7 +68,6 @@ function proxyToSimhub(req, res) {
 
 // ── Serve a static file ──────────────────────────────────────
 function serveFile(filePath, res) {
-  // Security: don't escape _appDir
   const resolved = path.resolve(filePath);
   const resolvedBase = path.resolve(_appDir);
   if (!resolved.startsWith(resolvedBase)) {
@@ -93,17 +88,11 @@ function serveFile(filePath, res) {
   });
 }
 
-// ── Landing page → redirect straight to dashboard ────────────
-function serveLandingPage(req, res) {
-  res.writeHead(302, { 'Location': '/build/' });
-  res.end();
-}
-
-// ── Inject remote-mode overrides + iPad touch menu ───────────
-// This makes the dashboard's fetch() calls hit this server's
-// proxy instead of localhost:8889 (which isn't reachable from iPad),
-// and injects a touch-friendly floating menu for key commands.
-function injectSimhubOverride(html, req) {
+// ── Inject remote-mode overrides + touch menu ────────────────
+// Rewrites the dashboard's SimHub URL to proxy through this server
+// (so remote browsers don't need direct access to localhost:8889)
+// and adds a floating touch menu for settings/fullscreen.
+function injectRemoteOverrides(html, req) {
   const host = req.headers.host || `${getLanAddress()}:${_port}`;
   const proxyUrl = `http://${host}/k10mediabroadcaster/`;
 
@@ -111,18 +100,9 @@ function injectSimhubOverride(html, req) {
 // ── K10 Remote Server Injection ──
 window._simhubUrlOverride = '${proxyUrl}';
 window._k10RemoteMode = true;
-// Auto-detect iPad/iPhone for K10 Pro Driver mode
-window._k10IsIOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-</script>
-<link rel="stylesheet" href="/modules/styles/drive-mode.css">
-<script src="/modules/js/drive-mode.js"></script>
-<script>
-function _k10StartDriveMode() { if (window.initDriveMode) window.initDriveMode(); }
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', _k10StartDriveMode); }
-else { _k10StartDriveMode(); }
 </script>
 <style>
-/* ── iPad Touch Menu ── */
+/* ── Touch Menu ── */
 #k10-remote-menu-fab {
   position: fixed; bottom: 20px; right: 20px; z-index: 99999;
   width: 48px; height: 48px; border-radius: 50%;
@@ -163,21 +143,15 @@ else { _k10StartDriveMode(); }
 .k10-rm-btn .k10-rm-label { flex: 1; }
 .k10-rm-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 8px; }
 
-/* Hide the FAB during fullscreen to avoid clutter, show on tap */
 @media (display-mode: fullscreen) {
   #k10-remote-menu-fab { opacity: 0.3; }
   #k10-remote-menu-fab:hover, #k10-remote-menu-fab.open { opacity: 1; }
 }
 
-/* Prevent iOS rubber-banding & double-tap zoom on dashboard */
 html, body { overscroll-behavior: none; touch-action: manipulation; }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Only show on touch devices (iPad, phone, etc.)
-  if (!('ontouchstart' in window) && !navigator.maxTouchPoints) return;
-
-  // ── Build the menu DOM ──
   const fab = document.createElement('div');
   fab.id = 'k10-remote-menu-fab';
   fab.textContent = '+';
@@ -186,17 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
   panel.id = 'k10-remote-menu-panel';
 
   const actions = [
-    { icon: '\u2699\uFE0F', label: 'Settings',        fn: () => { if (typeof toggleSettings === 'function') toggleSettings(); } },
-    { icon: '\uD83D\uDD04', label: 'Cycle Rating/Pos', fn: () => { if (typeof cycleRatingPos === 'function') cycleRatingPos(); } },
-    { icon: '\uD83D\uDE97', label: 'Cycle Car Logo',   fn: () => { if (typeof cycleCarLogo === 'function') cycleCarLogo(); } },
+    { icon: '\\u2699\\uFE0F', label: 'Settings',        fn: () => { if (typeof toggleSettings === 'function') toggleSettings(); } },
+    { icon: '\\uD83D\\uDD04', label: 'Cycle Rating/Pos', fn: () => { if (typeof cycleRatingPos === 'function') cycleRatingPos(); } },
+    { icon: '\\uD83D\\uDE97', label: 'Cycle Car Logo',   fn: () => { if (typeof cycleCarLogo === 'function') cycleCarLogo(); } },
     { sep: true },
-    { icon: '\uD83D\uDCFA', label: 'Fullscreen',       fn: () => {
+    { icon: '\\uD83D\\uDCFA', label: 'Fullscreen',       fn: () => {
         if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
         else document.exitFullscreen?.();
       }
     },
-    { icon: '\uD83D\uDD17', label: 'Reconnect',        fn: () => {
-        // Reset backoff to force immediate reconnect
+    { icon: '\\uD83D\\uDD17', label: 'Reconnect',        fn: () => {
         if (typeof _connFails !== 'undefined') { _connFails = 0; _backoffUntil = 0; }
       }
     },
@@ -215,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       a.fn();
-      // Close menu after action (except fullscreen)
       if (a.label !== 'Fullscreen') {
         fab.classList.remove('open');
         panel.classList.remove('open');
@@ -233,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
     panel.classList.toggle('open', isOpen);
   });
 
-  // Close menu when tapping elsewhere
   document.addEventListener('click', () => {
     fab.classList.remove('open');
     panel.classList.remove('open');
@@ -241,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>`;
 
-  // Insert right after <head>
   if (html.includes('<head>')) {
     return html.replace('<head>', '<head>' + injection);
   }
@@ -277,49 +247,25 @@ function handleRequest(req, res) {
       remoteServer: true,
       port: _port,
       lanAddress: getLanAddress(),
-      dashboards: Object.keys(DASHBOARD_MAP).filter(k => fs.existsSync(path.join(_appDir, DASHBOARD_MAP[k]))),
     }));
     return;
   }
 
-  // ── Landing page: /
+  // ── Root: serve dashboard.html with injected proxy URL
   if (urlPath === '/' || urlPath === '') {
-    serveLandingPage(req, res);
-    return;
-  }
-
-  // ── Dashboard routes: /original/, /react/, /build/
-  const dashMatch = urlPath.match(/^\/(original|react|build)(\/.*)?$/);
-  if (dashMatch) {
-    const variant = dashMatch[1];
-    let subPath = dashMatch[2] || '/';
-
-    const dashFile = DASHBOARD_MAP[variant];
-    if (!dashFile) {
-      res.writeHead(404); res.end('Unknown dashboard variant'); return;
-    }
-
-    // Root of variant → serve the dashboard HTML with injected proxy URL
-    if (subPath === '/' || subPath === '') {
-      const htmlPath = path.join(_appDir, dashFile);
-      fs.readFile(htmlPath, 'utf8', (err, html) => {
-        if (err) {
-          res.writeHead(404); res.end(`${dashFile} not found`); return;
-        }
-        const patched = injectSimhubOverride(html, req);
-        res.writeHead(200, {
-          'Content-Type': 'text/html',
-          'Cache-Control': 'no-cache',
-          'Access-Control-Allow-Origin': '*',
-        });
-        res.end(patched);
+    const htmlPath = path.join(_appDir, DASHBOARD_FILE);
+    fs.readFile(htmlPath, 'utf8', (err, html) => {
+      if (err) {
+        res.writeHead(404); res.end(`${DASHBOARD_FILE} not found`); return;
+      }
+      const patched = injectRemoteOverrides(html, req);
+      res.writeHead(200, {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*',
       });
-      return;
-    }
-
-    // Sub-assets: /original/modules/styles/base.css → modules/styles/base.css
-    const assetPath = path.join(_appDir, subPath);
-    serveFile(assetPath, res);
+      res.end(patched);
+    });
     return;
   }
 
@@ -332,15 +278,6 @@ function handleRequest(req, res) {
 // PUBLIC API
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Start the remote dashboard server.
- * @param {Object} opts
- * @param {number} [opts.port=9090]       - Port to listen on
- * @param {string} [opts.appDir=__dirname] - Path to K10 app directory
- * @param {string} [opts.simhubUrl]       - Override SimHub base URL
- * @param {Function} [opts.log]           - Logging function
- * @returns {Promise<{port: number, lanAddress: string, url: string}>}
- */
 function start(opts = {}) {
   return new Promise((resolve, reject) => {
     if (_server) {
@@ -354,7 +291,6 @@ function start(opts = {}) {
     _simhubBase = opts.simhubUrl || SIMHUB_DEFAULT;
     _logFn     = opts.log      || console.log;
 
-    // Strip trailing slash from simhubBase
     _simhubBase = _simhubBase.replace(/\/+$/, '');
 
     _server = http.createServer(handleRequest);
@@ -373,9 +309,6 @@ function start(opts = {}) {
   });
 }
 
-/**
- * Stop the remote dashboard server.
- */
 function stop() {
   return new Promise((resolve) => {
     if (!_server) { resolve(); return; }
@@ -387,16 +320,10 @@ function stop() {
   });
 }
 
-/**
- * Check if the server is running.
- */
 function isRunning() {
   return _server !== null;
 }
 
-/**
- * Get server info.
- */
 function getInfo() {
   const lanAddress = getLanAddress();
   return {

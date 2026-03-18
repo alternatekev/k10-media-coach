@@ -70,8 +70,8 @@
     updateLayoutRallyToggle();
     syncRallyToggles();
 
-    // K10 Pro Driver — only visible when Discord connected
-    updateProDriverVisibility();
+    // Remote dashboard — visible when Discord connected
+    updateRemoteDashVisibility();
   }
 
   async function connectDiscord() {
@@ -182,9 +182,9 @@
     }
   }
 
-  // ── K10 Pro Driver (iPad streaming) ──
+  // ── Remote Dashboard (LAN streaming via remote-server.js) ──
 
-  async function toggleProDriver(el) {
+  async function toggleRemoteDash(el) {
     if (!window.k10) return;
     const isOn = el.classList.contains('on');
     const newVal = !isOn;
@@ -193,51 +193,46 @@
     if (newVal) {
       const result = await window.k10.startRemoteServer();
       if (result && result.success) {
-        _showProDriverDocs(result);
+        _showRemoteDashDocs(result);
       } else {
         el.classList.remove('on');
-        console.error('[K10] Pro Driver server start failed:', result?.error);
+        console.error('[K10] Remote server start failed:', result?.error);
       }
     } else {
       await window.k10.stopRemoteServer();
-      document.getElementById('proDriverDocs').style.display = 'none';
+      document.getElementById('remoteDashDocs').style.display = 'none';
     }
   }
 
-  function _showProDriverDocs(info) {
-    const docs = document.getElementById('proDriverDocs');
+  function _showRemoteDashDocs(info) {
+    const docs = document.getElementById('remoteDashDocs');
     const urlEl = document.getElementById('remoteServerUrl');
     if (!docs) return;
     docs.style.display = '';
     if (urlEl && info.url) urlEl.textContent = info.url;
-    // Generate QR code
     if (info.url) _renderQR('remoteServerQR', info.url);
   }
 
-  /** Show/hide the Pro Driver section based on Discord connection status */
-  function updateProDriverVisibility() {
-    const section = document.getElementById('proDriverSection');
+  function updateRemoteDashVisibility() {
+    const section = document.getElementById('remoteDashSection');
     if (!section) return;
-    // Hide when in remote mode or when Discord not connected
     if (window._k10RemoteMode) { section.style.display = 'none'; return; }
     section.style.display = _discordUser ? '' : 'none';
   }
 
-  async function initProDriverState() {
+  async function initRemoteDashState() {
     if (window._k10RemoteMode) return;
-    // Ensure visibility is set (Discord state may have loaded before this runs)
-    updateProDriverVisibility();
+    updateRemoteDashVisibility();
     if (!window.k10 || !window.k10.getRemoteServerInfo) return;
     try {
       const info = await window.k10.getRemoteServerInfo();
       if (info && info.running) {
-        const toggle = document.getElementById('proDriverToggle');
+        const toggle = document.getElementById('remoteDashToggle');
         if (toggle) toggle.classList.add('on');
-        _showProDriverDocs(info);
+        _showRemoteDashDocs(info);
       }
     } catch (e) { /* ok */ }
-    // Re-check visibility after async operations complete
-    updateProDriverVisibility();
+    updateRemoteDashVisibility();
   }
 
   // QR code rendering — uses the local qr-code.js module (no external API)
@@ -402,9 +397,14 @@
     else if (secHOppose) secHoriz = dashIsRight ? 'left' : 'right';
     else secHoriz = dashIsRight ? 'right' : 'left';
 
-    // DS/Inc horizontal class names differ for center layout
-    let dsHoriz = secHoriz, incHoriz = secHoriz;
-    if (dashIsCenter) { dsHoriz = 'center-left'; incHoriz = 'center-left'; }
+    // DS horizontal class names differ for center layout
+    let dsHoriz = secHoriz;
+    if (dashIsCenter) { dsHoriz = 'center-left'; }
+
+    // Incidents panel: opposite horizontal from dashboard, same vertical as dashboard
+    const dashVert = dashIsBottom ? 'bottom' : 'top';
+    let incHoriz = dashIsCenter ? 'center-left' : (dashIsRight ? 'left' : 'right');
+    const incVert = dashVert;
 
     // Sync toggle UIs
     const secVToggle = document.getElementById('secVOpposeToggle');
@@ -440,29 +440,35 @@
       else { ds.style.marginTop = ''; ds.style.marginBottom = ''; }
     }
 
-    // Position incidents module adjacent to datastream
+    // Position incidents panel: opposite horizontal from dashboard, same vertical edge
     const inc = document.getElementById('incidentsPanel');
     if (inc) {
       inc.classList.remove('inc-top', 'inc-bottom', 'inc-left', 'inc-right', 'inc-center-left', 'inc-center-right');
-      inc.classList.add('inc-' + secVert);
+      inc.classList.add('inc-' + incVert);
       inc.classList.add('inc-' + incHoriz);
-      if (sameSideVOffset && secVert === 'top') inc.style.marginTop = sameSideVOffset + 'px';
-      else if (sameSideVOffset && secVert === 'bottom') inc.style.marginBottom = sameSideVOffset + 'px';
-      else { inc.style.marginTop = ''; inc.style.marginBottom = ''; }
+      inc.style.marginTop = '';
+      inc.style.marginBottom = '';
     }
 
-    // Position spotter on the opposite vertical edge from leaderboard
-    // so it sits between the dashboard and the leaderboard:
-    //   • Dashboard top → LB bottom → spotter top (above LB)
-    //   • Dashboard bottom → LB top → spotter bottom (below LB)
+    // Position spotter horizontally next to incidents panel (same vertical edge, offset by incidents width + gap)
     const sp = document.getElementById('spotterPanel');
     if (sp) {
       sp.classList.remove('sp-top', 'sp-bottom', 'sp-left', 'sp-right');
-      // Same horizontal side as leaderboard
-      sp.classList.add('sp-' + (dashIsCenter ? 'left' : secHoriz));
-      // Opposite vertical edge from leaderboard
-      const spVert = secVert === 'bottom' ? 'top' : 'bottom';
-      sp.classList.add('sp-' + spVert);
+      sp.classList.add('sp-' + incVert);
+      // Place spotter to the inboard side of incidents (toward screen center)
+      const gap = 4; // matches --gap
+      if (inc) {
+        const incW = inc.offsetWidth || 0;
+        if (incHoriz === 'left' || incHoriz === 'center-left') {
+          // Incidents on left edge → spotter to its right
+          sp.style.left = (10 + incW + gap) + 'px';
+          sp.style.right = '';
+        } else {
+          // Incidents on right edge → spotter to its left
+          sp.style.right = (10 + incW + gap) + 'px';
+          sp.style.left = '';
+        }
+      }
       sp.style.marginTop = '';
       sp.style.marginBottom = '';
     }
@@ -508,7 +514,7 @@
   }
 
   function updateSecOffset(axis, val) {
-    val = Math.max(-200, Math.min(200, +val));
+    val = Math.max(-800, Math.min(800, +val));
     if (axis === 'x') {
       _settings.secOffsetX = val;
       document.getElementById('secOffsetXVal').textContent = val + 'px';
@@ -529,7 +535,7 @@
   function applySecOffset() {
     const ox = (_settings.secOffsetX || 0) + 'px';
     const oy = (_settings.secOffsetY || 0) + 'px';
-    const panels = document.querySelectorAll('.leaderboard-panel, .datastream-panel, .incidents-panel, .spotter-panel');
+    const panels = document.querySelectorAll('.leaderboard-panel, .datastream-panel');
     panels.forEach(p => {
       p.style.setProperty('--sec-offset-x', ox);
       p.style.setProperty('--sec-offset-y', oy);
@@ -643,6 +649,6 @@
   // Load settings on startup
   loadSettings();
   initDiscordState();
-  initProDriverState();
+  initRemoteDashState();
 
   // ═══════════════════════════════════════════════════════════════

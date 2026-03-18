@@ -71,19 +71,15 @@
   body.sec-minimal .datastream-panel,
   body.sec-minimal .incidents-panel { display: none !important; }
 
-  /* Margin offsets — applied via CSS custom properties */
+  /* Margin offsets — applied via CSS custom properties (incidents + spotter excluded — positioned independently) */
   .leaderboard-panel,
-  .datastream-panel,
-  .incidents-panel,
-  .spotter-panel {
+  .datastream-panel {
     --sec-offset-x: 0px;
     --sec-offset-y: 0px;
   }
   /* Apply offsets using translate so they compose with existing positioning */
   body[data-sec-offset] .leaderboard-panel,
-  body[data-sec-offset] .datastream-panel,
-  body[data-sec-offset] .incidents-panel,
-  body[data-sec-offset] .spotter-panel {
+  body[data-sec-offset] .datastream-panel {
     transform: translate(var(--sec-offset-x), var(--sec-offset-y));
   }
   /* Center leaderboard needs special handling since it already uses transform */
@@ -285,6 +281,11 @@
     border-bottom: 1px solid hsla(0,0%,100%,0.05);
   }
   .settings-row:last-child { border-bottom: none; }
+  .settings-row.settings-sub {
+    padding-left: 14px;
+    border-bottom-color: hsla(0,0%,100%,0.03);
+  }
+  .settings-row.settings-sub .settings-label { color: hsla(0,0%,100%,0.45); font-size: 11px; }
   .settings-label {
     font-size: 12px;
     font-weight: 500;
