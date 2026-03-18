@@ -3,7 +3,7 @@
   // ═══ CAR MANUFACTURER LOGOS (loaded from images/logos/) ═══
   const CAR_LOGO_KEYS = ['bmw','mclaren','mazda','nissan','dallara','ferrari','porsche','audi',
     'mercedes','lamborghini','chevrolet','ford','toyota','hyundai','cadillac','astonmartin',
-    'lotus','honda','honda_white','ligier','generic','none'];
+    'lotus','honda','honda_white','ligier','fia','radical','generic','none'];
   const carLogos = {};
   async function loadCarLogos() {
     const results = await Promise.allSettled(
@@ -15,7 +15,7 @@
   }
 
 
-  const carLogoOrder = ['bmw', 'mclaren', 'mazda', 'nissan', 'dallara', 'ferrari', 'porsche', 'audi', 'mercedes', 'lamborghini', 'chevrolet', 'ford', 'toyota', 'hyundai', 'cadillac', 'astonmartin', 'lotus', 'honda', 'ligier'];
+  const carLogoOrder = ['bmw', 'mclaren', 'mazda', 'nissan', 'dallara', 'ferrari', 'porsche', 'audi', 'mercedes', 'lamborghini', 'chevrolet', 'ford', 'toyota', 'hyundai', 'cadillac', 'astonmartin', 'lotus', 'honda', 'ligier', 'fia', 'radical'];
   let currentCarLogoIdx = 0;
   // _currentCarLogo declared in config.js
 

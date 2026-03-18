@@ -88,6 +88,10 @@ namespace K10MediaBroadcaster.Plugin.Engine
         public bool   HasErs              { get; set; }
         public int    IRating             { get; set; }
         public double SafetyRating        { get; set; }
+        /// <summary>Estimated iRating change at current position (positive = gaining).</summary>
+        public int    EstimatedIRatingDelta { get; set; }
+        /// <summary>Number of cars in the field (for iRating estimation).</summary>
+        public int    IRatingFieldSize     { get; set; }
 
         // ── In-car adjustments (driver controls) ───────────────────────────
         // These change when the driver adjusts settings via button box / black box.

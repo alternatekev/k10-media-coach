@@ -34,6 +34,9 @@ namespace K10MediaBroadcaster.Plugin.Engine
         private static string _ersDetectCarModel = "";
         private static bool   _sessionHasErs     = false;
 
+        // ── iRating estimator (reads directly from iRacing shared memory) ────
+        private static IRatingEstimator _irEstimator;
+
         public static TelemetrySnapshot Capture(PluginManager pm, ref GameData data)
         {
             var s = new TelemetrySnapshot();
@@ -291,10 +294,20 @@ namespace K10MediaBroadcaster.Plugin.Engine
             }
 
             // ── iRating / Safety Rating ─────────────────────────────────────
-            // Primary: IRacingExtraProperties plugin properties
-            // Fallback 1: iRacing raw session data (DriverInfo YAML parsed by SimHub)
-            // Fallback 2: Player's own entry in the Opponents collection
-            s.IRating = GetPluginProp<int>(pm, "IRacingExtraProperties.iRacing_DriverInfo_IRating");
+            // Priority chain:
+            // 1. Direct iRacing shared memory (IRatingEstimator reads YAML)
+            // 2. IRacingExtraProperties plugin properties
+            // 3. SimHub normalized properties
+            // 4. iRacing raw telemetry
+            // 5. Opponents collection fallback
+
+            // Try direct shared memory first (most reliable, no plugin dependency)
+            if (_irEstimator == null) _irEstimator = new IRatingEstimator();
+            _irEstimator.TryReadSessionInfo();
+
+            s.IRating = _irEstimator.PlayerIRating;
+            if (s.IRating == 0)
+                s.IRating = GetPluginProp<int>(pm, "IRacingExtraProperties.iRacing_DriverInfo_IRating");
             if (s.IRating == 0)
                 s.IRating = GetPluginProp<int>(pm, "DataCorePlugin.GameData.IRating");
             if (s.IRating == 0)
@@ -302,11 +315,21 @@ namespace K10MediaBroadcaster.Plugin.Engine
             if (s.IRating == 0)
                 s.IRating = _fallbackIRating;
 
-            s.SafetyRating = GetPluginProp<double>(pm, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating");
+            s.SafetyRating = _irEstimator.PlayerSafetyRating;
+            if (s.SafetyRating == 0)
+                s.SafetyRating = GetPluginProp<double>(pm, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating");
             if (s.SafetyRating == 0)
                 s.SafetyRating = GetPluginProp<double>(pm, "DataCorePlugin.GameData.SafetyRating");
             if (s.SafetyRating == 0)
                 s.SafetyRating = _fallbackSR;
+
+            // Estimated iRating change (updates with current position)
+            if (s.Position > 0 && s.IRating > 0)
+            {
+                _irEstimator.Update(s.Position, s.TotalCars > 0 ? s.TotalCars : _irEstimator.FieldSize);
+                s.EstimatedIRatingDelta = _irEstimator.EstimatedDelta;
+                s.IRatingFieldSize = _irEstimator.FieldSize;
+            }
 
             // ── Gap times ───────────────────────────────────────────────────
             // Primary: IRacingExtraProperties plugin

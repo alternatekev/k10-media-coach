@@ -13,6 +13,7 @@ export interface Settings {
   showCommentary: boolean
   showK10Logo: boolean
   showCarLogo: boolean
+  showGameLogo: boolean
   simhubUrl: string
   layoutPosition: string
   layoutFlow: string

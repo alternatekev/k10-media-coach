@@ -111,6 +111,8 @@ export const PROP_KEYS: string[] = [
   'K10MediaBroadcaster.Plugin.DS.SteerTorque',
   'K10MediaBroadcaster.Plugin.DS.TrackTemp',
   'K10MediaBroadcaster.Plugin.DS.IncidentCount',
+  'K10MediaBroadcaster.Plugin.DS.EstimatedIRatingDelta',
+  'K10MediaBroadcaster.Plugin.DS.IRatingFieldSize',
   'K10MediaBroadcaster.Plugin.DS.AbsActive',
   'K10MediaBroadcaster.Plugin.DS.TcActive',
   'K10MediaBroadcaster.Plugin.DS.TrackPct',
@@ -247,6 +249,8 @@ export const MFR_BRAND_COLORS: Record<string, string> = {
   astonmartin: 'hsla(155, 70%, 38%, 0.85)',
   lotus:       'hsla(57, 100%, 50%, 0.85)',
   ligier:      'hsla(204, 78%, 40%, 0.85)',
+  fia:         'hsla(228, 73%, 21%, 0.85)',
+  radical:     'hsla(43, 82%, 57%, 0.85)',
 }
 
 export const MFR_MAP: Record<string, string> = {
@@ -254,6 +258,7 @@ export const MFR_MAP: Record<string, string> = {
   'mclaren': 'mclaren', 'mp4': 'mclaren',
   'mazda': 'mazda', 'mx-5': 'mazda', 'miata': 'mazda',
   'nissan': 'nissan', 'gtp zx': 'nissan', 'nismo': 'nissan',
+  'fia f4': 'fia', 'fia': 'fia',
   'dallara': 'dallara', 'ir-01': 'dallara', 'ir01': 'dallara', 'ir-04': 'dallara', 'ir04': 'dallara',
   'ferrari': 'ferrari', '488': 'ferrari', '296': 'ferrari', 'sf-23': 'ferrari',
   'porsche': 'porsche', '911': 'porsche', 'cayman': 'porsche', 'boxter': 'porsche', '918': 'porsche',
@@ -269,6 +274,7 @@ export const MFR_MAP: Record<string, string> = {
   'lotus': 'lotus', 'emira': 'lotus', 'evija': 'lotus',
   'honda': 'honda', 'civic': 'honda', 'nsx': 'honda',
   'ligier': 'ligier', 'js p3': 'ligier', 'js p320': 'ligier',
+  'radical': 'radical', 'sr10': 'radical', 'sr8': 'radical', 'sr3': 'radical',
   'generic': 'generic', 'none': 'none',
 }
 

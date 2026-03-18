@@ -903,6 +903,8 @@ namespace K10MediaBroadcaster.Plugin
                     Jp(sb, "DataCorePlugin.GameData.CarModel", Escape(s.CarModel ?? ""));
                     Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_IRating", s.IRating);
                     Jp(sb, "IRacingExtraProperties.iRacing_DriverInfo_SafetyRating", s.SafetyRating, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.EstimatedIRatingDelta", s.EstimatedIRatingDelta);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.IRatingFieldSize", s.IRatingFieldSize);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Gap", s.GapAhead, ic);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Behind_Gap", s.GapBehind, ic);
                     Jp(sb, "IRacingExtraProperties.iRacing_Opponent_Ahead_Name", Escape(s.NearestAheadName ?? ""));

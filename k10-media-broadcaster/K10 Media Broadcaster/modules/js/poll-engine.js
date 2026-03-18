@@ -416,6 +416,32 @@
     updateIRBar(ir);
     updateSRPie(sr);
 
+    // ─── Estimated iRating Delta ───
+    const irDelta = +(p[dsPre + 'EstimatedIRatingDelta']) || 0;
+    const ratDeltas = document.querySelectorAll('.rating-delta');
+    if (ratDeltas.length >= 1) {
+      const el = ratDeltas[0];
+      if (irDelta !== 0 && ir > 0) {
+        el.textContent = (irDelta > 0 ? '+' : '') + irDelta;
+        el.className = 'rating-delta ' + (irDelta > 0 ? 'positive' : 'negative');
+      } else {
+        el.textContent = '—';
+        el.className = 'rating-delta';
+      }
+    }
+    // SR delta: not estimatable (depends on incidents per corner, not position)
+    // Leave the SR delta element showing the license class or blank
+    if (ratDeltas.length >= 2) {
+      const srEl = ratDeltas[1];
+      if (sr > 0) {
+        srEl.textContent = sr >= 3.0 ? 'A' : sr >= 2.0 ? 'B' : sr >= 1.0 ? 'C' : 'D';
+        srEl.className = 'rating-delta';
+      } else {
+        srEl.textContent = '—';
+        srEl.className = 'rating-delta';
+      }
+    }
+
     // ─── Gaps / Lap Timing ───
     // Prefer server-computed DS.IsNonRaceSession, fallback to client-side string check
     const nonRace = +(p[dsPre + 'IsNonRaceSession']) > 0 || _isNonRaceSession(

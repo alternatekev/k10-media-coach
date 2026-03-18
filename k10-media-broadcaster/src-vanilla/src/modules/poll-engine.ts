@@ -388,9 +388,36 @@ async function pollUpdate() {
   const sr = _demo ? (+v('K10MediaBroadcaster.Plugin.Demo.SafetyRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_SafetyRating') || 0)
   setHasRatingData(ir > 0 || sr > 0)
   const ratVals = document.querySelectorAll('.rating-value')
-  if (ratVals.length >= 2) { (ratVals[0] as HTMLElement).textContent = ir > 0 ? ir.toString() : '—'; (ratVals[1] as HTMLElement).textContent = sr > 0 ? sr.toFixed(2) : '—' }
+  if (ratVals.length >= 2) {
+    ;(ratVals[0] as HTMLElement).textContent = ir > 0 ? ir.toString() : '—'
+    ;(ratVals[1] as HTMLElement).textContent = sr > 0 ? sr.toFixed(2) : '—'
+  }
   updateIRBar(ir)
   updateSRPie(sr)
+
+  // ─── Estimated iRating Delta ───
+  const irDelta = +(p[dsPre + 'EstimatedIRatingDelta']) || 0
+  const ratDeltas = document.querySelectorAll('.rating-delta')
+  if (ratDeltas.length >= 1) {
+    const el = ratDeltas[0] as HTMLElement
+    if (irDelta !== 0 && ir > 0) {
+      el.textContent = (irDelta > 0 ? '+' : '') + irDelta
+      el.className = 'rating-delta ' + (irDelta > 0 ? 'positive' : 'negative')
+    } else {
+      el.textContent = '—'
+      el.className = 'rating-delta'
+    }
+  }
+  if (ratDeltas.length >= 2) {
+    const srEl = ratDeltas[1] as HTMLElement
+    if (sr > 0) {
+      srEl.textContent = sr >= 3.0 ? 'A' : sr >= 2.0 ? 'B' : sr >= 1.0 ? 'C' : 'D'
+      srEl.className = 'rating-delta'
+    } else {
+      srEl.textContent = '—'
+      srEl.className = 'rating-delta'
+    }
+  }
 
   // ─── Gaps / Lap Timing ───
   const nonRace = +(p[dsPre + 'IsNonRaceSession']) > 0 || _isNonRaceSession(

@@ -9,7 +9,7 @@ import { MFR_BRAND_COLORS, DEFAULT_LOGO_BG, DEMO_MODELS } from '../constants'
 export const CAR_LOGO_KEYS = [
   'bmw','mclaren','mazda','nissan','dallara','ferrari','porsche','audi',
   'mercedes','lamborghini','chevrolet','ford','toyota','hyundai','cadillac','astonmartin',
-  'lotus','honda','honda_white','ligier','generic','none'
+  'lotus','honda','honda_white','ligier','fia','radical','generic','none'
 ]
 
 export const carLogos: Record<string, string> = {}
@@ -17,7 +17,7 @@ export const carLogos: Record<string, string> = {}
 export const carLogoOrder = [
   'bmw', 'mclaren', 'mazda', 'nissan', 'dallara', 'ferrari', 'porsche', 'audi',
   'mercedes', 'lamborghini', 'chevrolet', 'ford', 'toyota', 'hyundai', 'cadillac',
-  'astonmartin', 'lotus', 'honda', 'ligier'
+  'astonmartin', 'lotus', 'honda', 'ligier', 'fia', 'radical'
 ]
 
 export async function loadCarLogos(): Promise<void> {
