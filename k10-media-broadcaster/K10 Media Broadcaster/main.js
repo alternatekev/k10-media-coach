@@ -85,7 +85,7 @@ let overlayWindow = null;
 let settingsMode = false;
 let greenScreenMode = false;
 // Single dashboard: vanilla TypeScript build (Vite-bundled, single-file HTML)
-const DASHBOARD_FILE = 'dashboard-build.html';
+const DASHBOARD_FILE = 'dashboard.html';
 
 function getDashboardFile() {
   return DASHBOARD_FILE;

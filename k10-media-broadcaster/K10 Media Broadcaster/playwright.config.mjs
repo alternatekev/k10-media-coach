@@ -18,6 +18,12 @@ export default defineConfig({
       testDir: './tests/build',
       testMatch: /dashboard\.spec\.mjs$/,
     },
+    // Vanilla build parity tests (dashboard-build.html vs gold standard)
+    {
+      name: 'vanilla-parity',
+      testDir: './tests/build',
+      testMatch: /vanilla-parity\.mjs$/,
+    },
     // Non-dashboard tests (Discord OAuth, etc.)
     {
       name: 'unit',
