@@ -87,6 +87,7 @@
     <!-- COL: Maps stacked — rendered dynamically from TrackMapProvider -->
     <div class="maps-col">
       <div class="panel map-panel">
+        <div class="map-track-name" id="mapTrackName"></div>
         <svg class="map-svg" id="fullMapSvg" viewBox="0 0 100 100">
           <path class="map-track" id="fullMapTrack" d="" />
           <g id="fullMapSF" class="map-sf" style="display:none;">
@@ -485,28 +486,32 @@
 
     <!-- ── Tab: Sections ── -->
     <div class="settings-tab-content active" id="settingsTabSections">
-      <div class="settings-group-label">HUD Sections</div>
+      <div class="settings-group-label">Core</div>
+      <div class="settings-row"><span class="settings-label">Tachometer</span><div class="settings-toggle on" data-section="tacho-block" data-key="showTacho" onclick="toggleSetting(this)"></div></div>
+      <div class="settings-row"><span class="settings-label">Position &amp; Gaps</span><div class="settings-toggle on" data-section="pos-gaps-col" data-key="showPosition" onclick="toggleSetting(this)"></div></div>
+      <div class="settings-row"><span class="settings-label">Track Maps</span><div class="settings-toggle on" data-section="maps-col" data-key="showMaps" onclick="toggleSetting(this)"></div></div>
+
+      <div class="settings-group-label">Car</div>
       <div class="settings-row"><span class="settings-label">Fuel</span><div class="settings-toggle on" data-section="fuel-block" data-key="showFuel" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Tyres</span><div class="settings-toggle on" data-section="tyres-block" data-key="showTyres" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Controls (BB/TC/ABS)</span><div class="settings-toggle on" data-section="car-controls" data-key="showControls" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Pedals</span><div class="settings-toggle on" data-section="pedals-area" data-key="showPedals" onclick="toggleSetting(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Track Maps</span><div class="settings-toggle on" data-section="maps-col" data-key="showMaps" onclick="toggleSetting(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Reset Map</span><div class="settings-action" onclick="resetTrackMap()" style="cursor:pointer;color:hsl(0,75%,65%);font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:4px 12px;border:1px solid hsla(0,75%,65%,0.3);border-radius:6px;">RESET</div></div>
-      <div class="settings-row"><span class="settings-label">Position &amp; Gaps</span><div class="settings-toggle on" data-section="pos-gaps-col" data-key="showPosition" onclick="toggleSetting(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Tachometer</span><div class="settings-toggle on" data-section="tacho-block" data-key="showTacho" onclick="toggleSetting(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Commentary</span><div class="settings-toggle on" data-section="commentary-col" data-key="showCommentary" onclick="toggleSetting(this)"></div></div>
+
+      <div class="settings-group-label">Race</div>
       <div class="settings-row"><span class="settings-label">Leaderboard</span><div class="settings-toggle on" data-section="leaderboardPanel" data-key="showLeaderboard" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Datastream</span><div class="settings-toggle on" data-section="datastreamPanel" data-key="showDatastream" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Incidents</span><div class="settings-toggle on" data-section="incidentsPanel" data-key="showIncidents" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Spotter</span><div class="settings-toggle on" data-section="spotterPanel" data-key="showSpotter" onclick="toggleSetting(this)"></div></div>
+      <div class="settings-row"><span class="settings-label">Commentary</span><div class="settings-toggle on" data-section="commentary-col" data-key="showCommentary" onclick="toggleSetting(this)"></div></div>
+
+      <div class="settings-group-label">Logos</div>
+      <div class="settings-row"><span class="settings-label">K10 Logo</span><div class="settings-toggle on" data-section="k10LogoSquare" data-key="showK10Logo" onclick="toggleSetting(this)"></div></div>
+      <div class="settings-row"><span class="settings-label">Car Manufacturer</span><div class="settings-toggle on" data-section="carLogoSquare" data-key="showCarLogo" onclick="toggleSetting(this)"></div></div>
+      <div class="settings-row"><span class="settings-label">Game Logo</span><div class="settings-toggle on" data-key="showGameLogo" onclick="toggleGameLogo(this)"></div></div>
 
       <div class="settings-group-label">Effects</div>
       <div class="settings-row"><span class="settings-label">WebGL Effects</span><div class="settings-toggle on" data-key="showWebGL" onclick="toggleWebGL(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Pit Limiter Animation</span><div class="settings-toggle on" data-key="showBonkers" id="bonkersToggle" onclick="toggleBonkers(this)"></div></div>
-
-      <div class="settings-group-label">Logos</div>
-      <div class="settings-row"><span class="settings-label">K10 Logo</span><div class="settings-toggle on" data-section="k10LogoSquare" data-key="showK10Logo" onclick="toggleSetting(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Car Manufacturer Logo</span><div class="settings-toggle on" data-section="carLogoSquare" data-key="showCarLogo" onclick="toggleSetting(this)"></div></div>
     </div>
 
     <!-- ── Tab: Layout ── -->
@@ -653,6 +658,37 @@
         </div>
       </div>
 
+      <!-- K10 Pro Driver (iPad streaming) — only visible when Discord connected -->
+      <div id="proDriverSection" style="display:none;">
+        <div class="settings-group-label" style="margin-top:12px;">K10 Pro Driver</div>
+        <div class="settings-row">
+          <span class="settings-label">Stream to iPad</span>
+          <div class="settings-toggle" id="proDriverToggle" onclick="toggleProDriver(this)"></div>
+        </div>
+        <div id="proDriverDocs" style="display:none;">
+          <div class="conn-card" style="margin-top:8px;">
+            <div class="conn-card-status">
+              <div class="conn-dot green"></div>
+              <div class="conn-status-text"><strong>Running</strong></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;margin:10px 0 6px;">
+              <canvas id="remoteServerQR" width="120" height="120" style="width:120px;height:120px;border-radius:8px;background:#fff;flex-shrink:0;"></canvas>
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:'JetBrains Mono',monospace;color:#6c5ce7;font-size:14px;font-weight:600;word-break:break-all;" id="remoteServerUrl"></div>
+                <div style="font-size:10px;color:#555;margin-top:4px;">Scan with your iPad camera or type the URL into Safari.</div>
+              </div>
+            </div>
+            <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;color:#999;line-height:1.7;">
+              <div style="color:#bbb;font-weight:600;margin-bottom:4px;">Setup</div>
+              <div><span style="color:#6c5ce7;font-weight:700;">1.</span> Make sure your iPad is on the same Wi-Fi network as this PC.</div>
+              <div><span style="color:#6c5ce7;font-weight:700;">2.</span> Point your iPad camera at the QR code — tap the link that appears.</div>
+              <div><span style="color:#6c5ce7;font-weight:700;">3.</span> Choose a dashboard. Drive Mode activates automatically on iPad.</div>
+              <div><span style="color:#6c5ce7;font-weight:700;">4.</span> Tap <strong>Share → Add to Home Screen</strong> for a full-screen app icon.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="settings-row" style="margin-top:12px;">
         <span class="settings-label">Rally Mode</span>
         <div class="settings-toggle" data-key="rallyMode" onclick="toggleLayoutRally(this)"></div>
@@ -699,6 +735,8 @@
     </div>
 
     <button class="settings-close" onclick="toggleSettings()">Close Settings</button>
+
+    <div class="settings-version">K10 Media Broadcaster v1.0.0 — Build Dashboard</div>
 
   </div>
 </div>

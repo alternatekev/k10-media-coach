@@ -67,10 +67,13 @@
     const newGameId = detectGameId(rawGameId);
     if (newGameId !== _currentGameId) {
       _currentGameId = newGameId;
+      window._currentGameId = _currentGameId;
       _isIRacing = (_currentGameId === 'iracing');
       _isRally = isRallyGame() || _rallyModeEnabled;
       applyGameMode();
     }
+    // Game logo overlay
+    if (window.updateGameLogo) window.updateGameLogo(_currentGameId, _settings.showGameLogo !== false);
 
     // Block non-iRacing games unless Discord connected
     if (!isGameAllowed()) {
@@ -639,6 +642,11 @@
       const mapOpp  = vs('K10MediaBroadcaster.Plugin.TrackMap.Opponents') || '';
       updateTrackMap(mapPath, mapPX, mapPY, mapOpp);
     }
+    const mapNameEl = document.getElementById('mapTrackName');
+    if (mapNameEl) {
+      const trackName = vs('DataCorePlugin.GameData.TrackName') || '';
+      if (trackName && trackName !== mapNameEl.textContent) mapNameEl.textContent = trackName;
+    }
 
     // ─── Datastream ───
     try { updateDatastream(p, _demo); } catch(e) { console.error('[K10] Datastream error:', e); }
@@ -684,6 +692,9 @@
     // ─── FPS counter (game API framerate, not browser) ───
     setApiFps(+v('DataCorePlugin.GameRawData.Telemetry.FrameRate') || 0);
     updateFps();
+
+    // ─── Drive Mode (iPad) ───
+    try { if (window._driveModeUpdate) window._driveModeUpdate(p, _demo); } catch(e) { console.error('[K10] Drive mode error:', e); }
 
     } catch (err) {
       console.error('[K10 poll] Error in poll frame #' + _pollFrame + ':', err);

@@ -13,6 +13,15 @@ import './styles/original/settings.css'
 import './styles/original/connections.css'
 import './styles/original/rally.css'
 
+// K10 Drive Mode (iPad/remote mode)
+import './styles/original/drive-mode.css'
+
+// QR code generator (local, no external API)
+import './lib/qr-code.js'
+
+// Game logo overlay (opposite corner from dashboard)
+import './lib/game-logo.js'
+
 // React-specific overrides and keyframe animations
 import './styles/globals.css'
 

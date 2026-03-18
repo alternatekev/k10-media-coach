@@ -200,6 +200,7 @@ const PROP_KEYS = [
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerX',
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerY',
   'K10MediaBroadcaster.Plugin.TrackMap.Opponents',
+  'DataCorePlugin.GameData.TrackName',
   // Leaderboard
   'K10MediaBroadcaster.Plugin.Leaderboard',
   // Driver name
@@ -443,7 +444,7 @@ function getCarAdjustability(model) {
 const _defaultSettings = {
   showFuel: true, showTyres: true, showControls: true, showPedals: true,
   showMaps: true, showPosition: true, showTacho: true, showCommentary: true,
-  showK10Logo: true, showCarLogo: true, simhubUrl: 'http://localhost:8889/k10mediabroadcaster/',
+  showK10Logo: true, showCarLogo: true, showGameLogo: true, simhubUrl: 'http://localhost:8889/k10mediabroadcaster/',
   layoutPosition: 'top-right', layoutFlow: 'ltr', verticalSwap: false,
   greenScreen: false, showWebGL: true, showBonkers: true,
   zoom: 165, forceFlag: '', showLeaderboard: true, showDatastream: true, showIncidents: true, showSpotter: true,

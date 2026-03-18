@@ -115,7 +115,7 @@ describe('SettingsPanel Component', () => {
 
     it('shows Sections tab content by default when opened', () => {
       // Look for content that only appears in Sections tab
-      expect(screen.getByText(/Display/i)).toBeInTheDocument();
+      expect(screen.getByText(/Core/i)).toBeInTheDocument();
       // Fuel should be in the Sections tab
       expect(screen.getByLabelText(/toggle fuel/i)).toBeInTheDocument();
     });
@@ -177,16 +177,23 @@ describe('SettingsPanel Component', () => {
         'Tyres',
         'Controls',
         'Pedals',
-        'Track Maps',
-        'Position',
         'Tachometer',
-        'Commentary',
+        'Position & Gaps',
+        'Track Maps',
+        'Fuel',
+        'Tyres',
+        'Controls',
+        'Pedals',
         'Leaderboard',
         'Datastream',
         'Incidents',
-        'WebGL',
+        'Spotter',
+        'Commentary',
         'K10 Logo',
-        'Car Logo',
+        'Car Manufacturer',
+        'Game Logo',
+        'WebGL Effects',
+        'Pit Limiter Animation',
       ];
 
       expectedToggles.forEach((label) => {
@@ -307,8 +314,8 @@ describe('SettingsPanel Component', () => {
       expect(k10LogoToggle).toHaveAttribute('aria-checked', 'false');
     });
 
-    it('toggles showCarLogo when Car Logo toggle is clicked', async () => {
-      const carLogoToggle = screen.getByLabelText(/toggle car logo/i);
+    it('toggles showCarLogo when Car Manufacturer toggle is clicked', async () => {
+      const carLogoToggle = screen.getByLabelText(/toggle car manufacturer/i);
       expect(carLogoToggle).toHaveAttribute('aria-checked', 'true');
 
       fireEvent.click(carLogoToggle);

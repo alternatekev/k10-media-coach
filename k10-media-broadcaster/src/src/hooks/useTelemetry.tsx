@@ -130,6 +130,7 @@ function parseTelemetry(raw: TelemetryProps): ParsedTelemetry {
     playerMapX: raw['K10MediaBroadcaster.Plugin.TrackMap.PlayerX'] || 0,
     playerMapY: raw['K10MediaBroadcaster.Plugin.TrackMap.PlayerY'] || 0,
     opponentMapPositions: raw['K10MediaBroadcaster.Plugin.TrackMap.Opponents'] || '',
+    trackName: raw['DataCorePlugin.GameData.TrackName'] || '',
 
     // Leaderboard
     leaderboardJson: raw['K10MediaBroadcaster.Plugin.Leaderboard'] || '',

@@ -43,6 +43,7 @@ export interface OverlaySettings {
   showCommentary: boolean;
   showK10Logo: boolean;
   showCarLogo: boolean;
+  showGameLogo: boolean;
   showLeaderboard: boolean;
   showDatastream: boolean;
   showIncidents: boolean;
@@ -96,6 +97,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   showCommentary: true,
   showK10Logo: true,
   showCarLogo: true,
+  showGameLogo: true,
   showLeaderboard: true,
   showDatastream: true,
   showIncidents: true,

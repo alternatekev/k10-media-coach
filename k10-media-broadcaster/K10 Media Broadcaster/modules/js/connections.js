@@ -69,6 +69,9 @@
     // Update layout section rally toggle
     updateLayoutRallyToggle();
     syncRallyToggles();
+
+    // K10 Pro Driver — only visible when Discord connected
+    updateProDriverVisibility();
   }
 
   async function connectDiscord() {
@@ -179,51 +182,67 @@
     }
   }
 
-  // ── Remote Dashboard Server (iPad/tablet) ──
-  async function toggleRemoteServer(enable) {
-    if (!window.k10) return;
+  // ── K10 Pro Driver (iPad streaming) ──
 
-    if (enable) {
+  async function toggleProDriver(el) {
+    if (!window.k10) return;
+    const isOn = el.classList.contains('on');
+    const newVal = !isOn;
+    el.classList.toggle('on', newVal);
+
+    if (newVal) {
       const result = await window.k10.startRemoteServer();
       if (result && result.success) {
-        updateRemoteServerCard(result);
+        _showProDriverDocs(result);
       } else {
-        console.error('[K10] Remote server start failed:', result?.error);
+        el.classList.remove('on');
+        console.error('[K10] Pro Driver server start failed:', result?.error);
       }
     } else {
       await window.k10.stopRemoteServer();
-      updateRemoteServerCard({ running: false });
+      document.getElementById('proDriverDocs').style.display = 'none';
     }
   }
 
-  function updateRemoteServerCard(info) {
-    const offEl = document.getElementById('remoteServerOff');
-    const onEl = document.getElementById('remoteServerOn');
+  function _showProDriverDocs(info) {
+    const docs = document.getElementById('proDriverDocs');
     const urlEl = document.getElementById('remoteServerUrl');
-    if (!offEl || !onEl) return;
-
-    if (info && info.running !== false && info.url) {
-      offEl.style.display = 'none';
-      onEl.style.display = '';
-      if (urlEl) urlEl.textContent = info.url;
-    } else {
-      offEl.style.display = '';
-      onEl.style.display = 'none';
-    }
+    if (!docs) return;
+    docs.style.display = '';
+    if (urlEl && info.url) urlEl.textContent = info.url;
+    // Generate QR code
+    if (info.url) _renderQR('remoteServerQR', info.url);
   }
 
-  async function initRemoteServerState() {
-    // Hide the card entirely when viewing from a remote device
-    if (window._k10RemoteMode) {
-      const card = document.getElementById('remoteDashboardCard');
-      if (card) card.style.display = 'none';
-      return;
-    }
+  /** Show/hide the Pro Driver section based on Discord connection status */
+  function updateProDriverVisibility() {
+    const section = document.getElementById('proDriverSection');
+    if (!section) return;
+    // Hide when in remote mode or when Discord not connected
+    if (window._k10RemoteMode) { section.style.display = 'none'; return; }
+    section.style.display = _discordUser ? '' : 'none';
+  }
+
+  async function initProDriverState() {
+    if (window._k10RemoteMode) return;
+    // Ensure visibility is set (Discord state may have loaded before this runs)
+    updateProDriverVisibility();
     if (!window.k10 || !window.k10.getRemoteServerInfo) return;
     try {
       const info = await window.k10.getRemoteServerInfo();
-      updateRemoteServerCard(info);
+      if (info && info.running) {
+        const toggle = document.getElementById('proDriverToggle');
+        if (toggle) toggle.classList.add('on');
+        _showProDriverDocs(info);
+      }
     } catch (e) { /* ok */ }
+    // Re-check visibility after async operations complete
+    updateProDriverVisibility();
+  }
+
+  // QR code rendering — uses the local qr-code.js module (no external API)
+  function _renderQR(canvasId, text) {
+    if (window.renderQRCode) window.renderQRCode(canvasId, text);
   }
 
   // Load Discord user on startup
@@ -289,6 +308,16 @@
       window._simhubUrlOverride = url;
     }
     saveSettings();
+  }
+
+  // ─── Game Logo toggle ───
+  function toggleGameLogo(el) {
+    const isOn = el.classList.contains('on');
+    _settings.showGameLogo = !isOn;
+    el.classList.toggle('on', !isOn);
+    saveSettings();
+    // Immediately update the logo visibility
+    if (window.updateGameLogo) window.updateGameLogo(window._currentGameId || 'iracing', !isOn);
   }
 
   // ─── Green screen mode ───
@@ -614,6 +643,6 @@
   // Load settings on startup
   loadSettings();
   initDiscordState();
-  initRemoteServerState();
+  initProDriverState();
 
   // ═══════════════════════════════════════════════════════════════

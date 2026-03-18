@@ -153,6 +153,7 @@ export interface TelemetryProps {
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerX': number;
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerY': number;
   'K10MediaBroadcaster.Plugin.TrackMap.Opponents': string;
+  'DataCorePlugin.GameData.TrackName': string;
 
   // ═══ Leaderboard ═══
   'K10MediaBroadcaster.Plugin.Leaderboard': string;
@@ -282,6 +283,7 @@ export interface ParsedTelemetry {
   playerMapX: number;
   playerMapY: number;
   opponentMapPositions: string;
+  trackName: string;
 
   // Leaderboard (JSON string that parses to LeaderboardEntry[])
   leaderboardJson: string;

@@ -155,6 +155,18 @@ export function createTelemetryClient(url: string, config?: TelemetryClientConfi
       const data = await fetchProps();
       if (data) {
         callback(data);
+        // Drive Mode + Game Logo hooks
+        try {
+          const w = window as any;
+          const isDemo = data['K10MediaBroadcaster.Plugin.DemoMode'] ? 1 : 0;
+          if (w._driveModeUpdate) w._driveModeUpdate(data, isDemo);
+          // Game logo — detect game ID and update
+          const rawGameId = data['K10MediaBroadcaster.Plugin.GameId'] || '';
+          const gid = rawGameId.toLowerCase().includes('lemans') || rawGameId.toLowerCase().includes('lmu') || rawGameId.toLowerCase().includes('rfactor') ? 'lmu' : 'iracing';
+          if (w.updateGameLogo) {
+            try { const s = JSON.parse(localStorage.getItem('k10-settings') || '{}'); w.updateGameLogo(gid, s.showGameLogo !== false); } catch(_) { w.updateGameLogo(gid, true); }
+          }
+        } catch (e) { /* non-critical */ }
       }
 
       // Schedule next poll

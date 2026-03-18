@@ -110,7 +110,7 @@ function serveLandingPage(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>K10 Media Broadcaster — Remote Dashboard</title>
+  <title>K10 Pro Driver</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -139,8 +139,8 @@ function serveLandingPage(req, res) {
 <body>
   <div class="container">
     <img src="/images/branding/logomark.png" class="logo" alt="K10">
-    <h1>K10 Media Broadcaster</h1>
-    <p class="subtitle">Remote Dashboard — choose a variant</p>
+    <h1>K10 Pro Driver</h1>
+    <p class="subtitle">Choose your dashboard</p>
     ${dashboards.map(d => `
     <a href="/${d.key}/" class="card">
       <div class="card-title">${d.key.charAt(0).toUpperCase() + d.key.slice(1)} Dashboard</div>
@@ -167,7 +167,12 @@ function injectSimhubOverride(html, req) {
 // ── K10 Remote Server Injection ──
 window._simhubUrlOverride = '${proxyUrl}';
 window._k10RemoteMode = true;
+// Auto-detect iPad/iPhone for K10 Pro Driver mode
+window._k10IsIOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 </script>
+<link rel="stylesheet" href="/modules/styles/drive-mode.css">
+<script src="/modules/js/drive-mode.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function() { if (window.initDriveMode) window.initDriveMode(); });</script>
 <style>
 /* ── iPad Touch Menu ── */
 #k10-remote-menu-fab {

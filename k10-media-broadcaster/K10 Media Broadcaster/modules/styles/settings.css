@@ -188,24 +188,25 @@
 
   .settings-overlay {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    right: 0;
+    bottom: 0;
     z-index: 9998;
     display: none;
     font-family: var(--ff);
   }
-  .settings-overlay.open { display: block; }
+  .settings-overlay.open { display: flex; }
 
   .settings-panel {
-    background: hsla(0,0%,6%,0.92);
-    border: 1px solid hsla(0,0%,100%,0.1);
-    border-radius: 12px;
-    padding: 24px;
-    width: 380px;
-    max-height: 80vh;
+    background: hsla(0,0%,6%,0.95);
+    border-left: 1px solid hsla(0,0%,100%,0.08);
+    padding: 20px 22px;
+    width: 340px;
+    height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     color: white;
+    -webkit-overflow-scrolling: touch;
   }
   .settings-title {
     font-size: 16px;
@@ -417,4 +418,13 @@
   .section-hidden { display: none !important; }
 
   /* ═══════════════════════════════════════════════
+     VERSION FOOTER
      ═══════════════════════════════════════════════ */
+  .settings-version {
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.15);
+    padding: 12px 0 4px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }

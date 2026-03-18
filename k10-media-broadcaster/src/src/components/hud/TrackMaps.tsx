@@ -74,6 +74,9 @@ export default function TrackMaps() {
     <div className="maps-col">
       {/* Full Map Panel */}
       <div className="panel map-panel">
+        <div className="map-track-name" id="mapTrackName">
+          {telemetry.trackName || ''}
+        </div>
         <svg className="map-svg" id="fullMapSvg" viewBox="0 0 100 100">
           {/* Track path */}
           <path className="map-track" id="fullMapTrack" d={telemetry.trackMapSvg} />

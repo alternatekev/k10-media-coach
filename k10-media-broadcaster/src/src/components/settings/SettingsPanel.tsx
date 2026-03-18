@@ -9,6 +9,13 @@ const DISCORD_GUILD_INVITE = 'https://discord.gg/k10mediabroadcaster';
 
 const DISCORD_ICON_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg>';
 
+interface RemoteServerInfo {
+  url?: string;
+  running?: boolean;
+  success?: boolean;
+  error?: string;
+}
+
 /**
  * SettingsPanel: Overlay settings UI
  * Opens/closes with Ctrl+Shift+S keyboard shortcut
@@ -20,6 +27,8 @@ export function SettingsPanel() {
   const [discordUser, setDiscordUser] = useState<DiscordUser | null>(null);
   const [discordConnecting, setDiscordConnecting] = useState(false);
   const [discordError, setDiscordError] = useState('');
+  const [k10ProDriverEnabled, setK10ProDriverEnabled] = useState(false);
+  const [k10ProDriverInfo, setK10ProDriverInfo] = useState<RemoteServerInfo | null>(null);
 
   // Load Discord user state on mount
   useEffect(() => {
@@ -36,6 +45,21 @@ export function SettingsPanel() {
       try {
         const saved = JSON.parse(localStorage.getItem('k10-settings') || '{}');
         if (saved.discordUser?.id) setDiscordUser(saved.discordUser);
+      } catch { /* ok */ }
+    })();
+  }, []);
+
+  // Load K10 Pro Driver state on mount
+  useEffect(() => {
+    const k10 = (window as any).k10;
+    (async () => {
+      if (!k10?.getRemoteServerInfo) return;
+      try {
+        const info = await k10.getRemoteServerInfo();
+        if (info?.running) {
+          setK10ProDriverEnabled(true);
+          setK10ProDriverInfo(info);
+        }
       } catch { /* ok */ }
     })();
   }, []);
@@ -116,6 +140,45 @@ export function SettingsPanel() {
       window.open(DISCORD_GUILD_INVITE, '_blank');
     }
   };
+
+  const toggleK10ProDriver = useCallback(async () => {
+    const k10 = (window as any).k10;
+    if (!k10) return;
+    const newVal = !k10ProDriverEnabled;
+    setK10ProDriverEnabled(newVal);
+
+    if (newVal) {
+      try {
+        const result = await k10.startRemoteServer();
+        if (result?.success) {
+          setK10ProDriverInfo(result);
+          renderQRCode(result.url);
+        } else {
+          setK10ProDriverEnabled(false);
+          console.error('[K10] Pro Driver server start failed:', result?.error);
+        }
+      } catch (err) {
+        setK10ProDriverEnabled(false);
+        console.error('[K10] Pro Driver error:', err);
+      }
+    } else {
+      try {
+        await k10.stopRemoteServer();
+        setK10ProDriverInfo(null);
+      } catch (err) {
+        console.error('[K10] Pro Driver stop error:', err);
+      }
+    }
+  }, [k10ProDriverEnabled]);
+
+  const renderQRCode = useCallback((url: string) => {
+    // Use the local QR generator (qr-code.js) loaded by remote-server injection
+    const w = window as any;
+    if (w.renderQRCode) {
+      // Delay slightly to ensure canvas is in DOM after state update
+      setTimeout(() => w.renderQRCode('remoteServerQR', url), 50);
+    }
+  }, []);
 
   const handleClose = () => setIsOpen(false);
 
@@ -215,22 +278,12 @@ export function SettingsPanel() {
           className={`${styles.tabContent} ${activeTab === 'sections' ? styles.tabContentActive : ''}`}
           role="tabpanel"
         >
-          <div className={styles.groupLabel}>Display</div>
+          {/* Core */}
+          <div className={styles.groupLabel}>Core</div>
           {[
-            { key: 'showFuel' as const, label: 'Fuel' },
-            { key: 'showTyres' as const, label: 'Tyres' },
-            { key: 'showControls' as const, label: 'Controls' },
-            { key: 'showPedals' as const, label: 'Pedals' },
-            { key: 'showMaps' as const, label: 'Track Maps' },
-            { key: 'showPosition' as const, label: 'Position' },
             { key: 'showTacho' as const, label: 'Tachometer' },
-            { key: 'showCommentary' as const, label: 'Commentary' },
-            { key: 'showLeaderboard' as const, label: 'Leaderboard' },
-            { key: 'showDatastream' as const, label: 'Datastream' },
-            { key: 'showIncidents' as const, label: 'Incidents' },
-            { key: 'showWebGL' as const, label: 'WebGL' },
-            { key: 'showK10Logo' as const, label: 'K10 Logo' },
-            { key: 'showCarLogo' as const, label: 'Car Logo' },
+            { key: 'showPosition' as const, label: 'Position & Gaps' },
+            { key: 'showMaps' as const, label: 'Track Maps' },
           ].map(({ key, label }) => (
             <div key={key} className={styles.row}>
               <span className={styles.label}>{label}</span>
@@ -244,27 +297,83 @@ export function SettingsPanel() {
             </div>
           ))}
 
+          {/* Car */}
+          <div className={styles.groupLabel}>Car</div>
+          {[
+            { key: 'showFuel' as const, label: 'Fuel' },
+            { key: 'showTyres' as const, label: 'Tyres' },
+            { key: 'showControls' as const, label: 'Controls' },
+            { key: 'showPedals' as const, label: 'Pedals' },
+          ].map(({ key, label }) => (
+            <div key={key} className={styles.row}>
+              <span className={styles.label}>{label}</span>
+              <button
+                className={`${styles.toggle} ${settings[key] ? styles.toggleOn : ''}`}
+                onClick={() => handleToggle(key)}
+                role="switch"
+                aria-checked={settings[key] as boolean}
+                aria-label={`Toggle ${label}`}
+              />
+            </div>
+          ))}
+
+          {/* Race */}
+          <div className={styles.groupLabel}>Race</div>
+          {[
+            { key: 'showLeaderboard' as const, label: 'Leaderboard' },
+            { key: 'showDatastream' as const, label: 'Datastream' },
+            { key: 'showIncidents' as const, label: 'Incidents' },
+            { key: 'showSpotter' as const, label: 'Spotter' },
+            { key: 'showCommentary' as const, label: 'Commentary' },
+          ].map(({ key, label }) => (
+            <div key={key} className={styles.row}>
+              <span className={styles.label}>{label}</span>
+              <button
+                className={`${styles.toggle} ${settings[key] ? styles.toggleOn : ''}`}
+                onClick={() => handleToggle(key)}
+                role="switch"
+                aria-checked={settings[key] as boolean}
+                aria-label={`Toggle ${label}`}
+              />
+            </div>
+          ))}
+
+          {/* Logos */}
+          <div className={styles.groupLabel}>Logos</div>
+          {[
+            { key: 'showK10Logo' as const, label: 'K10 Logo' },
+            { key: 'showCarLogo' as const, label: 'Car Manufacturer' },
+            { key: 'showGameLogo' as const, label: 'Game Logo' },
+          ].map(({ key, label }) => (
+            <div key={key} className={styles.row}>
+              <span className={styles.label}>{label}</span>
+              <button
+                className={`${styles.toggle} ${settings[key] ? styles.toggleOn : ''}`}
+                onClick={() => handleToggle(key)}
+                role="switch"
+                aria-checked={settings[key] as boolean}
+                aria-label={`Toggle ${label}`}
+              />
+            </div>
+          ))}
+
+          {/* Effects */}
           <div className={styles.groupLabel}>Effects</div>
-          <div className={styles.row}>
-            <span className={styles.label}>Spotter</span>
-            <button
-              className={`${styles.toggle} ${settings.showSpotter ? styles.toggleOn : ''}`}
-              onClick={() => handleToggle('showSpotter')}
-              role="switch"
-              aria-checked={settings.showSpotter}
-              aria-label="Toggle Spotter"
-            />
-          </div>
-          <div className={styles.row}>
-            <span className={styles.label}>Pit Limiter Animation</span>
-            <button
-              className={`${styles.toggle} ${settings.showBonkers ? styles.toggleOn : ''}`}
-              onClick={() => handleToggle('showBonkers')}
-              role="switch"
-              aria-checked={settings.showBonkers}
-              aria-label="Toggle Pit Limiter Animation"
-            />
-          </div>
+          {[
+            { key: 'showWebGL' as const, label: 'WebGL Effects' },
+            { key: 'showBonkers' as const, label: 'Pit Limiter Animation' },
+          ].map(({ key, label }) => (
+            <div key={key} className={styles.row}>
+              <span className={styles.label}>{label}</span>
+              <button
+                className={`${styles.toggle} ${settings[key] ? styles.toggleOn : ''}`}
+                onClick={() => handleToggle(key)}
+                role="switch"
+                aria-checked={settings[key] as boolean}
+                aria-label={`Toggle ${label}`}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Layout Tab */}
@@ -317,18 +426,6 @@ export function SettingsPanel() {
               role="switch"
               aria-checked={settings.verticalSwap}
               aria-label="Toggle Vertical Swap"
-            />
-          </div>
-
-          <div className={styles.groupLabel}>Mode</div>
-          <div className={styles.row}>
-            <span className={styles.label}>Rally Mode</span>
-            <button
-              className={`${styles.toggle} ${settings.rallyMode ? styles.toggleOn : ''}`}
-              onClick={() => handleToggle('rallyMode')}
-              role="switch"
-              aria-checked={settings.rallyMode}
-              aria-label="Toggle Rally Mode"
             />
           </div>
 
@@ -495,6 +592,84 @@ export function SettingsPanel() {
               </div>
             )}
           </div>
+
+          {/* K10 Pro Driver (iPad streaming) — only visible when Discord connected */}
+          {discordUser && !(window as any)._k10RemoteMode && (
+            <>
+              <div className={styles.groupLabel} style={{ marginTop: '12px' }}>K10 Pro Driver</div>
+              <div className={styles.row}>
+                <span className={styles.label}>Stream to iPad</span>
+                <button
+                  className={`${styles.toggle} ${k10ProDriverEnabled ? styles.toggleOn : ''}`}
+                  onClick={toggleK10ProDriver}
+                  role="switch"
+                  aria-checked={k10ProDriverEnabled}
+                  aria-label="Toggle K10 Pro Driver"
+                />
+              </div>
+
+              {/* Docs + QR — shown only when enabled */}
+              {k10ProDriverEnabled && k10ProDriverInfo && (
+                <div style={{ marginTop: '8px' }}>
+                  <div className="conn-card">
+                    <div className="conn-card-status">
+                      <div className="conn-dot green" />
+                      <div className="conn-status-text"><strong>Running</strong></div>
+                    </div>
+
+                    {/* QR code + URL */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '10px 0 6px' }}>
+                      <canvas
+                        id="remoteServerQR"
+                        width="120"
+                        height="120"
+                        style={{ width: '120px', height: '120px', borderRadius: '8px', background: '#fff', flexShrink: 0 }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontFamily: "'JetBrains Mono',monospace",
+                            color: '#6c5ce7',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            wordBreak: 'break-all',
+                          }}
+                          id="remoteServerUrl"
+                        >
+                          {k10ProDriverInfo.url}
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#555', marginTop: '4px' }}>
+                          Scan with your iPad camera or type the URL into Safari.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Setup guide */}
+                    <div style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '11px', color: '#999', lineHeight: '1.7' }}>
+                      <div style={{ color: '#bbb', fontWeight: 600, marginBottom: '4px' }}>Setup</div>
+                      <div><span style={{ color: '#6c5ce7', fontWeight: 700 }}>1.</span> Make sure your iPad is on the same Wi-Fi network as this PC.</div>
+                      <div><span style={{ color: '#6c5ce7', fontWeight: 700 }}>2.</span> Point your iPad camera at the QR code — tap the link that appears.</div>
+                      <div><span style={{ color: '#6c5ce7', fontWeight: 700 }}>3.</span> Choose a dashboard. Drive Mode activates automatically on iPad.</div>
+                      <div><span style={{ color: '#6c5ce7', fontWeight: 700 }}>4.</span> Tap <strong>Share → Add to Home Screen</strong> for a full-screen app icon.</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Rally Mode (synced with Layout tab toggle) — appears after K10 Pro Driver */}
+          <div className={styles.groupLabel} style={discordUser && !(window as any)._k10RemoteMode ? { marginTop: '12px' } : {}}>Mode</div>
+          <div className={styles.row}>
+            <span className={styles.label}>Rally Mode</span>
+            <button
+              className={`${styles.toggle} ${settings.rallyMode ? styles.toggleOn : ''}`}
+              onClick={() => handleToggle('rallyMode')}
+              role="switch"
+              aria-checked={settings.rallyMode}
+              aria-label="Toggle Rally Mode"
+            />
+          </div>
         </div>
 
         {/* Keys Tab */}
@@ -600,6 +775,8 @@ export function SettingsPanel() {
         <div className={styles.hotkeys}>
           Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> to toggle settings
         </div>
+
+        <div className="settings-version">K10 Media Broadcaster v1.0.0 — React Dashboard</div>
       </div>
     </div>
   );

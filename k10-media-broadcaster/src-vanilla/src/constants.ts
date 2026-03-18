@@ -194,6 +194,7 @@ export const PROP_KEYS: string[] = [
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerX',
   'K10MediaBroadcaster.Plugin.TrackMap.PlayerY',
   'K10MediaBroadcaster.Plugin.TrackMap.Opponents',
+  'DataCorePlugin.GameData.TrackName',
   'K10MediaBroadcaster.Plugin.Leaderboard',
   'K10MediaBroadcaster.Plugin.DriverFirstName',
   'K10MediaBroadcaster.Plugin.DriverLastName',
@@ -331,7 +332,7 @@ export const GAME_FEATURES: Record<string, GameFeatures> = {
 export const DEFAULT_SETTINGS: Settings = {
   showFuel: true, showTyres: true, showControls: true, showPedals: true,
   showMaps: true, showPosition: true, showTacho: true, showCommentary: true,
-  showK10Logo: true, showCarLogo: true,
+  showK10Logo: true, showCarLogo: true, showGameLogo: true,
   simhubUrl: 'http://localhost:8889/k10mediabroadcaster/',
   layoutPosition: 'top-right', layoutFlow: 'ltr', verticalSwap: false,
   greenScreen: false, showWebGL: true, showBonkers: true,

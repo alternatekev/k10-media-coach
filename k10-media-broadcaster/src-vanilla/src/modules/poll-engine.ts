@@ -39,7 +39,7 @@ import {
   setHasRatingData,
 } from './webgl-helpers'
 import { loadSettings, applySettings, initSettingsListeners } from './settings'
-import { initDiscordState } from './connections'
+import { initDiscordState, initProDriverState } from './connections'
 import { initKeyboard } from './keyboard'
 
 const _cycleIntervalFrames = 300
@@ -95,10 +95,13 @@ async function pollUpdate() {
   const newGameId = detectGameId(rawGameId)
   if (newGameId !== state.currentGameId) {
     state.currentGameId = newGameId
+    ;(window as any)._currentGameId = state.currentGameId
     state.isIRacing = (state.currentGameId === 'iracing')
     state.isRally = isRallyGame() || state.rallyModeEnabled
     applyGameMode()
   }
+  // Game logo overlay
+  { const w = window as any; if (w.updateGameLogo) w.updateGameLogo(state.currentGameId, state.settings.showGameLogo !== false) }
 
   // Block non-iRacing games unless Discord connected
   if (!isGameAllowed()) return
@@ -560,6 +563,11 @@ async function pollUpdate() {
       vs('K10MediaBroadcaster.Plugin.TrackMap.Opponents')
     )
   }
+  const mapNameEl = document.getElementById('mapTrackName')
+  if (mapNameEl) {
+    const trackName = vs('DataCorePlugin.GameData.TrackName') || ''
+    if (trackName && trackName !== mapNameEl.textContent) mapNameEl.textContent = trackName
+  }
 
   // ─── Sub-module updates ───
   const isDemo = !!_demo
@@ -593,6 +601,9 @@ async function pollUpdate() {
   setApiFps(+v('DataCorePlugin.GameRawData.Telemetry.FrameRate') || 0)
   updateFps()
 
+  // ─── Drive Mode (iPad) ───
+  try { const w = window as any; if (w._driveModeUpdate) w._driveModeUpdate(p, isDemo) } catch(e) { console.error('[K10] Drive mode error:', e) }
+
   } catch (err) {
     console.error('[K10 poll] Error in poll frame #' + state.pollFrame + ':', err)
   } finally {
@@ -605,8 +616,9 @@ export async function initPollEngine(): Promise<void> {
   await loadSettings()
   initSettingsListeners()
 
-  // Initialize Discord state
+  // Initialize Discord state + K10 Pro Driver
   await initDiscordState()
+  initProDriverState()
 
   // Initialize keyboard shortcuts
   initKeyboard()

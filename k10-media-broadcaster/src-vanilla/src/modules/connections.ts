@@ -73,6 +73,7 @@ function updateDiscordConnectionCard() {
 
   updateLayoutRallyToggle()
   syncRallyToggles()
+  updateProDriverVisibility()
 }
 
 export async function connectDiscord() {
@@ -164,9 +165,81 @@ export async function initDiscordState() {
   }
 }
 
+// ── K10 Pro Driver (iPad streaming) ──
+
+export async function toggleProDriver(el: HTMLElement) {
+  const k10 = (window as any).k10
+  if (!k10) return
+  const isOn = el.classList.contains('on')
+  const newVal = !isOn
+  el.classList.toggle('on', newVal)
+
+  if (newVal) {
+    const result = await k10.startRemoteServer()
+    if (result && result.success) {
+      showProDriverDocs(result)
+    } else {
+      el.classList.remove('on')
+      console.error('[K10] Pro Driver server start failed:', result?.error)
+    }
+  } else {
+    await k10.stopRemoteServer()
+    const docs = document.getElementById('proDriverDocs')
+    if (docs) docs.style.display = 'none'
+  }
+}
+
+function showProDriverDocs(info: { url?: string }) {
+  const docs = document.getElementById('proDriverDocs')
+  const urlEl = document.getElementById('remoteServerUrl')
+  if (!docs) return
+  docs.style.display = ''
+  if (urlEl && info.url) urlEl.textContent = info.url
+  if (info.url) renderQR('remoteServerQR', info.url)
+}
+
+export function updateProDriverVisibility() {
+  const section = document.getElementById('proDriverSection')
+  if (!section) return
+  if ((window as any)._k10RemoteMode) { section.style.display = 'none'; return }
+  section.style.display = state.discordUser ? '' : 'none'
+}
+
+export async function initProDriverState() {
+  if ((window as any)._k10RemoteMode) return
+  updateProDriverVisibility()
+  const k10 = (window as any).k10
+  if (!k10 || !k10.getRemoteServerInfo) return
+  try {
+    const info = await k10.getRemoteServerInfo()
+    if (info && info.running) {
+      const toggle = document.getElementById('proDriverToggle')
+      if (toggle) toggle.classList.add('on')
+      showProDriverDocs(info)
+    }
+  } catch (e) { /* ok */ }
+  updateProDriverVisibility()
+}
+
+function renderQR(canvasId: string, text: string) {
+  const w = window as any
+  if (w.renderQRCode) w.renderQRCode(canvasId, text)
+}
+
+export function toggleGameLogo(el: HTMLElement) {
+  const isOn = el.classList.contains('on')
+  state.settings.showGameLogo = !isOn
+  el.classList.toggle('on', !isOn)
+  saveSettings()
+  const w = window as any
+  if (w.updateGameLogo) w.updateGameLogo(w._currentGameId || 'iracing', !isOn)
+}
+
 // Register on window for HTML onclick handlers
 ;(window as any).connectDiscord = connectDiscord
 ;(window as any).disconnectDiscord = disconnectDiscord
 ;(window as any).openDiscordInvite = openDiscordInvite
 ;(window as any).toggleRallyMode = toggleRallyMode
+;(window as any).toggleProDriver = toggleProDriver
+;(window as any).toggleGameLogo = toggleGameLogo
 ;(window as any).updateConnectionsTab = updateConnectionsTab
