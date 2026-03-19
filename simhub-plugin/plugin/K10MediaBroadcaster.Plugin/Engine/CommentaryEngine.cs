@@ -320,9 +320,22 @@ namespace K10MediaBroadcaster.Plugin.Engine
                 .ThenBy(_ => _rng.Next())
                 .ToList();
 
+            // Pre-race detection: race session, lap 0, not yet racing
+            bool isPreRace = IsRaceSession(current.SessionTypeName) && current.CompletedLaps == 0 && current.CurrentLap <= 1;
+
             foreach (var topic in ordered)
             {
                 if (!IsTopicEnabled(topic, current.SessionTypeName)) continue;
+
+                // During pre-race, only allow pre-race-specific and formation/start topics
+                if (isPreRace)
+                {
+                    bool allowedPreRace = topic.Id == "formation_lap" || topic.Id == "race_start"
+                        || topic.Id == "prerace_track" || topic.Id == "prerace_car"
+                        || topic.Id == "prerace_circuit_detail" || topic.Id == "prerace_manufacturer";
+                    if (!allowedPreRace) continue;
+                }
+
                 if (!IsTopicCooledDown(topic)) continue;
                 if (!AnyTriggerFires(topic, current, previous)) continue;
 
@@ -462,6 +475,13 @@ namespace K10MediaBroadcaster.Plugin.Engine
             return true;
         }
 
+        private static bool IsRaceSession(string sessionTypeName)
+        {
+            if (string.IsNullOrEmpty(sessionTypeName)) return false;
+            var s = sessionTypeName.ToLowerInvariant();
+            return s.Contains("race") && !s.Contains("practice") && !s.Contains("qualify") && !s.Contains("warmup");
+        }
+
         private bool IsTopicCooledDown(CommentaryTopic topic)
         {
             if (!_topicLastTrigger.TryGetValue(topic.Id, out DateTime last))
@@ -537,6 +557,11 @@ namespace K10MediaBroadcaster.Plugin.Engine
             // Substitute {driver} with randomly-chosen first or last name
             prompt = prompt.Replace("{driver}", ResolveDriverName());
 
+            // Substitute car-specific placeholders
+            prompt = prompt.Replace("{car}", ResolveCar("{car}", context));
+            prompt = prompt.Replace("{manufacturer}", ResolveCar("{manufacturer}", context));
+            prompt = prompt.Replace("{class}", ResolveCar("{class}", context));
+
             // Build event exposition text (used in event-only mode)
             string exposition = BuildEventExposition(topic, context);
 
@@ -598,6 +623,11 @@ namespace K10MediaBroadcaster.Plugin.Engine
             // Substitute {driver} with randomly-chosen first or last name
             template = template.Replace("{driver}", ResolveDriverName());
 
+            // Substitute car-specific placeholders
+            template = template.Replace("{car}", ResolveCar("{car}", context));
+            template = template.Replace("{manufacturer}", ResolveCar("{manufacturer}", context));
+            template = template.Replace("{class}", ResolveCar("{class}", context));
+
             return template;
         }
 
@@ -640,6 +670,62 @@ namespace K10MediaBroadcaster.Plugin.Engine
             if (hasFirst) return DriverFirstName.Trim();
             if (hasLast)  return DriverLastName.Trim();
             return "the driver";
+        }
+
+        /// <summary>
+        /// Resolves car-specific placeholders: {car}, {manufacturer}, {class}.
+        /// {car} → full car model name (e.g., "the McLaren 570S")
+        /// {manufacturer} → brand only (e.g., "the McLaren")
+        /// {class} → car class (e.g., "the GT3 car")
+        /// </summary>
+        private string ResolveCar(string placeholder, TelemetrySnapshot context)
+        {
+            if (context == null || string.IsNullOrEmpty(context.CarModel))
+                return "the car";
+
+            string carModel = context.CarModel.Trim();
+
+            if (placeholder == "{car}")
+            {
+                // Return full car model with "the" prefix if not already present
+                if (!carModel.StartsWith("the ", System.StringComparison.OrdinalIgnoreCase))
+                    return "the " + carModel;
+                return carModel;
+            }
+
+            if (placeholder == "{manufacturer}")
+            {
+                // Extract first word as manufacturer (e.g., "the McLaren" from "McLaren 570S")
+                string[] parts = carModel.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length > 0)
+                {
+                    string mfg = parts[0];
+                    if (!mfg.StartsWith("the ", System.StringComparison.OrdinalIgnoreCase))
+                        return "the " + mfg;
+                    return mfg;
+                }
+                return "the car";
+            }
+
+            if (placeholder == "{class}")
+            {
+                // Detect class from car model string
+                string carLower = carModel.ToLowerInvariant();
+
+                if (carLower.Contains("gt3")) return "the GT3 car";
+                if (carLower.Contains("gt4")) return "the GT4 car";
+                if (carLower.Contains("gte")) return "the GTE car";
+                if (carLower.Contains("lmp2")) return "the LMP2 car";
+                if (carLower.Contains("lmdh")) return "the LMDh car";
+                if (carLower.Contains("formula") || carLower.Contains("f1")) return "the Formula car";
+                if (carLower.Contains("stock") || carLower.Contains("nascar")) return "the stock car";
+                if (carLower.Contains("truck")) return "the truck";
+                if (carLower.Contains("prototype")) return "the prototype";
+
+                return "the car";
+            }
+
+            return "the car";
         }
 
         /// <summary>

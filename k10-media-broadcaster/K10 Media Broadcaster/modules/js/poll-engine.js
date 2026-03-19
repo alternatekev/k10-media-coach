@@ -483,29 +483,53 @@
       // Store for track map sector coloring
       window._sectorData = { curSector, splits, deltas, states };
 
+      // Read current lap time for live sector elapsed
+      const currentLapTime = _demo
+        ? (+(p['K10MediaBroadcaster.Plugin.Demo.CurrentLapTime']) || 0)
+        : (+(p['DataCorePlugin.GameData.CurrentLapTime']) || 0);
+
       for (let si = 1; si <= 3; si++) {
         const cell = document.getElementById('sector' + si);
         const timeEl = document.getElementById('sector' + si + 'Time');
+        const deltaEl = document.getElementById('sector' + si + 'Delta');
         if (!cell || !timeEl) continue;
 
         cell.classList.remove('sector-pb', 'sector-faster', 'sector-slower', 'sector-active');
 
         if (si === curSector) {
+          // Active sector: show running elapsed time, delta below
           cell.classList.add('sector-active');
-          if (lapDelta !== 0) {
-            timeEl.textContent = (lapDelta >= 0 ? '+' : '') + lapDelta.toFixed(2);
-            cell.classList.add(lapDelta < 0 ? 'sector-faster' : 'sector-slower');
-          } else {
-            timeEl.textContent = '—';
+          // Estimate sector entry time from previous splits
+          let entryTime = 0;
+          for (let k = 0; k < si - 1; k++) entryTime += splits[k] || 0;
+          const elapsed = currentLapTime > entryTime ? currentLapTime - entryTime : currentLapTime;
+          const em = Math.floor(elapsed / 60);
+          const es = elapsed % 60;
+          timeEl.textContent = elapsed > 0 ? ((em > 0 ? em + ':' : '') + (em > 0 && es < 10 ? '0' : '') + es.toFixed(1)) : '—';
+          if (deltaEl) {
+            if (lapDelta !== 0) {
+              deltaEl.textContent = (lapDelta >= 0 ? '+' : '') + lapDelta.toFixed(2);
+              cell.classList.add(lapDelta < 0 ? 'sector-faster' : 'sector-slower');
+            } else {
+              deltaEl.textContent = '';
+            }
           }
         } else if (splits[si - 1] > 0) {
+          // Completed sector: show split time, delta to best below
           const split = splits[si - 1];
           const m = Math.floor(split / 60);
           const s = (split % 60);
           timeEl.textContent = (m > 0 ? m + ':' : '') + (m > 0 && s < 10 ? '0' : '') + s.toFixed(1);
           if (stateClass[states[si - 1]]) cell.classList.add(stateClass[states[si - 1]]);
+          if (deltaEl) {
+            const d = deltas[si - 1];
+            if (states[si - 1] === 1) deltaEl.textContent = 'PB';
+            else if (d !== 0) deltaEl.textContent = (d >= 0 ? '+' : '') + d.toFixed(2);
+            else deltaEl.textContent = '';
+          }
         } else {
           timeEl.textContent = '—';
+          if (deltaEl) deltaEl.textContent = '';
         }
       }
 
@@ -521,6 +545,12 @@
         if (sectorEl) sectorEl.style.display = 'none';
         if (gapAhead) gapAhead.style.display = '';
         if (gapBehind) gapBehind.style.display = '';
+        // Clear sector map highlights
+        window._sectorData = null;
+        for (let si = 1; si <= 3; si++) {
+          const el = document.getElementById('mapSector' + si);
+          if (el) el.setAttribute('stroke', 'transparent');
+        }
         _gapsNonRaceMode = false;
         _gapsWorstLap = 0;
         _gapsLastLap = 0;

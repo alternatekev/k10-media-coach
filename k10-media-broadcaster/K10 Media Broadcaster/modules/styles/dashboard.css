@@ -749,22 +749,32 @@
   }
   .sector-time {
     font-family: var(--ff-mono);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
+  }
+  .sector-delta {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: hsla(0,0%,100%,0.35);
+    margin-top: 1px;
   }
   .sector-cell.sector-pb {
     background: hsla(280,60%,45%,0.25);
   }
   .sector-cell.sector-pb .sector-time { color: var(--purple); }
+  .sector-cell.sector-pb .sector-delta { color: var(--purple); }
   .sector-cell.sector-faster {
     background: hsla(130,55%,40%,0.25);
   }
   .sector-cell.sector-faster .sector-time { color: var(--green); }
+  .sector-cell.sector-faster .sector-delta { color: var(--green); }
   .sector-cell.sector-slower {
     background: hsla(0,65%,45%,0.25);
   }
   .sector-cell.sector-slower .sector-time { color: var(--red); }
+  .sector-cell.sector-slower .sector-delta { color: var(--red); }
   .sector-cell.sector-active {
     border: 1px solid hsla(0,0%,100%,0.15);
   }
