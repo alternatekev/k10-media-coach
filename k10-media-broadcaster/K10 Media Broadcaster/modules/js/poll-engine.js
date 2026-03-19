@@ -220,6 +220,8 @@
       _lastCarModel = carModel;
       _carAdj = getCarAdjustability(carModel);
       setCarLogo(detectMfr(carModel), carModel);
+      // Track car usage for driver profile heatmap
+      if (carModel && !_demo && typeof recordCarSession === 'function') recordCarSession(carModel);
     }
     if (_demo) { _tcSeen = true; _absSeen = true; }
     else {
@@ -408,8 +410,11 @@
     }
 
     // ─── iRating / Safety ───
-    const ir = _demo ? (+v('K10MediaBroadcaster.Plugin.Demo.IRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_IRating') || 0);
-    const sr = _demo ? (+v('K10MediaBroadcaster.Plugin.Demo.SafetyRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_SafetyRating') || 0);
+    // Priority: manual entry (always wins when set) → telemetry
+    let ir = window._manualIRating > 0 ? window._manualIRating
+      : (_demo ? (+v('K10MediaBroadcaster.Plugin.Demo.IRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_IRating') || 0));
+    let sr = window._manualSafetyRating > 0 ? window._manualSafetyRating
+      : (_demo ? (+v('K10MediaBroadcaster.Plugin.Demo.SafetyRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_SafetyRating') || 0));
     _hasRatingData = (ir > 0 || sr > 0);
     const ratVals = document.querySelectorAll('.rating-value');
     if (ratVals.length >= 2) { ratVals[0].textContent = ir > 0 ? ir : '—'; ratVals[1].textContent = sr > 0 ? sr.toFixed(2) : '—'; }
@@ -418,6 +423,7 @@
 
     // ─── Estimated iRating Delta ───
     const irDelta = +(p[dsPre + 'EstimatedIRatingDelta']) || 0;
+    window._lastIRDelta = irDelta; // expose for driver profile modal
     const ratDeltas = document.querySelectorAll('.rating-delta');
     if (ratDeltas.length >= 1) {
       const el = ratDeltas[0];
@@ -429,11 +435,14 @@
         el.className = 'rating-delta';
       }
     }
-    // SR delta: not estimatable (depends on incidents per corner, not position)
-    // Leave the SR delta element showing the license class or blank
+    // SR delta: show manual license letter if set, otherwise derive from SR value
     if (ratDeltas.length >= 2) {
       const srEl = ratDeltas[1];
-      if (sr > 0) {
+      const lic = window._manualLicense || '';
+      if (lic) {
+        srEl.textContent = lic === 'R' ? 'R' : lic === 'P' ? 'Pro' : lic;
+        srEl.className = 'rating-delta';
+      } else if (sr > 0) {
         srEl.textContent = sr >= 3.0 ? 'A' : sr >= 2.0 ? 'B' : sr >= 1.0 ? 'C' : 'D';
         srEl.className = 'rating-delta';
       } else {
@@ -455,48 +464,63 @@
     const gapItems = document.querySelectorAll('.gap-item');
 
     if (nonRace) {
-      // ── Non-race: show best lap / last lap ──
-      const bestLap = _demo
-        ? (+(p['K10MediaBroadcaster.Plugin.Demo.BestLapTime']) || 0)
-        : (+(p['DataCorePlugin.GameData.BestLapTime']) || 0);
-      const lastLap = _demo
-        ? (+(p['K10MediaBroadcaster.Plugin.Demo.LastLapTime']) || 0)
-        : (+(p['DataCorePlugin.GameData.LastLapTime']) || 0);
-      const curLap = _demo
-        ? (+(p['K10MediaBroadcaster.Plugin.Demo.CurrentLap']) || 0)
-        : (+(p['DataCorePlugin.GameData.CurrentLap']) || 0);
+      // ── Non-race: show F1-style sector indicator (data from plugin SectorTracker) ──
+      const sectorEl = document.getElementById('sectorIndicator');
+      const gapAhead = document.getElementById('gapAheadItem');
+      const gapBehind = document.getElementById('gapBehindItem');
+      if (sectorEl) sectorEl.style.display = '';
+      if (gapAhead) gapAhead.style.display = 'none';
+      if (gapBehind) gapBehind.style.display = 'none';
 
-      // Track worst lap
-      if (lastLap > 0 && lastLap !== _gapsLastLap) {
-        _gapsLastLap = lastLap;
-        if (lastLap > _gapsWorstLap) _gapsWorstLap = lastLap;
-      }
-      _gapsBestLap = bestLap;
-      _gapsLapNum = curLap;
+      const curSector = +(p[dsPre + 'CurrentSector']) || 1;
+      const lapDelta = +(p[dsPre + 'LapDelta']) || 0;
+      const splits = [+(p[dsPre + 'SectorSplitS1']) || 0, +(p[dsPre + 'SectorSplitS2']) || 0, +(p[dsPre + 'SectorSplitS3']) || 0];
+      const deltas = [+(p[dsPre + 'SectorDeltaS1']) || 0, +(p[dsPre + 'SectorDeltaS2']) || 0, +(p[dsPre + 'SectorDeltaS3']) || 0];
+      const states = [+(p[dsPre + 'SectorStateS1']) || 0, +(p[dsPre + 'SectorStateS2']) || 0, +(p[dsPre + 'SectorStateS3']) || 0];
+      // state: 0=none, 1=pb, 2=faster, 3=slower
+      const stateClass = ['', 'sector-pb', 'sector-faster', 'sector-slower'];
 
-      // Update labels
-      if (gapLabels.length >= 2) { gapLabels[0].textContent = 'Best Lap'; gapLabels[1].textContent = 'Last Lap'; }
-      if (gapTimes.length >= 2) {
-        gapTimes[0].textContent = bestLap > 0 ? _fmtLapTime(bestLap) : '—';
-        gapTimes[1].textContent = lastLap > 0 ? _fmtLapTime(lastLap) : '—';
-      }
-      // Show delta from best instead of driver name
-      if (gapDrivers.length >= 2) {
-        gapDrivers[0].textContent = curLap > 0 ? 'Lap ' + curLap : '';
-        if (lastLap > 0 && bestLap > 0) {
-          const delta = lastLap - bestLap;
-          gapDrivers[1].textContent = delta <= 0.001 ? 'Personal Best' : '+' + delta.toFixed(3);
+      // Store for track map sector coloring
+      window._sectorData = { curSector, splits, deltas, states };
+
+      for (let si = 1; si <= 3; si++) {
+        const cell = document.getElementById('sector' + si);
+        const timeEl = document.getElementById('sector' + si + 'Time');
+        if (!cell || !timeEl) continue;
+
+        cell.classList.remove('sector-pb', 'sector-faster', 'sector-slower', 'sector-active');
+
+        if (si === curSector) {
+          cell.classList.add('sector-active');
+          if (lapDelta !== 0) {
+            timeEl.textContent = (lapDelta >= 0 ? '+' : '') + lapDelta.toFixed(2);
+            cell.classList.add(lapDelta < 0 ? 'sector-faster' : 'sector-slower');
+          } else {
+            timeEl.textContent = '—';
+          }
+        } else if (splits[si - 1] > 0) {
+          const split = splits[si - 1];
+          const m = Math.floor(split / 60);
+          const s = (split % 60);
+          timeEl.textContent = (m > 0 ? m + ':' : '') + (m > 0 && s < 10 ? '0' : '') + s.toFixed(1);
+          if (stateClass[states[si - 1]]) cell.classList.add(stateClass[states[si - 1]]);
         } else {
-          gapDrivers[1].textContent = '';
+          timeEl.textContent = '—';
         }
       }
-      if (gapIRs.length >= 2) { gapIRs[0].textContent = ''; gapIRs[1].textContent = ''; }
+
       _gapsNonRaceMode = true;
     } else {
       // ── Race: show ahead / behind gaps ──
       if (_gapsNonRaceMode) {
-        // Restore labels when switching back to race
+        // Restore gaps, hide sectors
         if (gapLabels.length >= 2) { gapLabels[0].textContent = 'Ahead'; gapLabels[1].textContent = 'Behind'; }
+        const sectorEl = document.getElementById('sectorIndicator');
+        const gapAhead = document.getElementById('gapAheadItem');
+        const gapBehind = document.getElementById('gapBehindItem');
+        if (sectorEl) sectorEl.style.display = 'none';
+        if (gapAhead) gapAhead.style.display = '';
+        if (gapBehind) gapBehind.style.display = '';
         _gapsNonRaceMode = false;
         _gapsWorstLap = 0;
         _gapsLastLap = 0;
@@ -713,7 +737,12 @@
     // ─── Cycling timer ───
     // Suppress cycling while timer row is visible — keep position page showing
     const _timerShowing = timerRow && timerRow.classList.contains('timer-visible');
-    if (_cycleFrameCount >= _cycleIntervalFrames) { _cycleFrameCount = 0; if (!_timerShowing) cycleRatingPos(); }
+    // Asymmetric cycle: 60s on position page, 15s on rating page
+    const _posFrames = Math.round(60000 / POLL_MS);   // 60s
+    const _ratFrames = Math.round(15000 / POLL_MS);    // 15s
+    const _onRatingPage = window._isRatingPageActive ? window._isRatingPageActive() : false;
+    const _cycleTarget = _onRatingPage ? _ratFrames : _posFrames;
+    if (_cycleFrameCount >= _cycleTarget) { _cycleFrameCount = 0; if (!_timerShowing) cycleRatingPos(); }
 
     // ─── FPS counter (game API framerate, not browser) ───
     setApiFps(+v('DataCorePlugin.GameRawData.Telemetry.FrameRate') || 0);

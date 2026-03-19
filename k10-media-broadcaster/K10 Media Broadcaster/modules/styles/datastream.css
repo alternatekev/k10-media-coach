@@ -28,10 +28,11 @@
   .datastream-panel.section-hidden { display: none; }
   .datastream-panel.ds-bottom { bottom: 28px; }
   .datastream-panel.ds-top { top: 10px; }
-  .datastream-panel.ds-right { right: 314px; }   /* leaderboard (310) + 4px gap */
-  .datastream-panel.ds-left { left: 314px; }
-  .datastream-panel.ds-center-right { right: 162px; }
-  .datastream-panel.ds-center-left { left: 162px; }
+  .datastream-panel.ds-right { right: 326px; }   /* leaderboard (310) + 16px gap */
+  .datastream-panel.ds-left { left: 326px; }
+  /* center modes: positioned dynamically by applyLayout() JS */
+  .datastream-panel.ds-center-right { right: auto; }
+  .datastream-panel.ds-center-left { left: auto; }
 
   .ds-inner {
     background: hsla(0, 0%, 5%, 0.90);

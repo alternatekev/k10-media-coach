@@ -923,6 +923,17 @@ namespace K10MediaBroadcaster.Plugin
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.TcActive", s.TcActive ? 1 : 0);
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.TrackPct", s.TrackPositionPct, ic);
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.LapDelta", s.LapDeltaToBest, ic);
+                    // Sector splits
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.CurrentSector", s.CurrentSector);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorSplitS1", s.SectorSplitS1, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorSplitS2", s.SectorSplitS2, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorSplitS3", s.SectorSplitS3, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorDeltaS1", s.SectorDeltaS1, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorDeltaS2", s.SectorDeltaS2, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorDeltaS3", s.SectorDeltaS3, ic);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorStateS1", s.SectorStateS1);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorStateS2", s.SectorStateS2);
+                    Jp(sb, "K10MediaBroadcaster.Plugin.DS.SectorStateS3", s.SectorStateS3);
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.CompletedLaps", s.CompletedLaps);
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.IsInPitLane", s.IsInPitLane ? 1 : 0);
                     Jp(sb, "K10MediaBroadcaster.Plugin.DS.SpeedKmh", s.SpeedKmh, ic);

@@ -36,6 +36,7 @@ namespace K10MediaBroadcaster.Plugin.Engine
 
         // ── iRating estimator (reads directly from iRacing shared memory) ────
         private static IRatingEstimator _irEstimator;
+        private static SectorTracker _sectorTracker = new SectorTracker();
 
         public static TelemetrySnapshot Capture(PluginManager pm, ref GameData data)
         {
@@ -99,6 +100,19 @@ namespace K10MediaBroadcaster.Plugin.Engine
             s.LapBestTime       = Coalesce(GetRaw<float>(pm, "LapBestLapTime"),     GetNorm<float>(d, "BestLapTime"));
             s.LapDeltaToBest    = Coalesce(GetRaw<float>(pm, "LapDeltaToBestLap"),  GetNorm<float>(d, "DeltaToSessionBestLap"));
             s.SessionTimeRemain = Coalesce(GetRaw<double>(pm, "SessionTimeRemain"), GetNorm<double>(d, "SessionTimeLeft"));
+
+            // ── Sector splits (3 sectors = track thirds by LapDistPct) ──────────
+            _sectorTracker.Update(s.TrackPositionPct, s.LapCurrentTime, s.CompletedLaps);
+            s.CurrentSector  = _sectorTracker.CurrentSector;
+            s.SectorSplitS1  = _sectorTracker.SplitS1;
+            s.SectorSplitS2  = _sectorTracker.SplitS2;
+            s.SectorSplitS3  = _sectorTracker.SplitS3;
+            s.SectorDeltaS1  = _sectorTracker.DeltaS1;
+            s.SectorDeltaS2  = _sectorTracker.DeltaS2;
+            s.SectorDeltaS3  = _sectorTracker.DeltaS3;
+            s.SectorStateS1  = _sectorTracker.StateS1;
+            s.SectorStateS2  = _sectorTracker.StateS2;
+            s.SectorStateS3  = _sectorTracker.StateS3;
 
             // ── Player name (needed before opponents loop for IsPlayer matching) ──
             try

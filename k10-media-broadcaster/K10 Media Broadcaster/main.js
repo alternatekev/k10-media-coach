@@ -59,6 +59,40 @@ function saveSettingsSync(settings) {
   fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2));
 }
 
+// ── iRating / Safety Rating persistence ──────────────────────
+function getRatingPath() {
+  return path.join(app.getPath('userData'), 'irating-history.json');
+}
+
+function loadRatingData() {
+  try {
+    return JSON.parse(fs.readFileSync(getRatingPath(), 'utf8'));
+  } catch (e) {
+    return { iRating: 0, safetyRating: 0, history: [] };
+  }
+}
+
+function saveRatingData(data) {
+  fs.writeFileSync(getRatingPath(), JSON.stringify(data, null, 2));
+}
+
+// ── Driver profile / car history persistence ─────────────────
+function getProfilePath() {
+  return path.join(app.getPath('userData'), 'driver-profile.json');
+}
+
+function loadProfileData() {
+  try {
+    return JSON.parse(fs.readFileSync(getProfilePath(), 'utf8'));
+  } catch (e) {
+    return { carSessions: {} };
+  }
+}
+
+function saveProfileData(data) {
+  fs.writeFileSync(getProfilePath(), JSON.stringify(data, null, 2));
+}
+
 // ── Window bounds persistence (green-screen mode only) ───────
 function getBoundsPath() {
   return path.join(app.getPath('userData'), 'window-bounds.json');
@@ -347,6 +381,14 @@ app.whenReady().then(() => {
   globalShortcut.register('CommandOrControl+Shift+M', () => {
     if (overlayWindow) overlayWindow.webContents.send('reset-trackmap');
   });
+
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    if (overlayWindow) overlayWindow.webContents.send('toggle-rating-editor');
+  });
+
+  globalShortcut.register('CommandOrControl+Shift+V', () => {
+    if (overlayWindow) overlayWindow.webContents.send('toggle-driver-profile');
+  });
 });
 
 app.on('will-quit', () => {
@@ -373,6 +415,24 @@ ipcMain.handle('release-interactive', async () => {
   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
   overlayWindow.setFocusable(false);
   console.log('[K10] Interactive mode OFF — click-through restored');
+});
+
+// ── IPC: Driver profile / car history persistence ──
+ipcMain.handle('get-profile-data', async () => {
+  return loadProfileData();
+});
+
+ipcMain.handle('save-profile-data', async (event, data) => {
+  saveProfileData(data);
+});
+
+// ── IPC: iRating / Safety Rating persistence ──
+ipcMain.handle('get-rating-data', async () => {
+  return loadRatingData();
+});
+
+ipcMain.handle('save-rating-data', async (event, data) => {
+  saveRatingData(data);
 });
 
 // ── IPC: Settings persistence ──

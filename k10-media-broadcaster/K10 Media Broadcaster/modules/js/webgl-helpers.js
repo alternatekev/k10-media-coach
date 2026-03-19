@@ -345,6 +345,10 @@
   let ratingActive = true;
 
   let _hasRatingData = false; // set true when iRating or SR become nonzero
+  // Allow external modules (rating-editor.js) to flag rating data as available
+  window.setHasRatingData = function(val) { _hasRatingData = !!val; };
+  // Expose current cycle state so poll-engine can use asymmetric timing
+  window._isRatingPageActive = function() { return ratingActive; };
   function cycleRatingPos() {
     // Don't cycle to rating page if no iRating/SR data is available
     if (!_hasRatingData) return;
@@ -508,15 +512,43 @@
     if (zg) zg.innerHTML = '';
   }
 
+  // Sector colors: 0=none(transparent), 1=pb(purple), 2=faster(green), 3=slower(red)
+  const _sectorColors = ['transparent', 'hsl(280,60%,55%)', 'hsl(130,60%,50%)', 'hsl(0,65%,50%)'];
+  const _sectorActiveColor = 'hsla(0,0%,100%,0.25)';
+
+  // Split an SVG path string into 3 roughly equal sub-paths by point count
+  function _splitPathIntoSectors(svgPath) {
+    // Extract all coordinate pairs from the path (M, L, C control points)
+    const coords = svgPath.match(/[\d.]+[,\s]+[\d.]+/g);
+    if (!coords || coords.length < 6) return ['', '', ''];
+    const third = Math.floor(coords.length / 3);
+    const parts = [coords.slice(0, third), coords.slice(third, third * 2), coords.slice(third * 2)];
+    return parts.map(function(pts, i) {
+      // Build an SVG path: M first point, L remaining points
+      // Include the last point of the previous segment as the start for continuity
+      let startPt = i === 0 ? pts[0] : coords[third * i - 1];
+      let d = 'M ' + startPt;
+      for (let j = (i === 0 ? 1 : 0); j < pts.length; j++) d += ' L ' + pts[j];
+      return d;
+    });
+  }
+
   function updateTrackMap(svgPath, playerX, playerY, opponentStr) {
     // Update track outline (only when path changes — new track or first load)
     if (svgPath && svgPath !== _mapLastPath) {
       _mapLastPath = svgPath;
-      _mapHasInit = false; // reset smoothing on track change
+      _mapHasInit = false;
       const fullTrack = document.getElementById('fullMapTrack');
       const zoomTrack = document.getElementById('zoomMapTrack');
       if (fullTrack) fullTrack.setAttribute('d', svgPath);
       if (zoomTrack) zoomTrack.setAttribute('d', svgPath);
+
+      // Split path into 3 sector sub-paths for colored overlays
+      const sectorPaths = _splitPathIntoSectors(svgPath);
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('mapSector' + i);
+        if (el) el.setAttribute('d', sectorPaths[i - 1]);
+      }
 
       // Position start/finish marker at the first point of the path (LapDistPct=0)
       const sfMatch = svgPath.match(/^M\s*([\d.]+)[,\s]+([\d.]+)/);
@@ -531,6 +563,20 @@
         if (zoomSF) {
           zoomSF.setAttribute('transform', 'translate(' + sfX.toFixed(1) + ',' + sfY.toFixed(1) + ')');
           zoomSF.style.display = '';
+        }
+      }
+    }
+
+    // Update sector colors from live performance data (set by poll-engine)
+    if (window._sectorData) {
+      const sd = window._sectorData;
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('mapSector' + i);
+        if (!el) continue;
+        if (i === sd.curSector) {
+          el.setAttribute('stroke', _sectorActiveColor);
+        } else {
+          el.setAttribute('stroke', _sectorColors[sd.states[i - 1]] || 'transparent');
         }
       }
     }

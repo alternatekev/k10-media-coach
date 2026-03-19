@@ -72,6 +72,9 @@
 
     // Remote dashboard — visible when Discord connected
     updateRemoteDashVisibility();
+
+    // iRacing tab — enabled when Discord connected
+    if (typeof updateIRacingTabState === 'function') updateIRacingTabState();
   }
 
   async function connectDiscord() {
@@ -435,9 +438,18 @@
       ds.classList.remove('ds-top', 'ds-bottom', 'ds-left', 'ds-right', 'ds-center-left', 'ds-center-right');
       ds.classList.add('ds-' + secVert);
       ds.classList.add('ds-' + dsHoriz);
+      ds.style.left = ''; ds.style.right = '';
       if (sameSideVOffset && secVert === 'top') ds.style.marginTop = sameSideVOffset + 'px';
       else if (sameSideVOffset && secVert === 'bottom') ds.style.marginBottom = sameSideVOffset + 'px';
       else { ds.style.marginTop = ''; ds.style.marginBottom = ''; }
+      // In center mode, compute position from leaderboard's actual edge
+      if (dashIsCenter && lb) {
+        requestAnimationFrame(function() {
+          const lbRect = lb.getBoundingClientRect();
+          const gap = 4;
+          ds.style.left = (lbRect.right + gap) + 'px';
+        });
+      }
     }
 
     // Position incidents panel: opposite horizontal from dashboard, same vertical edge

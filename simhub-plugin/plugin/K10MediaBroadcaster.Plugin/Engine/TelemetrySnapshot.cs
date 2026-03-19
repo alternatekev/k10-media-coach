@@ -93,6 +93,19 @@ namespace K10MediaBroadcaster.Plugin.Engine
         /// <summary>Number of cars in the field (for iRating estimation).</summary>
         public int    IRatingFieldSize     { get; set; }
 
+        // ── Sector splits (computed by SectorTracker) ──────────────────────
+        public int    CurrentSector      { get; set; } = 1;
+        public double SectorSplitS1      { get; set; }
+        public double SectorSplitS2      { get; set; }
+        public double SectorSplitS3      { get; set; }
+        public double SectorDeltaS1      { get; set; }
+        public double SectorDeltaS2      { get; set; }
+        public double SectorDeltaS3      { get; set; }
+        /// <summary>0=none, 1=pb, 2=faster, 3=slower</summary>
+        public int    SectorStateS1      { get; set; }
+        public int    SectorStateS2      { get; set; }
+        public int    SectorStateS3      { get; set; }
+
         // ── In-car adjustments (driver controls) ───────────────────────────
         // These change when the driver adjusts settings via button box / black box.
         // iRacing: dcBrakeBias, dcTractionControl, dcABS, dcAntiRollFront, dcAntiRollRear

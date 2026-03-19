@@ -28,6 +28,18 @@ contextBridge.exposeInMainWorld('k10', {
   onResetTrackmap: (callback) => {
     ipcRenderer.on('reset-trackmap', () => callback());
   },
+  // iRating / Safety Rating
+  getRatingData: () => ipcRenderer.invoke('get-rating-data'),
+  saveRatingData: (data) => ipcRenderer.invoke('save-rating-data', data),
+  onToggleRatingEditor: (callback) => {
+    ipcRenderer.on('toggle-rating-editor', () => callback());
+  },
+  // Driver profile
+  getProfileData: () => ipcRenderer.invoke('get-profile-data'),
+  saveProfileData: (data) => ipcRenderer.invoke('save-profile-data', data),
+  onToggleDriverProfile: (callback) => {
+    ipcRenderer.on('toggle-driver-profile', () => callback());
+  },
   // Discord OAuth2
   discordConnect: () => ipcRenderer.invoke('discord-connect'),
   discordDisconnect: () => ipcRenderer.invoke('discord-disconnect'),
