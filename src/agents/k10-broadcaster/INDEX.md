@@ -30,11 +30,11 @@
 
 ## What This MCP Does
 
-The K10 Broadcaster MCP provides 12 specialized tools for understanding the K10 Media Broadcaster React overlay source code. Instead of manually reading files or parsing HTML, Claude can use structured MCP tools to:
+The K10 Broadcaster MCP provides 12 specialized tools for understanding the K10 Media Broadcaster dashboard overlay source code. Instead of manually reading files or parsing HTML, Claude can use structured MCP tools to:
 
-- Discover and read React components
-- Understand type definitions
-- Access custom hooks
+- Discover and read dashboard modules
+- Understand configuration and data definitions
+- Access utility functions
 - Read utility libraries
 - Browse design tokens
 - Search code patterns
@@ -43,18 +43,18 @@ The K10 Broadcaster MCP provides 12 specialized tools for understanding the K10 
 
 ## The 12 Tools
 
-### 1. Component Discovery
-- **list_components** - Lists all React components with categories
-- **get_component** - Reads component source and CSS modules
-- **get_component_tree** - Shows Dashboard.tsx component hierarchy
+### 1. Module Discovery
+- **list_components** - Lists all dashboard modules with categories
+- **get_component** - Reads module source and CSS
+- **get_component_tree** - Shows dashboard.html module hierarchy
 
-### 2. Type Systems
-- **get_telemetry_types** - Telemetry data type definitions
+### 2. Configuration Data
+- **get_telemetry_types** - Telemetry property definitions
 - **get_settings_types** - Settings configuration types
 
-### 3. Code Access
-- **get_hook** - Custom React hooks (useTelemetry, useSettings)
-- **get_lib** - Utility libraries (formatters, manufacturers, telemetry-client)
+### 3. Utilities & Code Access
+- **get_hook** - Utility functions and helpers
+- **get_lib** - Utility libraries (formatters, manufacturers, etc.)
 
 ### 4. Styling
 - **get_design_tokens** - CSS custom properties and design system
@@ -64,52 +64,43 @@ The K10 Broadcaster MCP provides 12 specialized tools for understanding the K10 
 - **get_test** - Individual test file contents
 
 ### 6. Configuration
-- **get_build_config** - Vite, TypeScript, and package.json configs
+- **get_build_config** - Package and Electron configuration
 
 ### 7. Code Search
 - **search_source** - Regex-based pattern search across source
 
 ## Source Code Organization
 
-The MCP reads from: `/k10-media-broadcaster/src/src/`
+The MCP reads from: `dashboard-overlay/`
 
 ```
-components/         HUD and UI components (20+ files)
-├── hud/            Overlay HUD elements
-├── panels/         Secondary panels (leaderboard, datastream, etc.)
-├── overlays/       Full-screen overlays (race control, pit limiter)
-├── settings/       Settings UI
-└── layout/         Main layouts (Dashboard)
+modules/            Dashboard modules
+├── js/             Dashboard JavaScript modules (20+ files)
+│   ├── config.js
+│   ├── game-detect.js
+│   ├── settings.js
+│   ├── spotter.js
+│   └── more modules...
+└── styles/         Dashboard CSS files
+    ├── base.css
+    ├── dashboard.css
+    └── more styles...
 
-hooks/              Custom React hooks
-├── useTelemetry    Telemetry data polling
-└── useSettings     Settings persistence
+tests/              Test files
+├── helpers.mjs
+├── discord-oauth.spec.mjs
+└── dashboard.spec.mjs
 
-types/              TypeScript type definitions
-├── telemetry.ts    Telemetry data types
-├── settings.ts     Settings configuration
-└── leaderboard.ts  Leaderboard data types
-
-lib/                Utility functions
-├── formatters.ts   Value formatting
-├── manufacturers.ts Car/team logos
-└── telemetry-client.ts SimHub API client
-
-styles/             Styling and design system
-├── tokens.css      CSS custom properties
-├── globals.css     Global styles
-└── *.module.css    Component-specific styles
-
-test/               Test files
-├── components/     Component tests
-└── *.test.ts       Unit tests
+main.js             Electron main process
+preload.js          IPC context bridge
+dashboard.html      Main dashboard HTML
 ```
 
 ## Getting Started
 
 ### 1. Start the Server
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 npm start
 ```
 
@@ -188,11 +179,9 @@ npm start
 ## Integration Points
 
 The MCP connects Claude to:
-- React component source code
-- TypeScript type definitions
-- Custom React hooks
+- Dashboard module source code (vanilla JS)
+- CSS design system (8 modular stylesheets)
 - Utility libraries
-- CSS design system
 - Test files
 - Build configuration
 
@@ -256,4 +245,4 @@ FOR REFERENCE:
 
 ---
 
-**K10 Broadcaster MCP v1.0.0** - Structured access to React overlay source code for Claude
+**K10 Broadcaster MCP v1.0.0** - Structured access to dashboard overlay source code for Claude

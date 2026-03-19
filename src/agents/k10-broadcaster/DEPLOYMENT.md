@@ -2,7 +2,7 @@
 
 ## Overview
 
-This MCP server provides structured access to the K10 Media Broadcaster React overlay source code. It replaces the need to manually read from dashboard.html or parse raw files.
+This MCP server provides structured access to the K10 Media Broadcaster dashboard overlay source code. It replaces the need to manually read from dashboard.html or parse raw files.
 
 ## Files Created
 
@@ -30,17 +30,17 @@ mcp/k10-broadcaster/
 
 ## 12 Implemented Tools
 
-1. **list_components** - Lists all React components by category
-2. **get_component** - Reads component source and CSS modules
-3. **get_telemetry_types** - Returns telemetry type definitions
+1. **list_components** - Lists all dashboard modules by category
+2. **get_component** - Reads module source and CSS
+3. **get_telemetry_types** - Returns telemetry property definitions
 4. **get_settings_types** - Returns settings configuration types
-5. **get_hook** - Reads custom React hooks (useTelemetry, useSettings)
-6. **get_lib** - Reads utility libraries (formatters, manufacturers, telemetry-client)
+5. **get_hook** - Reads utility functions and helpers
+6. **get_lib** - Reads utility libraries (formatters, manufacturers, etc.)
 7. **list_tests** - Lists all test files
 8. **get_test** - Reads specific test files
-9. **get_build_config** - Returns Vite/TypeScript/package.json config
+9. **get_build_config** - Returns build configuration and package.json
 10. **get_design_tokens** - Returns CSS custom properties
-11. **get_component_tree** - Extracts component hierarchy from Dashboard.tsx
+11. **get_component_tree** - Extracts module hierarchy from dashboard.html
 12. **search_source** - Searches across source for regex patterns
 
 ## Architecture
@@ -60,21 +60,21 @@ export K10_BROADCASTER_ROOT=/path/to/source
 
 Components are automatically categorized:
 
-- **hud** - Tachometer, FuelPanel, TyresPanel, PedalsPanel, ControlsPanel, PositionPanel, GapsPanel, LogoPanel, CommentaryPanel
-- **panels** - LeaderboardPanel, DatastreamPanel, IncidentsPanel, SpotterPanel
-- **overlays** - RaceControlBanner, PitLimiterBanner, RaceEndScreen
-- **settings** - SettingsPanel
-- **layout** - Dashboard
+- **hud** - tachometer, fuel, tires, pedals, controls, position, gaps, logo, commentary modules
+- **panels** - leaderboard, datastream, incidents, spotter modules
+- **overlays** - race control, pit limiter, race end modules
+- **settings** - settings panel
+- **layout** - main layout module
 
 ## Key Features
 
 ### Source Code Access
-- Read component TSX and CSS modules together
-- Access hooks, utilities, types in one request
+- Read module JS and CSS files together
+- Access utilities and helpers in one request
 - No need for multiple file reads
 
 ### Navigation
-- Component hierarchy extraction from Dashboard.tsx
+- Module hierarchy extraction from dashboard.html
 - Category-based filtering
 - Full file paths for integration
 
@@ -83,39 +83,39 @@ Components are automatically categorized:
 - Line-by-line context for search results
 - Limited to first 50 matches for performance
 
-### Type Understanding
-- Complete telemetry type definitions
+### Configuration Understanding
+- Complete telemetry property definitions
 - Settings configuration schemas
-- Type guards and validators
+- Default values and validators
 
 ### Test Access
 - List all test files
 - Read individual test files
-- Component test references
+- Playwright test references
 
 ### Build Insight
-- Vite configuration
-- TypeScript settings
+- Build configuration
 - Package dependencies
+- Project metadata
 
 ## Integration Example
 
 The MCP is designed to be used with Claude. Here's how Claude can leverage it:
 
 ```
-User: "Help me understand how the Tachometer component works"
+User: "Help me understand how the tachometer module works"
 
 Claude:
-1. Uses list_components to find Tachometer
-2. Uses get_component to read Tachometer.tsx and CSS
-3. Uses search_source to find Tachometer usage in Dashboard
+1. Uses list_components to find tachometer module
+2. Uses get_component to read tachometer JS and CSS
+3. Uses search_source to find tachometer usage in dashboard.html
 4. Uses get_component_tree to show its context
 5. Provides complete understanding with code
 
-User: "What telemetry data does FuelPanel need?"
+User: "What telemetry data does the fuel module need?"
 
 Claude:
-1. Uses get_component to read FuelPanel.tsx
+1. Uses get_component to read fuel module JS
 2. Uses get_telemetry_types to understand data structure
 3. Uses search_source to find related formatters
 4. Explains the data flow clearly
@@ -124,7 +124,7 @@ Claude:
 ## Starting the Server
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 
 # Install dependencies
 npm install
@@ -180,11 +180,11 @@ The MCP enforces:
 
 This MCP enhances Claude's ability to:
 
-1. Understand React component architecture
-2. Locate and explain specific components
-3. Trace data flow through the app
+1. Understand dashboard module architecture
+2. Locate and explain specific modules
+3. Trace data flow through the dashboard
 4. Understand styling and layout
-5. Analyze component dependencies
+5. Analyze module dependencies
 6. Find relevant test cases
 7. Review build configuration
 8. Search for code patterns
@@ -204,7 +204,7 @@ This MCP enhances Claude's ability to:
 To verify the MCP is working:
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 
 # Test the server
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | npm start

@@ -8,7 +8,7 @@ A standalone Electron overlay that renders real-time sim racing telemetry as a t
 
 The dashboard connects to the K10 Media Broadcaster SimHub plugin's HTTP API and renders telemetry data at ~30fps. It runs as a frameless, always-on-top, click-through window so the game receives all mouse and keyboard input normally. On systems that support native transparency (x64 Windows), the window background is fully transparent. On ARM devices (Surface Pro, Snapdragon laptops), it uses a green chroma key background for OBS Color Key compositing.
 
-The same `dashboard.html` file powers three deployment modes: the Electron overlay (this app), the SimHub built-in dashboard template, and direct browser access via the plugin's HTTP server.
+The `dashboard.html` file powers three deployment modes: the Electron overlay (this app), the SimHub built-in dashboard template, and direct browser access via the plugin's HTTP server.
 
 ## Quick Start
 
@@ -45,7 +45,6 @@ npm run start:safe
 | `Ctrl+Shift+S` | Toggle settings/move mode — drag the overlay to reposition, resize from edges |
 | `Ctrl+Shift+H` | Hide or show the overlay |
 | `Ctrl+Shift+G` | Toggle green-screen mode (restarts) |
-| `Ctrl+Shift+T` | Cycle dashboard (Original / React / Vanilla) |
 | `Ctrl+Shift+R` | Reset overlay position and size to defaults |
 | `Ctrl+Shift+D` | Restart demo sequence |
 | `Ctrl+Shift+Q` | Quit the overlay |
@@ -146,12 +145,12 @@ An expandable panel that slides in from the left when the commentary engine fire
 |------|---------|
 | `main.js` | Electron main process — window creation, transparency, hotkeys, IPC, crash recovery |
 | `preload.js` | Context bridge — exposes settings IPC to the renderer securely |
-| `dashboard.html` | Original dashboard — CSS, HTML layout, and all JavaScript in a single file |
-| `dashboard-react.html` | React 19 + TypeScript dashboard (built from `src/`) |
-| `dashboard-build.html` | TypeScript ES modules dashboard (built from `src-vanilla/`) — also called vanilla build |
-| `scripts/mac/` | macOS launcher scripts (install, start, rebuild) |
-| `scripts/windows/` | Windows launcher scripts (install, start, rebuild) |
-| `package.json` | Node.js manifest with `start`, `dev`, `rebuild-*`, and `build` scripts |
+| `dashboard.html` | Main dashboard — vanilla JS, no build step |
+| `modules/js/` | JavaScript modules (20+ files: config, polling, rendering, etc.) |
+| `modules/styles/` | CSS stylesheets (8 files: base, layout, effects, etc.) |
+| `scripts/mac/` | macOS launcher scripts (install, start) |
+| `scripts/windows/` | Windows launcher scripts (install, start) |
+| `package.json` | Node.js manifest with `start`, `dev`, and launcher scripts |
 
 ## Configuration
 

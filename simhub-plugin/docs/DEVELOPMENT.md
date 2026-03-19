@@ -31,7 +31,7 @@ dotnet build plugin/K10MediaBroadcaster.Plugin/K10MediaBroadcaster.Plugin.sln
 
 The build automatically:
 1. Compiles `K10MediaBroadcaster.Plugin.dll` to the SimHub directory
-2. Copies `dataset/` to `SimHub\dataset\` (post-build target `CopyDataset`)
+2. Copies `k10-media-broadcaster-data/` to `SimHub\dataset\` (post-build target `CopyDataset`)
 3. Copies `DashTemplates/` to `SimHub\DashTemplates\` (post-build target `CopyDashboard`)
 
 In Debug configuration, pressing F5 in Visual Studio launches SimHub directly for debugging.
@@ -103,7 +103,7 @@ The plugin has zero runtime dependencies. All functionality uses Node.js built-i
 
 ### Editing Topics and Fragments
 
-Edit the JSON files in `dataset/` directly. After changes:
+Edit the JSON files in `k10-media-broadcaster-data/` directly. After changes:
 
 ```bash
 # Validate structural integrity (28 tests)
@@ -170,7 +170,7 @@ The export tool copies:
 - `K10MediaBroadcaster.Plugin.dll` and `.pdb` from SimHub to the repo root
 - The `DashTemplates/k10 media broadcaster/` folder from SimHub to the repo (excluding `_Backups/`)
 
-It does **not** copy the `dataset/` folder back — the repo is the source of truth for dataset files. Changes to datasets should be made in the repo and pushed to SimHub via `install.bat` or a rebuild.
+It does **not** copy the `k10-media-broadcaster-data/` folder back — the repo is the source of truth for dataset files. Changes to datasets should be made in the repo and pushed to SimHub via `install.bat` or a rebuild.
 
 ```bash
 # After export, the typical commit flow is:
@@ -187,7 +187,7 @@ git commit -m "Update built plugin and dashboard"
 │   └── Properties/                 Assembly info
 ├── homebridge-plugin/              Homebridge plugin source (TypeScript)
 │   └── src/__tests__/              Jest tests
-├── dataset/                        Shared data files (JSON)
+├── k10-media-broadcaster-data/                        Shared data files (JSON)
 ├── tests/
 │   ├── K10MediaBroadcaster.Tests/        C# unit tests (.NET 6.0, NUnit)
 │   ├── validate_datasets.py        Python dataset validation

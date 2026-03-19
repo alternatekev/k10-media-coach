@@ -15,17 +15,17 @@
 - [x] Zero compilation errors
 
 ## Tool Implementation (12 tools)
-- [x] list_components - Component discovery with categories
-- [x] get_component - Read TSX + CSS modules
-- [x] get_telemetry_types - Telemetry type definitions
+- [x] list_components - Module discovery with categories
+- [x] get_component - Read JS + CSS modules
+- [x] get_telemetry_types - Telemetry property definitions
 - [x] get_settings_types - Settings configuration types
-- [x] get_hook - Custom React hooks (useTelemetry, useSettings)
-- [x] get_lib - Utility libraries (formatters, manufacturers, telemetry-client)
+- [x] get_hook - Utility functions and helpers
+- [x] get_lib - Utility libraries (formatters, manufacturers, etc.)
 - [x] list_tests - List all test files
 - [x] get_test - Read specific test file
-- [x] get_build_config - Vite, TypeScript, package.json configs
+- [x] get_build_config - Build configuration and package.json
 - [x] get_design_tokens - CSS custom properties
-- [x] get_component_tree - Dashboard.tsx component hierarchy
+- [x] get_component_tree - dashboard.html module hierarchy
 - [x] search_source - Regex pattern search across source
 
 ## MCP Compliance
@@ -37,13 +37,13 @@
 - [x] Follows JSON-RPC 2.0 protocol
 
 ## Source Code Access
-- [x] Reads from correct location (k10-media-broadcaster/src/src)
-- [x] Discovers components in components/ directory
-- [x] Accesses hooks in hooks/ directory
-- [x] Reads types in types/ directory
+- [x] Reads from correct location (dashboard-overlay/)
+- [x] Discovers modules in modules/ directory
+- [x] Accesses JS utilities
+- [x] Reads configuration in modules/ directory
 - [x] Accesses lib/ utilities
-- [x] Reads styles including tokens.css
-- [x] Accesses test files in test/ directory
+- [x] Reads styles including CSS
+- [x] Accesses test files in tests/ directory
 
 ## Testing & Verification
 - [x] Created test-mcp.sh verification script
@@ -133,4 +133,4 @@
 
 The K10 Media Broadcaster MCP is fully implemented, tested, and ready for 
 integration with Claude. It provides comprehensive structured access to the 
-React overlay source code without requiring manual file reading.
+dashboard overlay source code without requiring manual file reading.

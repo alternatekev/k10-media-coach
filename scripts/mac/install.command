@@ -44,43 +44,11 @@ xattr -cr node_modules/electron/dist/Electron.app 2>/dev/null
 codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null
 
 echo ""
-echo "[3/7] Installing React dashboard dependencies..."
-SRC_DIR="$APP_DIR/../src"
-if [ ! -f "$SRC_DIR/package.json" ]; then
-    echo "WARNING: React source directory not found — skipping React build."
+echo "[3/5] Verifying dashboard..."
+if [ -f "$APP_DIR/dashboard.html" ]; then
+    echo "  dashboard.html OK"
 else
-    cd "$SRC_DIR"
-    npm install
-    if [ $? -ne 0 ]; then
-        echo ""
-        echo "ERROR: React dependency install failed."
-        read -p "Press Enter to close..."
-        exit 1
-    fi
-
-    echo ""
-    echo "[4/7] Building React dashboard..."
-    npx vite build
-    if [ $? -ne 0 ]; then
-        echo ""
-        echo "ERROR: React dashboard build failed."
-        read -p "Press Enter to close..."
-        exit 1
-    fi
-    cd "$APP_DIR"
-fi
-
-echo ""
-echo "[5/7] Verifying build output..."
-if [ -f "$APP_DIR/dashboard-react.html" ]; then
-    echo "  dashboard-react.html OK"
-else
-    echo "  WARNING: dashboard-react.html not found"
-fi
-if [ -f "$APP_DIR/dashboard-build.html" ]; then
-    echo "  dashboard-build.html OK"
-else
-    echo "  WARNING: dashboard-build.html not found"
+    echo "  WARNING: dashboard.html not found"
 fi
 
 echo ""

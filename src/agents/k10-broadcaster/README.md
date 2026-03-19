@@ -1,6 +1,6 @@
 # K10 Media Broadcaster MCP Server
 
-A Model Context Protocol (MCP) server providing structured access to the K10 Media Broadcaster React/TypeScript overlay source code. This MCP enables Claude to understand the overlay's component architecture, types, hooks, styling, and build configuration without parsing raw HTML or manually reading files.
+A Model Context Protocol (MCP) server providing structured access to the K10 Media Broadcaster dashboard overlay source code. This MCP enables Claude to understand the overlay's architecture, modules, styling, and configuration without parsing raw HTML or manually reading files.
 
 ## Location
 
@@ -17,20 +17,20 @@ mcp/k10-broadcaster/
 
 ## Features
 
-The MCP provides 12 specialized tools for exploring the K10 Broadcaster React codebase:
+The MCP provides 12 specialized tools for exploring the K10 Broadcaster dashboard codebase:
 
-### Component Management
-- **`list_components`** - Lists all React components with categories (HUD, panels, overlays, settings, layout)
-- **`get_component`** - Reads component source (TSX) and styling (CSS modules)
-- **`get_component_tree`** - Extracts the full component hierarchy from Dashboard.tsx
+### Dashboard Module Management
+- **`list_components`** - Lists all dashboard modules with categories (HUD, panels, overlays, settings, layout)
+- **`get_component`** - Reads module source (JS) and styling (CSS)
+- **`get_component_tree`** - Extracts the full module hierarchy from dashboard.html
 
-### Type Definitions
-- **`get_telemetry_types`** - Reads telemetry type definitions (TelemetryProps, ParsedTelemetry, ConnectionStatus, PollStats)
-- **`get_settings_types`** - Reads overlay settings definitions (OverlaySettings, DEFAULT_SETTINGS, validators)
+### Configuration Data
+- **`get_telemetry_types`** - Reads telemetry property definitions
+- **`get_settings_types`** - Reads overlay settings definitions
 
-### Hooks & Libraries
-- **`get_hook`** - Reads custom React hooks (useTelemetry, useSettings)
-- **`get_lib`** - Reads utility libraries (formatters, manufacturers, telemetry-client)
+### Utilities & Helpers
+- **`get_hook`** - Reads utility functions and helpers
+- **`get_lib`** - Reads utility libraries (formatters, manufacturers, etc.)
 
 ### Styling & Design
 - **`get_design_tokens`** - Reads CSS custom properties (design system variables)
@@ -40,74 +40,52 @@ The MCP provides 12 specialized tools for exploring the K10 Broadcaster React co
 - **`get_test`** - Reads specific test files
 
 ### Build Configuration
-- **`get_build_config`** - Reads vite.config.ts, tsconfig.json, and package.json
+- **`get_build_config`** - Reads build configuration and package.json
 
 ### Code Search
 - **`search_source`** - Searches across source files for regex patterns with context
 
 ## Source Structure
 
-The MCP reads from the K10 Broadcaster React source:
+The MCP reads from the K10 Broadcaster dashboard source:
 
 ```
-k10-media-broadcaster/src/src/
-├── components/
-│   ├── hud/               # HUD overlay components
-│   │   ├── Tachometer.tsx
-│   │   ├── FuelPanel.tsx
-│   │   ├── TyresPanel.tsx
-│   │   ├── PedalsPanel.tsx
-│   │   ├── ControlsPanel.tsx
-│   │   ├── PositionPanel.tsx
-│   │   ├── GapsPanel.tsx
-│   │   ├── LogoPanel.tsx
-│   │   ├── CommentaryPanel.tsx
-│   │   └── *module.css files
-│   ├── panels/            # Secondary panels
-│   │   ├── LeaderboardPanel.tsx
-│   │   ├── DatastreamPanel.tsx
-│   │   ├── IncidentsPanel.tsx
-│   │   └── SpotterPanel.tsx
-│   ├── overlays/          # Full-screen overlays
-│   │   ├── RaceControlBanner.tsx
-│   │   ├── PitLimiterBanner.tsx
-│   │   └── RaceEndScreen.tsx
-│   ├── settings/          # Settings UI
-│   │   └── SettingsPanel.tsx
-│   └── layout/            # Main layouts
-│       └── Dashboard.tsx
-├── hooks/
-│   ├── useTelemetry.tsx   # Telemetry polling hook
-│   └── useSettings.tsx    # Settings persistence hook
-├── lib/
-│   ├── formatters.ts      # Value formatting utilities
-│   ├── manufacturers.ts   # Car/team logos database
-│   └── telemetry-client.ts # SimHub API client
-├── types/
-│   ├── telemetry.ts       # Telemetry data types
-│   ├── settings.ts        # Settings configuration types
-│   └── leaderboard.ts     # Leaderboard data types
-├── styles/
-│   ├── tokens.css         # CSS custom properties
-│   ├── globals.css        # Global styles
-│   ├── dashboard.module.css
-│   └── components.module.css
-├── test/
-│   ├── components/        # Component tests
-│   ├── formatters.test.ts
-│   ├── manufacturers.test.ts
-│   ├── telemetry-client.test.ts
-│   └── helpers.tsx
-├── App.tsx
-├── main.tsx
-└── demo-preview.tsx
+dashboard-overlay/
+├── modules/
+│   ├── js/                # Dashboard modules
+│   │   ├── config.js
+│   │   ├── keyboard.js
+│   │   ├── car-logos.js
+│   │   ├── game-detect.js
+│   │   ├── settings.js
+│   │   ├── connections.js
+│   │   ├── leaderboard.js
+│   │   ├── datastream.js
+│   │   ├── spotter.js
+│   │   ├── pit-limiter.js
+│   │   ├── webgl.js
+│   │   ├── poll-engine.js
+│   │   └── more modules...
+│   └── styles/            # Dashboard styles
+│       ├── base.css
+│       ├── dashboard.css
+│       ├── effects.css
+│       └── more styles...
+├── tests/
+│   ├── helpers.mjs
+│   ├── discord-oauth.spec.mjs
+│   └── dashboard.spec.mjs
+├── main.js                # Electron main process
+├── preload.js             # IPC context bridge
+├── dashboard.html         # Main dashboard
+└── package.json
 ```
 
 ## Tool Reference
 
 ### list_components
 
-Lists all React components with file paths and CSS module status.
+Lists all dashboard modules with file paths and CSS status.
 
 **Parameters:**
 - `category` (optional): Filter by "hud", "panels", "overlays", "settings", "layout", or "all" (default)
@@ -236,9 +214,8 @@ Returns build configuration files.
 **Parameters:** None
 
 **Returns:** Combined content from:
-- `vite.config.ts` - Vite build configuration
-- `tsconfig.json` - TypeScript configuration
 - `package.json` - Dependencies and scripts
+- `main.js` - Electron entry point configuration
 
 ### search_source
 
@@ -267,7 +244,7 @@ fileType: "tsx"
 ### Build the MCP
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 npm install
 npm run build
 ```
@@ -282,8 +259,8 @@ The server will start on stdio and begin accepting MCP calls.
 
 ### Environment Variables
 
-- `K10_BROADCASTER_ROOT` - Path to k10-media-broadcaster src/src directory
-  - Default: `/sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/k10-media-broadcaster/src/src`
+- `K10_BROADCASTER_ROOT` - Path to dashboard-overlay src/src directory
+  - Default: `dashboard-overlay/src/src`
 
 ## Component Architecture
 

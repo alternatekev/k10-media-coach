@@ -2,12 +2,12 @@
 
 ## What is this?
 
-A Model Context Protocol (MCP) server that lets Claude understand the K10 Media Broadcaster React overlay code without reading raw HTML files.
+A Model Context Protocol (MCP) server that lets Claude understand the K10 Media Broadcaster dashboard overlay code without reading raw HTML files.
 
 ## Location
 
 ```
-/sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster/
+src/agents/k10-broadcaster/
 ```
 
 ## Built & Ready
@@ -27,14 +27,14 @@ The MCP is fully built and tested:
 ### Option 1: Run in Background
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 npm start &
 ```
 
 ### Option 2: Run in Foreground
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 npm start
 ```
 
@@ -42,10 +42,10 @@ The server will start listening on stdio and accept MCP protocol requests.
 
 ## 12 Available Tools
 
-### Component Discovery
+### Dashboard Module Discovery
 ```
 list_components
-  → Lists all React components
+  → Lists all dashboard modules
   → Optionally filter by: hud, panels, overlays, settings, layout
 
 get_component <name>
@@ -92,7 +92,7 @@ get_test <name>
 ### Configuration
 ```
 get_build_config
-  → vite.config.ts + tsconfig.json + package.json
+  → Build configuration and package.json
 ```
 
 ### Code Search
@@ -127,13 +127,12 @@ search_source <pattern>
 
 The MCP reads from:
 ```
-k10-media-broadcaster/src/src/
-├── components/      (React components)
-├── hooks/          (useTelemetry, useSettings)
-├── types/          (TypeScript interfaces)
-├── lib/            (Utilities)
-├── styles/         (CSS modules + tokens)
-└── test/           (Test files)
+dashboard-overlay/
+├── modules/        (Dashboard modules)
+│   ├── js/         (JavaScript modules)
+│   └── styles/     (CSS modules)
+├── tests/          (Playwright tests)
+└── main.js, preload.js, dashboard.html
 ```
 
 ## File Sizes
@@ -147,7 +146,7 @@ k10-media-broadcaster/src/src/
 Test that everything works:
 
 ```bash
-cd /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/mcp/k10-broadcaster
+cd src/agents/k10-broadcaster
 bash test-mcp.sh
 ```
 
@@ -174,7 +173,7 @@ Expected output: All tests pass ✓
 If the MCP doesn't start:
 
 1. Check Node.js version: `node --version` (should be 16+)
-2. Verify source exists: `ls /sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/k10-media-broadcaster/src/src/`
+2. Verify source exists: `ls dashboard-overlay/src/src/`
 3. Rebuild: `npm run build`
 4. Run test: `bash test-mcp.sh`
 

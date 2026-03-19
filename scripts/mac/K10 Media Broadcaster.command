@@ -16,7 +16,6 @@ echo "Hotkeys:"
 echo "  Cmd+Shift+S   Toggle settings mode (clickable)"
 echo "  Cmd+Shift+H   Toggle overlay visibility"
 echo "  Cmd+Shift+G   Toggle green-screen mode (restarts)"
-echo "  Cmd+Shift+T   Cycle dashboard (Original / React / Build)"
 echo "  Cmd+Shift+R   Reset window position/size"
 echo "  Cmd+Shift+D   Restart demo sequence"
 echo "  Cmd+Shift+Q   Quit overlay"
@@ -45,28 +44,6 @@ if [ ! -d "node_modules" ] || [ ! -x "node_modules/.bin/electron" ]; then
     echo ""
     echo "Dependencies installed. Launching overlay..."
     echo ""
-fi
-
-# Rebuild React dashboard if source is available but output is missing
-SRC_DIR="$APP_DIR/../src"
-if [ -f "$SRC_DIR/package.json" ]; then
-    if [ ! -f "dashboard-react.html" ]; then
-        echo "React dashboard not built. Building..."
-        pushd "$SRC_DIR" >/dev/null
-        npx vite build
-        popd >/dev/null
-    fi
-fi
-
-# Rebuild vanilla TS dashboard if source is available but output is missing
-SRC_VANILLA_DIR="$APP_DIR/../src-vanilla"
-if [ -f "$SRC_VANILLA_DIR/package.json" ]; then
-    if [ ! -f "dashboard-build.html" ]; then
-        echo "Vanilla TS dashboard not built. Building..."
-        pushd "$SRC_VANILLA_DIR" >/dev/null
-        npm run build
-        popd >/dev/null
-    fi
 fi
 
 # Ensure all bin stubs are executable (may lose +x via cross-platform sync)

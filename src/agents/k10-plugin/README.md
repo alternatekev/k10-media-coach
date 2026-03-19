@@ -16,7 +16,7 @@ This server exposes 8 tools for reading and analyzing:
 
 The server uses environment variable `K10_PLUGIN_ROOT` to locate plugin files. If not set, it defaults to:
 ```
-/sessions/gifted-keen-pasteur/mnt/media-coach-simhub-plugin/simhub-plugin
+simhub-plugin
 ```
 
 To use a custom location:
