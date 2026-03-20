@@ -1,36 +1,222 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# K10 Motorsports — Web
 
-## Getting Started
+Next.js 16 site for [k10motorsports.com](https://k10motorsports.com) with subdomain routing:
 
-First, run the development server:
+- **k10motorsports.com** → Marketing site (public)
+- **drive.k10motorsports.com** → K10 Pro Drive members app (Discord auth)
+
+Stack: Next.js 16, React 19, Tailwind CSS 4, NextAuth 5, Strapi CMS.
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- npm 10+
+- Strapi instance running (see [CMS Setup](#cms-setup) below)
+
+### 1. Install dependencies
+
+```bash
+cd web
+npm install
+```
+
+### 2. Environment variables
+
+Copy the example env file and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `YOUTUBE_API_KEY` | Yes | YouTube Data API v3 key ([Google Cloud Console](https://console.cloud.google.com/apis/credentials)) |
+| `DISCORD_CLIENT_ID` | For auth | Discord OAuth app client ID |
+| `DISCORD_CLIENT_SECRET` | For auth | Discord OAuth app secret |
+| `NEXTAUTH_SECRET` | For auth | Generate with `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | Yes | `http://localhost:3000` locally, production URL in deploy |
+| `STRAPI_URL` | For CMS | Strapi instance URL (e.g. `http://localhost:1337`) |
+| `STRAPI_API_TOKEN` | For CMS | Strapi API token (Settings → API Tokens → Create) |
+
+### 3. Local domain setup
+
+The middleware uses subdomain routing. To test both domains locally, add these to `/etc/hosts`:
+
+```
+127.0.0.1   k10motorsports.local
+127.0.0.1   drive.k10motorsports.local
+```
+
+Then access:
+
+- `http://k10motorsports.local:3000` → marketing site
+- `http://drive.k10motorsports.local:3000` → drive members app
+
+Alternatively, use the query parameter shortcut without hosts changes:
+
+- `http://localhost:3000` → marketing site
+- `http://localhost:3000?subdomain=drive` → drive members app
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> **Note:** The dev server uses `--webpack` instead of Turbopack due to a LightningCSS native module compatibility issue with Turbopack in Next.js 16. This is configured in `package.json` and requires no extra steps.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## CMS Setup (Strapi)
 
-## Learn More
+Strapi provides the headless CMS for managing site content (news posts, driver profiles, team info, etc.).
 
-To learn more about Next.js, take a look at the following resources:
+### Option A: Local Strapi (development)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# From the repo root (outside web/)
+npx create-strapi-app@latest cms --quickstart
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This creates a `cms/` directory with SQLite. Once running:
 
-## Deploy on Vercel
+1. Open `http://localhost:1337/admin` and create your admin account
+2. Go to **Settings → API Tokens → Create new API Token**
+   - Name: `k10-web`
+   - Type: `Read-only` (or Full access if the site will write data)
+   - Copy the token
+3. Add to `web/.env.local`:
+   ```
+   STRAPI_URL=http://localhost:1337
+   STRAPI_API_TOKEN=your-token-here
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Option B: Strapi Cloud (production)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push your Strapi project to GitHub
+2. Sign up at [cloud.strapi.io](https://cloud.strapi.io)
+3. Connect your repo and deploy
+4. Create an API token in the Strapi Cloud admin panel
+5. Set the environment variables in Vercel (see below)
+
+### Option C: Self-hosted Strapi
+
+Deploy Strapi to any Node.js host (Railway, Render, DigitalOcean App Platform):
+
+```bash
+cd cms
+NODE_ENV=production npm run build
+NODE_ENV=production npm start
+```
+
+Use PostgreSQL in production — configure via Strapi's `config/database.ts`:
+
+```ts
+export default ({ env }) => ({
+  connection: {
+    client: 'postgres',
+    connection: {
+      host: env('DATABASE_HOST'),
+      port: env.int('DATABASE_PORT', 5432),
+      database: env('DATABASE_NAME'),
+      user: env('DATABASE_USERNAME'),
+      password: env('DATABASE_PASSWORD'),
+    },
+  },
+});
+```
+
+---
+
+## Deploy to Vercel
+
+### 1. Connect repository
+
+1. Push this repo to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new)
+3. Import the repository
+4. Set the **Root Directory** to `web`
+5. Framework preset will auto-detect **Next.js**
+
+### 2. Environment variables
+
+In Vercel project settings → Environment Variables, add:
+
+```
+YOUTUBE_API_KEY=your-key
+NEXTAUTH_SECRET=your-secret
+NEXTAUTH_URL=https://k10motorsports.com
+DISCORD_CLIENT_ID=your-id
+DISCORD_CLIENT_SECRET=your-secret
+STRAPI_URL=https://your-strapi-instance.com
+STRAPI_API_TOKEN=your-token
+```
+
+### 3. Domain configuration
+
+In Vercel project settings → Domains, add both:
+
+| Domain | Purpose |
+|---|---|
+| `k10motorsports.com` | Marketing site |
+| `drive.k10motorsports.com` | Pro Drive members app |
+
+Then configure DNS at your registrar:
+
+| Type | Name | Value |
+|---|---|---|
+| `A` | `@` | `76.76.21.21` |
+| `CNAME` | `drive` | `cname.vercel-dns.com` |
+
+> Vercel automatically provisions SSL certificates for both domains.
+
+### 4. Discord OAuth callback
+
+Update your Discord application's OAuth2 redirect URL to:
+
+```
+https://k10motorsports.com/api/auth/callback/discord
+https://drive.k10motorsports.com/api/auth/callback/discord
+```
+
+### 5. Deploy
+
+Vercel deploys automatically on every push to `main`. To trigger manually:
+
+```bash
+npx vercel --prod
+```
+
+---
+
+## Build
+
+```bash
+npm run build    # Production build (uses Webpack)
+npm start        # Serve the production build locally
+```
+
+---
+
+## Project Structure
+
+```
+web/
+├── public/branding/       # Logomark assets (logomark.png, logomark-white.png)
+├── src/
+│   ├── app/
+│   │   ├── marketing/     # k10motorsports.com routes
+│   │   ├── drive/         # drive.k10motorsports.com routes
+│   │   └── api/           # API routes (ratings, auth)
+│   ├── components/        # Shared React components
+│   ├── lib/               # Constants, YouTube API, utilities
+│   ├── middleware.ts       # Subdomain routing
+│   └── styles/globals.css # Design tokens (K10 brand palette)
+├── .env.example           # Environment variable template
+├── next.config.ts         # Next.js config
+└── package.json
+```
