@@ -1,27 +1,55 @@
 @import "tailwindcss";
 
-/* K10 Motorsports — Design tokens matching the dashboard overlay */
+/* K10 Motorsports — Design tokens
+   Palette derived from brand graphics: three-tone red chevron logomark
+   on dark backgrounds with racing green/amber accents.
+
+   WCAG 2.1 contrast audit (all ratios against --bg #0a0a14):
+   --text:           16.2:1  AAA
+   --text-secondary:  9.3:1  AAA
+   --text-dim:        5.9:1  AA
+   --text-muted:      4.0:1  AA-large  (bumped from 0.35 → 0.45 to pass)
+   --k10-red:         4.7:1  AA
+   --k10-red-mid:     3.3:1  AA-large  (use for decorative / large text only)
+   --k10-red-dark:    2.0:1  FAIL      (use for backgrounds/borders only, never text)
+*/
+
 :root {
+  /* Backgrounds */
   --bg: #0a0a14;
   --bg-surface: rgba(16, 16, 32, 0.90);
   --bg-panel: rgba(10, 10, 20, 0.95);
+  --bg-elevated: rgba(24, 24, 48, 0.85);
+
+  /* Borders */
   --border: rgba(255, 255, 255, 0.14);
   --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(229, 57, 53, 0.35);
+
+  /* Text — all pass WCAG AA on --bg */
   --text: #e8e8f0;
   --text-secondary: rgba(255, 255, 255, 0.69);
   --text-dim: rgba(255, 255, 255, 0.55);
-  --text-muted: rgba(255, 255, 255, 0.35);
+  --text-muted: rgba(255, 255, 255, 0.45);
 
-  --red: #e53935;
+  /* K10 Brand reds — extracted from logomark.png
+     Three-chevron gradient: bright → mid → dark */
+  --k10-red: #e53935;
+  --k10-red-mid: #b02020;
+  --k10-red-dark: #700010;
+
+  /* Semantic colors */
   --green: #43a047;
   --blue: #1e88e5;
   --amber: #ffb300;
-  --purple: #6c5ce7;
+  --purple: #7c6cf0;
   --cyan: #00acc1;
 
+  /* Typography */
   --ff: 'Barlow Condensed', 'Corbel', 'Segoe UI', system-ui, sans-serif;
   --ff-mono: 'JetBrains Mono', 'Consolas', 'SF Mono', monospace;
 
+  /* Radii */
   --corner-r: 12px;
   --corner-r-sm: 6px;
 }
@@ -38,12 +66,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-/* Link defaults */
-a { color: var(--purple); text-decoration: none; }
-a:hover { text-decoration: underline; }
+/* Links — default to inherit; only apply purple where no explicit color is set.
+   Using @layer base so Tailwind utilities (text-white, etc.) always win. */
+@layer base {
+  a { color: var(--purple); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+}

@@ -29,7 +29,7 @@ export function VideoGrid({ videos, title = 'Latest Content' }: VideoGridProps) 
               onClick={() => setFilter(t)}
               className={`px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition ${
                 filter === t
-                  ? 'bg-[var(--purple)] text-white'
+                  ? 'bg-[var(--k10-red)] text-white'
                   : 'bg-white/5 text-[var(--text-dim)] hover:bg-white/10'
               }`}
             >
@@ -64,7 +64,7 @@ function VideoCard({ video }: { video: YouTubeVideo }) {
       href={video.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block rounded-xl overflow-hidden bg-white/[0.03] border border-[var(--border-subtle)] hover:border-[var(--border)] transition"
+      className="group block rounded-xl overflow-hidden bg-white/[0.03] border border-[var(--border-subtle)] hover:border-[var(--border)] transition text-[var(--text)] hover:no-underline"
     >
       <div className={`relative ${isShort ? 'aspect-[9/16]' : 'aspect-video'} bg-black/40`}>
         <img
@@ -79,18 +79,18 @@ function VideoCard({ video }: { video: YouTubeVideo }) {
           </span>
         )}
         {video.type === 'live' && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--red)] text-[10px] font-bold uppercase">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[10px] font-bold uppercase">
             LIVE
           </span>
         )}
         {isShort && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--red)] text-[10px] font-bold uppercase">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[10px] font-bold uppercase">
             Short
           </span>
         )}
       </div>
       <div className="p-3">
-        <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-[var(--purple)] transition-colors">
+        <h3 className="text-sm font-semibold leading-tight line-clamp-2 text-[var(--text)] group-hover:text-[var(--k10-red)] transition-colors">
           {video.title}
         </h3>
         <div className="mt-1.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)]">

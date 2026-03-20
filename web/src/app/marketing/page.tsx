@@ -12,8 +12,16 @@ export default async function HomePage() {
   return (
     <main className="flex flex-col min-h-screen">
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-6 py-32 text-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--purple)]/5 to-transparent pointer-events-none" />
+      <section className="relative flex flex-col items-center justify-center px-6 py-32 text-center overflow-hidden">
+        {/* Gradient background inspired by brand graphics — deep reds fading to dark */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--k10-red-dark)]/20 via-[var(--k10-red)]/5 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[var(--k10-red)]/[0.04] blur-3xl pointer-events-none" />
+
+        <img
+          src="/branding/logomark-white.png"
+          alt=""
+          className="h-20 w-auto mb-8 relative z-10 opacity-90"
+        />
         <h1 className="text-6xl font-black tracking-tight leading-none mb-4 relative z-10">
           {SITE_NAME}
         </h1>
@@ -24,13 +32,13 @@ export default async function HomePage() {
         <div className="flex gap-4 relative z-10">
           <a
             href="#install"
-            className="px-8 py-3 rounded-lg bg-[var(--purple)] text-white font-bold text-sm uppercase tracking-wider hover:brightness-110 transition"
+            className="px-8 py-3 rounded-lg bg-[var(--k10-red)] text-white font-bold text-sm uppercase tracking-wider hover:brightness-110 hover:no-underline transition"
           >
             Get Started
           </a>
           <a
             href={DRIVE_URL}
-            className="px-8 py-3 rounded-lg border border-[var(--border)] text-[var(--text-secondary)] font-semibold text-sm uppercase tracking-wider hover:bg-white/5 transition"
+            className="px-8 py-3 rounded-lg border border-[var(--border)] text-[var(--text-secondary)] font-semibold text-sm uppercase tracking-wider hover:bg-white/5 hover:no-underline transition"
           >
             K10 Pro Drive
           </a>
@@ -38,38 +46,49 @@ export default async function HomePage() {
       </section>
 
       {/* Features grid */}
-      <section className="px-6 py-20 max-w-6xl mx-auto w-full">
-        <div className="grid md:grid-cols-3 gap-8">
+      <section id="features" className="px-6 py-20 max-w-6xl mx-auto w-full">
+        <h2 className="text-3xl font-black mb-10 text-center">What&apos;s Inside</h2>
+        <div className="grid md:grid-cols-3 gap-6">
           {[
             {
               title: 'Live Telemetry HUD',
               desc: 'Gear, speed, RPM with tachometer. Pedal traces. Fuel and tyre monitoring. Brake bias, TC, ABS. All at 30fps.',
+              accent: 'var(--k10-red)',
             },
             {
               title: 'AI Commentary',
               desc: '50+ telemetry-driven events with severity-based interruption. Contextual commentary about your car and the circuit.',
+              accent: 'var(--amber)',
             },
             {
               title: 'Sector Analysis',
               desc: 'F1-style 3-sector timing using iRacing native boundaries. Live delta, split times, PB tracking.',
+              accent: 'var(--green)',
             },
             {
               title: 'Leaderboard',
               desc: 'Relative leaderboard with sparkline lap history, iRating display, gap times, and pit status.',
+              accent: 'var(--blue)',
             },
             {
               title: 'Drive Mode',
               desc: 'Full-screen driver HUD for iPad or second screen. Track map, sectors, position, incidents — glanceable at speed.',
+              accent: 'var(--cyan)',
             },
             {
               title: 'Driver Profile',
               desc: 'iRating and Safety Rating tracking across all license classes. History charts, car brand heatmap, performance assessment.',
+              accent: 'var(--purple)',
             },
           ].map((f) => (
             <div
               key={f.title}
-              className="p-6 rounded-xl bg-white/[0.03] border border-[var(--border-subtle)] hover:border-[var(--border)] transition"
+              className="group p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border)] transition"
             >
+              <div
+                className="w-1 h-6 rounded-full mb-4"
+                style={{ background: f.accent }}
+              />
               <h3 className="text-lg font-bold mb-2">{f.title}</h3>
               <p className="text-sm text-[var(--text-dim)] leading-relaxed">{f.desc}</p>
             </div>
@@ -79,37 +98,37 @@ export default async function HomePage() {
 
       {/* Installation */}
       <section id="install" className="px-6 py-20 max-w-4xl mx-auto w-full">
-        <h2 className="text-3xl font-black mb-8">Install</h2>
+        <h2 className="text-3xl font-black mb-10">Install</h2>
 
         <div className="space-y-8">
           <div>
-            <h3 className="text-xl font-bold mb-3 text-[var(--purple)]">1. SimHub Plugin</h3>
+            <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">1. SimHub Plugin</h3>
             <p className="text-[var(--text-dim)] mb-3">
               Prerequisites: SimHub installed on Windows. Optional: iRacing Extra Properties plugin for iRating display.
             </p>
-            <div className="bg-black/40 rounded-lg p-4 font-mono text-sm text-[var(--green)]">
+            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm text-[var(--green)] border border-[var(--border-subtle)]">
               Double-click <span className="text-white">install.bat</span> in the repository root
             </div>
           </div>
 
           <div>
-            <h3 className="text-xl font-bold mb-3 text-[var(--purple)]">2. Dashboard Overlay</h3>
+            <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">2. Dashboard Overlay</h3>
             <p className="text-[var(--text-dim)] mb-3">
               The Electron overlay runs as a transparent window on top of your sim.
             </p>
-            <div className="bg-black/40 rounded-lg p-4 font-mono text-sm space-y-1">
-              <div><span className="text-[var(--text-dim)]">$</span> <span className="text-white">cd dashboard-overlay</span></div>
-              <div><span className="text-[var(--text-dim)]">$</span> <span className="text-white">npm install</span></div>
-              <div><span className="text-[var(--text-dim)]">$</span> <span className="text-white">npm start</span></div>
+            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm space-y-1 border border-[var(--border-subtle)]">
+              <div><span className="text-[var(--text-muted)]">$</span> <span className="text-white">cd dashboard-overlay</span></div>
+              <div><span className="text-[var(--text-muted)]">$</span> <span className="text-white">npm install</span></div>
+              <div><span className="text-[var(--text-muted)]">$</span> <span className="text-white">npm start</span></div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-xl font-bold mb-3 text-[var(--purple)]">3. Remote Access</h3>
+            <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">3. Remote Access</h3>
             <p className="text-[var(--text-dim)] mb-3">
               Stream the dashboard to any browser on your network — iPad, phone, second monitor.
             </p>
-            <div className="bg-black/40 rounded-lg p-4 font-mono text-sm text-[var(--text-dim)]">
+            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm text-[var(--text-dim)] border border-[var(--border-subtle)]">
               Settings → Connections → Stream to Safari → scan QR code
             </div>
           </div>
@@ -125,9 +144,14 @@ export default async function HomePage() {
       )}
 
       {/* Footer */}
-      <footer className="mt-auto px-6 py-8 border-t border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)]">
-        <p>{SITE_NAME} — Built by Kevin Conboy</p>
-        <p className="mt-1">MIT License</p>
+      <footer className="mt-auto px-6 py-8 border-t border-[var(--border-subtle)]">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/branding/logomark-white.png" alt="" className="h-5 w-auto opacity-40" />
+            <span className="text-xs text-[var(--text-muted)]">{SITE_NAME} — Built by Kevin Conboy</span>
+          </div>
+          <span className="text-xs text-[var(--text-muted)]">MIT License</span>
+        </div>
       </footer>
     </main>
   )

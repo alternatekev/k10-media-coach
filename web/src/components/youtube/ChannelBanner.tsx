@@ -11,14 +11,14 @@ export function ChannelBanner({ channel }: ChannelBannerProps) {
       <img
         src={channel.thumbnail}
         alt={channel.title}
-        className="w-16 h-16 rounded-full border-2 border-[var(--purple)]/30"
+        className="w-16 h-16 rounded-full border-2 border-[var(--k10-red)]/30"
       />
       <div>
         <a
           href={`https://www.youtube.com/@k10motorsports`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xl font-black hover:text-[var(--purple)] transition-colors"
+          className="text-xl font-black text-[var(--text)] hover:text-[var(--k10-red)] hover:no-underline transition-colors"
         >
           {channel.title}
         </a>
@@ -32,7 +32,7 @@ export function ChannelBanner({ channel }: ChannelBannerProps) {
         href="https://www.youtube.com/@k10motorsports?sub_confirmation=1"
         target="_blank"
         rel="noopener noreferrer"
-        className="ml-auto px-5 py-2 rounded-lg bg-[var(--red)] text-white text-xs font-bold uppercase tracking-wider hover:brightness-110 transition"
+        className="ml-auto px-5 py-2 rounded-lg bg-[var(--k10-red)] text-white text-xs font-bold uppercase tracking-wider hover:brightness-110 hover:no-underline transition"
       >
         Subscribe
       </a>

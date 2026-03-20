@@ -25,17 +25,24 @@ export const CATEGORY_LABELS: Record<RatingCategory, string> = {
   road: 'Road', oval: 'Oval', dirt_road: 'Dirt Road', dirt_oval: 'Dirt Oval', sports_car: 'Sports Car',
 }
 
-// Brand palette (matches dashboard CSS variables)
+// Brand palette (matches dashboard CSS variables + logomark colors)
 export const COLORS = {
   bg: '#0a0a14',
   surface: 'rgba(16, 16, 32, 0.90)',
+  elevated: 'rgba(24, 24, 48, 0.85)',
   border: 'rgba(255, 255, 255, 0.14)',
   text: '#e8e8f0',
+  textSecondary: 'rgba(255, 255, 255, 0.69)',
   textDim: 'rgba(255, 255, 255, 0.55)',
-  red: '#e53935',
+  textMuted: 'rgba(255, 255, 255, 0.45)',
+  // K10 logomark three-tone reds
+  k10Red: '#e53935',
+  k10RedMid: '#b02020',
+  k10RedDark: '#700010',
+  // Semantic
   green: '#43a047',
   blue: '#1e88e5',
   amber: '#ffb300',
-  purple: '#6c5ce7',
+  purple: '#7c6cf0',
   cyan: '#00acc1',
 } as const
