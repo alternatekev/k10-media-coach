@@ -55,40 +55,17 @@
   }
   updateTacho(0); // Will be driven by SimHub RPM data
 
-  // ═══ LAYERED PEDAL HISTOGRAMS ═══
-  const HIST_BARS = 20;
-  function setupHist(id, cls) {
-    const c = document.getElementById(id);
-    for (let i = 0; i < HIST_BARS; i++) {
-      const b = document.createElement('div');
-      b.className = `pedal-hist-bar ${cls}`;
-      if (i === HIST_BARS - 1) b.classList.add('live');
-      c.appendChild(b);
-    }
-  }
-  setupHist('throttleHist', 'throttle');
-  setupHist('brakeHist', 'brake');
-  setupHist('clutchHist', 'clutch');
+  // ═══ LAYERED PEDAL HISTOGRAMS — now rendered in WebGL ═══
+  // DOM histogram bars removed; data feeds directly to pedals shader via
+  // window._updatePedalHistWebGL() in webgl.js
 
-  function renderHist(id, data) {
-    const bars = document.getElementById(id).children;
-    for (let i = 0; i < data.length && i < bars.length; i++)
-      bars[i].style.height = Math.max(1, data[i] * 100) + '%';
-  }
-  // Initialize empty — SimHub will push live data
-  renderHist('throttleHist', new Array(HIST_BARS).fill(0));
-  renderHist('brakeHist', new Array(HIST_BARS).fill(0));
-  renderHist('clutchHist', new Array(HIST_BARS).fill(0));
-
-  // ═══ PEDAL TRACE — smooth trailing waveforms ═══
+  // ═══ PEDAL TRACE — circular buffer, pushed to WebGL texture ═══
   const _pedalTraceLen = 120;
   const _ptThr = new Float32Array(_pedalTraceLen);
   const _ptBrk = new Float32Array(_pedalTraceLen);
   const _ptClt = new Float32Array(_pedalTraceLen);
   let _ptIdx = 0;
   let _ptCount = 0;
-  const _ptCanvas = document.getElementById('pedalTraceCanvas');
-  const _ptCtx = _ptCanvas ? _ptCanvas.getContext('2d') : null;
 
   function renderPedalTrace(thr, brk, clt) {
     _ptThr[_ptIdx] = thr;
@@ -97,60 +74,9 @@
     _ptIdx = (_ptIdx + 1) % _pedalTraceLen;
     _ptCount++;
 
-    if (!_ptCtx) return;
-    const c = _ptCanvas;
-    // Match canvas resolution to display size
-    const rect = c.getBoundingClientRect();
-    if (c.width !== Math.round(rect.width) || c.height !== Math.round(rect.height)) {
-      c.width = Math.round(rect.width);
-      c.height = Math.round(rect.height);
-    }
-    const w = c.width, h = c.height;
-    const ctx = _ptCtx;
-    ctx.clearRect(0, 0, w, h);
-
-    const count = Math.min(_ptCount, _pedalTraceLen);
-    if (count < 3) return;
-
-    // Draw each pedal trace as a smooth line with gradient fade
-    const traces = [
-      { buf: _ptThr, color: [76, 175, 80],  label: 'thr' },   // green
-      { buf: _ptBrk, color: [244, 67, 54],   label: 'brk' },   // red
-      { buf: _ptClt, color: [66, 165, 245],   label: 'clt' },   // blue
-    ];
-
-    for (const tr of traces) {
-      ctx.beginPath();
-      for (let i = 0; i < count; i++) {
-        const idx = (_ptIdx - count + i + _pedalTraceLen) % _pedalTraceLen;
-        const x = (i / (count - 1)) * w;
-        const y = h - tr.buf[idx] * (h - 2) - 1;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      // Gradient stroke: fades in from left (oldest) to right (newest)
-      const grad = ctx.createLinearGradient(0, 0, w, 0);
-      const [r, g, b] = tr.color;
-      grad.addColorStop(0, `rgba(${r},${g},${b},0.0)`);
-      grad.addColorStop(0.3, `rgba(${r},${g},${b},0.08)`);
-      grad.addColorStop(0.7, `rgba(${r},${g},${b},0.2)`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0.45)`);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 1.5;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-
-      // Subtle glow at the leading edge (newest sample)
-      const lastIdx = (_ptIdx - 1 + _pedalTraceLen) % _pedalTraceLen;
-      const lastVal = tr.buf[lastIdx];
-      if (lastVal > 0.02) {
-        const lx = w - 1;
-        const ly = h - lastVal * (h - 2) - 1;
-        ctx.beginPath();
-        ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r},${g},${b},0.6)`;
-        ctx.fill();
-      }
+    // Push to WebGL data texture
+    if (window._updatePedalTraceWebGL) {
+      window._updatePedalTraceWebGL(_ptThr, _ptBrk, _ptClt, _ptIdx, Math.min(_ptCount, _pedalTraceLen));
     }
   }
 

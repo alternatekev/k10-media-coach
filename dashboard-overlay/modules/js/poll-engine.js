@@ -160,12 +160,8 @@
     }
 
     if (_pollFrame % 2 === 0) {
-      _thrHist.shift(); _thrHist.push(thr);
-      _brkHist.shift(); _brkHist.push(brk);
-      _cltHist.shift(); _cltHist.push(clt);
-      renderHist('throttleHist', _thrHist);
-      renderHist('brakeHist', _brkHist);
-      if (!_clutchHidden) renderHist('clutchHist', _cltHist);
+      // Level meter bars are driven directly by uThr/uBrk/uClt uniforms in WebGL.
+      // Update trace (function in webgl-helpers manages circular buffer + WebGL upload)
       renderPedalTrace(thr, brk, _clutchHidden ? 0 : clt);
     }
     const pcts = document.querySelectorAll('.pedal-pct');
@@ -183,7 +179,8 @@
       rpm: rpmRatio,
       latG: +(p[dsPre + 'LatG']) || 0,
       longG: +(p[dsPre + 'LongG']) || 0,
-      yawRate: +(p[dsPre + 'YawRate']) || 0
+      yawRate: +(p[dsPre + 'YawRate']) || 0,
+      steer: Math.max(-1, Math.min(1, +(p['DataCorePlugin.GameRawData.Telemetry.SteeringWheelAngle']) || 0))
     });
 
     // ─── Fuel — server-computed (DS.FuelPct, DS.FuelLapsRemaining) ───

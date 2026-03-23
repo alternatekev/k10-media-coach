@@ -905,7 +905,10 @@ function startAmbientCapture() {
   // Self-scheduling async loop — each tick awaits the previous
   // captureAmbientFrame() before scheduling the next one, preventing
   // overlapping desktopCapturer.getSources() calls.
-  const TARGET_INTERVAL = 33; // ~30fps target
+  // ~4fps capture — shader effects provide all visual movement.
+  // LERP in ambient-light.js smooths color transitions between samples.
+  // Preview mode uses faster rate for responsive UI feedback.
+  const TARGET_INTERVAL = _ambientPreviewMode ? 66 : 250;
 
   const tick = async () => {
     if (!overlayWindow || overlayWindow.isDestroyed() || !_ambientEnabled) {

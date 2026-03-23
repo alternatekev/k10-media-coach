@@ -48,63 +48,10 @@
   position: fixed;
 }
 
-/* ── ::before — Single-source illumination ──
-   One light source placed within the panel, contained to its bounds.
-   Brightness scales with --ambient-lum: dark ambient = dark panel,
-   bright ambient = visible bloom.  Breathing animation for organic feel. */
-.panel::before,
-.commentary-inner::before,
-.leaderboard-panel::before,
-.datastream-panel::before,
-.pitbox-panel::before,
-.incidents-panel::before,
-.spotter-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  overflow: hidden;
-  /* Single point light — tight radial at upper-center, no spill beyond panel */
-  background:
-    radial-gradient(
-      ellipse 70% 60% at 50% 25%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.18) 0%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.07) 40%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.02) 70%,
-      transparent 100%
-    );
-  /* Dark ambient = very dim, bright ambient = gentle glow */
-  opacity: calc(0.15 + var(--ambient-lum) * 0.35);
-  animation: ambient-breathe 4s ease-in-out infinite;
-}
-
-/* Tacho gets a centered light (bigger panel, stronger bloom) */
-.tacho-block::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      ellipse 80% 70% at 50% 35%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.20) 0%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.08) 35%,
-      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.02) 65%,
-      transparent 100%
-    );
-  opacity: calc(0.15 + var(--ambient-lum) * 0.35);
-  animation: ambient-breathe 4s ease-in-out infinite;
-}
-
-@keyframes ambient-breathe {
-  0%, 100% { opacity: calc(0.15 + var(--ambient-lum) * 0.35); }
-  50%      { opacity: calc(0.10 + var(--ambient-lum) * 0.25); }
-}
+/* ── ::before — REMOVED ──
+   Ambient illumination now rendered in WebGL postfx shader
+   for better performance (single GPU draw call vs per-panel CSS repaints)
+   and richer visual effects (animated caustics, drifting light). */
 
 /* ── ::after — Glass refraction surface ──
    Simulates light refracting across a glass panel surface.
@@ -156,15 +103,7 @@
   transition: opacity 400ms ease;
 }
 
-/* ── Kill glow + reflections when ambient is off ── */
-body.ambient-off .panel::before,
-body.ambient-off .tacho-block::before,
-body.ambient-off .commentary-inner::before,
-body.ambient-off .leaderboard-panel::before,
-body.ambient-off .datastream-panel::before,
-body.ambient-off .pitbox-panel::before,
-body.ambient-off .incidents-panel::before,
-body.ambient-off .spotter-panel::before,
+/* ── Kill glass reflections when ambient is off ── */
 body.ambient-off .panel::after,
 body.ambient-off .tacho-block::after,
 body.ambient-off .commentary-inner::after,
@@ -176,15 +115,7 @@ body.ambient-off .spotter-panel::after {
   display: none !important;
 }
 
-/* ── Green-screen mode: also disable ambient ── */
-body.opaque-mode .panel::before,
-body.opaque-mode .tacho-block::before,
-body.opaque-mode .commentary-inner::before,
-body.opaque-mode .leaderboard-panel::before,
-body.opaque-mode .datastream-panel::before,
-body.opaque-mode .pitbox-panel::before,
-body.opaque-mode .incidents-panel::before,
-body.opaque-mode .spotter-panel::before,
+/* ── Green-screen mode: also disable reflections ── */
 body.opaque-mode .panel::after,
 body.opaque-mode .tacho-block::after,
 body.opaque-mode .commentary-inner::after,

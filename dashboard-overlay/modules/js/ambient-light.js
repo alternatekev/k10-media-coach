@@ -48,6 +48,9 @@
   // No brightness floor — dark sampled colors darken the modules.
   // --ambient-lum (0-1) tells CSS how bright the ambient light is,
   // so panels can dim their background when the lighting source is dark.
+  // Expose ambient color for WebGL postfx shader (0-1 range)
+  window._ambientGL = { r: 0, g: 0, b: 0, lum: 0 };
+
   function updateReflectionColor(r, g, b) {
     const root = document.documentElement.style;
     root.setProperty('--ambient-r', String(Math.round(r * 255)));
@@ -56,6 +59,9 @@
     // Perceptual luminance (rec. 709)
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     root.setProperty('--ambient-lum', lum.toFixed(3));
+    // Push to WebGL-readable global
+    const a = window._ambientGL;
+    a.r = r; a.g = g; a.b = b; a.lum = lum;
   }
 
   function clearReflectionColor() {

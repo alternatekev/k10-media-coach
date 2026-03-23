@@ -62,14 +62,12 @@ test.describe('Page structure', () => {
     await expect(segs).toHaveCount(11);
   });
 
-  test('pedal histograms have correct bar count', async ({ page }) => {
+  test('pedal level meters rendered via WebGL', async ({ page }) => {
     await load(page);
-    const throttleBars = page.locator('#throttleHist .pedal-hist-bar');
-    const brakeBars = page.locator('#brakeHist .pedal-hist-bar');
-    const clutchBars = page.locator('#clutchHist .pedal-hist-bar');
-    await expect(throttleBars).toHaveCount(20);
-    await expect(brakeBars).toHaveCount(20);
-    await expect(clutchBars).toHaveCount(20);
+    // Level meter bars + trace are drawn by the pedals WebGL shader.
+    // Verify the WebGL FX frame function is exposed.
+    const hasFn = await page.evaluate(() => typeof window._pedalsFXFrame === 'function');
+    expect(hasFn).toBeTruthy();
   });
 
   test('K10 logo image is present', async ({ page }) => {
@@ -797,7 +795,7 @@ test.describe('Window API', () => {
     await load(page);
     const fns = await page.evaluate(() => [
       typeof window.updateTacho,
-      typeof window.renderHist,
+      typeof window._pedalsFXFrame,
       typeof window.showCommentary,
       typeof window.hideCommentary,
       typeof window.cycleRatingPos,
