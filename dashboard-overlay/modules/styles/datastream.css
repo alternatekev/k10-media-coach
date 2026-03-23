@@ -140,6 +140,7 @@
   .incidents-panel {
     position: fixed;
     z-index: 50;
+    width: fit-content;
     transition: opacity 0.4s ease;
   }
   .incidents-panel.section-hidden { display: none; }

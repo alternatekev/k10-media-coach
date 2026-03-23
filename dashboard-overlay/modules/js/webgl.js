@@ -44,6 +44,17 @@
         gl.viewport(0, 0, w, h);
       }
     }
+    /** Half-DPR variant for glare canvases — trades sharpness for performance */
+    function resizeCanvasHalfDPR(canvas, gl) {
+      const r = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.max((window.devicePixelRatio || 1) * 0.5, 1);
+      const w = Math.round(r.width * dpr);
+      const h = Math.round(r.height * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w; canvas.height = h;
+        gl.viewport(0, 0, w, h);
+      }
+    }
 
     /* ════════════════════════════════════════════
        TACHOMETER FX — bloom, heat distortion
@@ -306,7 +317,7 @@
         pGL.blendFunc(pGL.ONE, pGL.ONE_MINUS_SRC_ALPHA);
 
         window._pedalsFXFrame = function(dt) {
-          resizeCanvas(pC, pGL);
+          resizeCanvasHalfDPR(pC, pGL);
           _pedalTime += dt;
 
           pGL.clearColor(0, 0, 0, 0);

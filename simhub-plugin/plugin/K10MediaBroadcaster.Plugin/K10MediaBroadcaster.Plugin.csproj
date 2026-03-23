@@ -100,8 +100,15 @@
     <Copy SourceFiles="@(RecordedMaps)"
           DestinationFolder="$(RepoPluginDir)k10-media-broadcaster-data\trackmaps\"
           SkipUnchangedFiles="true" />
+    <!-- Sync telemetry recordings back to repo for git commit -->
+    <ItemGroup>
+      <RecordedTelemetry Include="$(SimHubPath)k10-media-broadcaster-data\recordings\*.jsonl" />
+    </ItemGroup>
+    <Copy SourceFiles="@(RecordedTelemetry)"
+          DestinationFolder="$(RepoPluginDir)k10-media-broadcaster-data\recordings\"
+          SkipUnchangedFiles="true" />
     <Message Importance="high"
-             Text="Exported DLL+PDB+TrackMaps to $(RepoPluginDir)" />
+             Text="Exported DLL+PDB+TrackMaps+Recordings to $(RepoPluginDir)" />
   </Target>
 
   <!-- Debug: launch SimHub when pressing F5 -->

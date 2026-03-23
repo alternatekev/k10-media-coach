@@ -179,7 +179,7 @@
         gapStr = '+' + gap.toFixed(1) + 's';
         gapClass = 'gap-behind';
       } else {
-        gapStr = '—';
+        gapStr = '';
       }
 
       // iRating shorthand

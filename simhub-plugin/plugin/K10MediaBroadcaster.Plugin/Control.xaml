@@ -97,7 +97,7 @@
                   Foreground="White" FontSize="13" Margin="0,0,0,4"
                   Checked="RecordModeCheck_Changed" Unchecked="RecordModeCheck_Changed"/>
         <TextBlock x:Name="RecordingStatusLabel"
-                   Text="Recordings saved to: %ProgramData%\SimHub\PluginsData\K10MediaBroadcaster\recordings\"
+                   Text="Recordings saved to: k10-media-broadcaster-data\recordings\ (next to plugin DLL)"
                    FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,4"/>
         <TextBlock Text="Use ThumbsUp / ThumbsDown actions in Control Mapper to rate prompts."
                    FontSize="10" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,20"/>

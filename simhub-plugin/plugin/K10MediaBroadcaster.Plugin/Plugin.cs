@@ -559,9 +559,8 @@ namespace K10MediaBroadcaster.Plugin
 
             if (Settings.RecordMode && !_recorder.IsRecording)
             {
-                string dir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                    "SimHub", "PluginsData", "K10MediaBroadcaster", "recordings");
+                string dllDir = Path.GetDirectoryName(typeof(Plugin).Assembly.Location) ?? "";
+                string dir = Path.Combine(dllDir, "k10-media-broadcaster-data", "recordings");
                 _recorder.StartRecording(dir);
             }
             else if (!Settings.RecordMode && _recorder.IsRecording)
