@@ -59,6 +59,8 @@
 
 <!-- Ambient light glow — full viewport WebGL canvas behind all panels -->
 <canvas class="ambient-canvas" id="ambientGlCanvas"></canvas>
+<!-- Full-screen glare canvas — renders all panel edge glows in one pass -->
+<canvas id="glareCanvas" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:48;"></canvas>
 
 <!-- Capture area selection overlay — shown when user clicks "Draw Region" -->
 <div id="captureAreaOverlay" class="capture-area-overlay" style="display:none;">
@@ -647,8 +649,8 @@
   </div>
 </div>
 
-<!-- COMPONENT: Spotter Panel (stacking voice messages) -->
-<div class="spotter-panel sp-bottom sp-left" id="spotterPanel">
+<!-- COMPONENT: Spotter Panel (stacking voice messages, co-located with race control) -->
+<div class="spotter-panel" id="spotterPanel">
   <canvas class="sp-gl-canvas" id="spotterGlCanvas"></canvas>
   <div class="sp-stack" id="spotterStack"></div>
 </div>

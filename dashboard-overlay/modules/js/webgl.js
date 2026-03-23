@@ -341,6 +341,457 @@
     }
 
     /* ════════════════════════════════════════════
+       POST-PROCESSING PIPELINE — panel-masked effects
+       Single GL context, one draw call. Renders at half DPR.
+       ALL effects are masked to panel boundaries so nothing
+       bleeds onto the game footage.
+
+       Effects:
+         1. Panel edge glow (per-source registry, up to 8)
+         2. G-force vignette (lateral + longitudinal darkening)
+         3. Speed chromatic aberration (RGB split near panels)
+         4. Brake heat wash (warm bloom from brake zone)
+         5. RPM redline pulse (panel-edge red flicker)
+       ════════════════════════════════════════════ */
+    let _postfxTime = 0;
+
+    // Smoothed telemetry for post-processing
+    const _pfx = {
+      speed: 0, speedTarget: 0,
+      rpm: 0, rpmTarget: 0,
+      latG: 0, latGTarget: 0,
+      longG: 0, longGTarget: 0,
+      brakeHeat: 0,
+      yawRate: 0, yawRateTarget: 0,
+    };
+    const _pfxLerp = { speed: 3.0, rpm: 8.0, latG: 5.0, longG: 5.0, yawRate: 4.0 };
+
+    /** Resize a full-screen canvas at half DPR for soft effects */
+    function resizeCanvasScreen(canvas, gl) {
+      const dpr = Math.max((window.devicePixelRatio || 1) * 0.5, 1);
+      const w = Math.round(window.innerWidth * dpr);
+      const h = Math.round(window.innerHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w; canvas.height = h;
+        gl.viewport(0, 0, w, h);
+      }
+    }
+
+    const glareCtx = initGL('glareCanvas');
+    if (glareCtx) {
+      const { canvas: gC, gl: gGL } = glareCtx;
+
+      const quadVS = `#version 300 es
+        in vec2 aPos;
+        out vec2 vUV;
+        void main() {
+          vUV = aPos * 0.5 + 0.5;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      // ── Post-processing fragment shader ──
+      // All effects masked to panel rects — nothing escapes onto the game.
+      const postfxFS = `#version 300 es
+        precision highp float;
+        in vec2 vUV;
+        out vec4 fragColor;
+
+        // Panel glow sources (pedals, etc.)
+        uniform float uTime;
+        uniform vec4  uRect[8];      // glow source rects
+        uniform vec4  uColor[8];     // glow source colors
+        uniform int   uCount;        // active glow sources
+
+        // Panel mask rects (ALL visible panels)
+        uniform vec4  uPanelRect[16];
+        uniform int   uPanelCount;
+
+        // Telemetry
+        uniform float uSpeed;
+        uniform float uRpm;
+        uniform float uLatG;
+        uniform float uLongG;
+        uniform float uBrakeHeat;
+        uniform float uYawRate;
+
+        // ── Panel mask: 1.0 inside any panel, 0.0 outside ──
+        // Soft feather at edges for natural blending.
+        float panelMask(vec2 uv) {
+          float mask = 0.0;
+          for (int i = 0; i < 16; i++) {
+            if (i >= uPanelCount) break;
+            vec4 r = uPanelRect[i];
+            // Signed distance from rect interior (negative = inside)
+            float dx = max(r.x - uv.x, uv.x - (r.x + r.z));
+            float dy = max(r.y - uv.y, uv.y - (r.y + r.w));
+            float d = max(dx, dy);
+            // Soft feather: fully inside = 1.0, feather over ~2% of viewport
+            float m = 1.0 - smoothstep(-0.01, 0.008, d);
+            mask = max(mask, m);
+          }
+          return mask;
+        }
+
+        float pulse(float t, float speed, float base) {
+          return base + (1.0 - base) * (0.5 + 0.5 * sin(t * speed * 0.6));
+        }
+
+        // EFFECT 1: Panel glow — top-edge reflective source
+        // Light originates from the top-center of each panel
+        // and falls off downward, like overhead light hitting glass.
+        vec4 panelGlow(vec2 uv) {
+          vec3 col = vec3(0.0);
+          float alpha = 0.0;
+          for (int i = 0; i < 8; i++) {
+            if (i >= uCount) break;
+            vec4 rect = uRect[i];
+            vec4 clr  = uColor[i];
+            float inten = clr.a;
+            if (inten < 0.01) continue;
+
+            // Glow source: top-center of panel, 20% down from top edge
+            vec2 src = vec2(rect.x + rect.z * 0.5, rect.y + rect.w * 0.20);
+
+            // Elliptical falloff: wider horizontally, tighter vertically
+            vec2 delta = uv - src;
+            delta.x /= max(rect.z * 0.7, 0.01);  // scale by panel width
+            delta.y /= max(rect.w * 0.5, 0.01);   // tighter vertical
+            float dist = length(delta);
+
+            // Downward bias: glow falls toward bottom of panel
+            float downBias = smoothstep(rect.y, rect.y + rect.w, uv.y);
+            float spread = 3.0;
+            float glow = exp(-dist * dist * spread) * inten;
+            // Brighter at top, dimmer toward bottom
+            glow *= mix(1.0, 0.3, downBias);
+
+            float p = pulse(uTime, 3.5 + inten * 2.0, 0.88);
+            glow *= p;
+
+            col += clr.rgb * glow * 0.9;
+            alpha += glow * 0.4;
+          }
+          return vec4(col, clamp(alpha, 0.0, 0.70));
+        }
+
+        // EFFECT 2: G-force vignette (masked to panels)
+        vec4 gForceVignette(vec2 uv) {
+          float totalG = length(vec2(uLatG, uLongG));
+          if (totalG < 0.3) return vec4(0.0);
+          float gIntensity = smoothstep(0.3, 3.0, totalG);
+          vec2 center = vec2(0.5);
+          float dist = length(uv - center) * 1.4;
+          float vig = smoothstep(0.3, 1.0, dist);
+          vec2 bias = vec2(-uLatG * 0.15, uLongG * 0.12);
+          float biasedDist = length(uv - center + bias) * 1.4;
+          float biasedVig = smoothstep(0.25, 1.0, biasedDist);
+          float finalVig = max(vig, biasedVig) * gIntensity * 0.35;
+          vec3 tint = mix(
+            vec3(0.02, 0.03, 0.06),
+            vec3(0.06, 0.02, 0.01),
+            smoothstep(0.0, 1.5, abs(uLongG))
+          );
+          return vec4(tint, finalVig);
+        }
+
+        // EFFECT 3: Speed chromatic aberration
+        vec4 speedAberration(vec2 uv) {
+          if (uSpeed < 0.3) return vec4(0.0);
+          float intensity = smoothstep(0.3, 0.95, uSpeed) * 0.20;
+          vec2 center = vec2(0.5);
+          vec2 dir = uv - center;
+          float dist = length(dir);
+          float edgeMask = smoothstep(0.3, 0.8, dist);
+          float angle = atan(dir.y, dir.x);
+          float streak = pow(abs(sin(angle * 40.0 + uTime * 2.0)), 16.0);
+          streak += pow(abs(sin(angle * 25.0 - uTime * 1.3)), 12.0) * 0.5;
+          float t = fract(angle / 6.2832 + 0.5);
+          vec3 col = mix(
+            vec3(0.15, 0.20, 0.60),
+            vec3(0.50, 0.10, 0.15),
+            t * 0.5 + 0.25
+          );
+          float alpha = streak * edgeMask * intensity;
+          return vec4(col * alpha, alpha * 0.6);
+        }
+
+        // EFFECT 4: Brake heat wash
+        vec4 brakeHeatWash(vec2 uv) {
+          if (uBrakeHeat < 0.05) return vec4(0.0);
+          float heat = smoothstep(0.05, 0.8, uBrakeHeat);
+          float rise = 1.0 - uv.y;
+          rise = pow(rise, 2.0);
+          float hSpread = smoothstep(0.5, 0.0, abs(uv.x - 0.5) - heat * 0.3);
+          float shimmer = 0.85 + 0.15 * sin(uTime * 8.0 + uv.x * 20.0)
+                                     * sin(uTime * 6.0 + uv.y * 15.0);
+          float mask = rise * hSpread * heat * shimmer;
+          vec3 col = mix(
+            vec3(0.90, 0.25, 0.05),
+            vec3(1.00, 0.55, 0.10),
+            rise * 0.6
+          );
+          float alpha = mask * 0.25;
+          return vec4(col * alpha, alpha);
+        }
+
+        // EFFECT 5: RPM redline pulse
+        vec4 rpmRedlinePulse(vec2 uv) {
+          if (uRpm < 0.88) return vec4(0.0);
+          float rpmIntensity = smoothstep(0.88, 0.98, uRpm);
+          float strobe = 1.0;
+          if (uRpm > 0.95) {
+            strobe = 0.6 + 0.4 * abs(sin(uTime * 18.0));
+          }
+          // Edge glow relative to nearby panel edges
+          float edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+          float edgeGlow = exp(-edgeDist * 30.0);
+          float alpha = edgeGlow * rpmIntensity * strobe * 0.40;
+          vec3 col = vec3(0.95, 0.10, 0.05);
+          return vec4(col * alpha, alpha);
+        }
+
+        void main() {
+          vec2 uv = vUV;
+          uv.y = 1.0 - uv.y;  // flip Y for CSS coordinate space
+
+          // Compute panel mask — 0.0 outside all panels, 1.0 inside
+          float mask = panelMask(uv);
+          if (mask < 0.001) { fragColor = vec4(0.0); return; }
+
+          // Layer all effects
+          vec4 glow     = panelGlow(uv);
+          vec4 vignette = gForceVignette(uv);
+          vec4 aberr    = speedAberration(uv);
+          vec4 heat     = brakeHeatWash(uv);
+          vec4 redline  = rpmRedlinePulse(uv);
+
+          // Additive composite
+          vec3 col = vec3(0.0);
+          float alpha = 0.0;
+
+          col += glow.rgb;
+          alpha += glow.a;
+
+          col = mix(col, col - vignette.rgb, vignette.a);
+          alpha = max(alpha, vignette.a * 0.5);
+
+          col += aberr.rgb;
+          alpha += aberr.a;
+
+          col += heat.rgb;
+          alpha += heat.a;
+
+          col += redline.rgb;
+          alpha += redline.a;
+
+          alpha = clamp(alpha, 0.0, 0.80);
+          col = clamp(col, 0.0, 1.0);
+
+          // Apply panel mask — nothing escapes onto the game
+          alpha *= mask;
+          fragColor = vec4(col * alpha, alpha);
+        }`;
+
+      const vs = createShader(gGL, gGL.VERTEX_SHADER, quadVS);
+      const fs = createShader(gGL, gGL.FRAGMENT_SHADER, postfxFS);
+      const prog = createProgram(gGL, vs, fs);
+
+      if (prog) {
+        const aPos   = gGL.getAttribLocation(prog, 'aPos');
+        const uTime  = gGL.getUniformLocation(prog, 'uTime');
+        const uCount = gGL.getUniformLocation(prog, 'uCount');
+        const uRect = [], uColor = [];
+        for (let i = 0; i < 8; i++) {
+          uRect[i]  = gGL.getUniformLocation(prog, 'uRect[' + i + ']');
+          uColor[i] = gGL.getUniformLocation(prog, 'uColor[' + i + ']');
+        }
+        // Panel mask uniforms
+        const uPanelCount = gGL.getUniformLocation(prog, 'uPanelCount');
+        const uPanelRect = [];
+        for (let i = 0; i < 16; i++) {
+          uPanelRect[i] = gGL.getUniformLocation(prog, 'uPanelRect[' + i + ']');
+        }
+        // Telemetry uniforms
+        const uSpeed     = gGL.getUniformLocation(prog, 'uSpeed');
+        const uRpm       = gGL.getUniformLocation(prog, 'uRpm');
+        const uLatG      = gGL.getUniformLocation(prog, 'uLatG');
+        const uLongG     = gGL.getUniformLocation(prog, 'uLongG');
+        const uBrakeHeat = gGL.getUniformLocation(prog, 'uBrakeHeat');
+        const uYawRate   = gGL.getUniformLocation(prog, 'uYawRate');
+
+        const buf = gGL.createBuffer();
+        gGL.bindBuffer(gGL.ARRAY_BUFFER, buf);
+        gGL.bufferData(gGL.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gGL.STATIC_DRAW);
+
+        gGL.enable(gGL.BLEND);
+        gGL.blendFunc(gGL.ONE, gGL.ONE_MINUS_SRC_ALPHA);
+
+        // ── Glow source registry ──
+        const _glareSources = [];
+
+        window.registerGlareSource = function(id, elementId, color, getIntensity) {
+          const idx = _glareSources.findIndex(s => s.id === id);
+          const source = { id, elementId, color, getIntensity };
+          if (idx >= 0) _glareSources[idx] = source;
+          else _glareSources.push(source);
+        };
+
+        window.removeGlareSource = function(id) {
+          const idx = _glareSources.findIndex(s => s.id === id);
+          if (idx >= 0) _glareSources.splice(idx, 1);
+        };
+
+        // Register pedal glare sources
+        window.registerGlareSource('pedal-thr', 'pedalsArea',
+          [0.08, 0.20, 0.05], function() { return Math.min(_pedalValues.thr * 0.15, 0.20); });
+        window.registerGlareSource('pedal-brk', 'pedalsArea',
+          [0.92, 0.22, 0.20], function() { return _pedalValues.brk * 0.5; });
+        window.registerGlareSource('pedal-clt', 'pedalsArea',
+          [0.25, 0.50, 0.92], function() { return _pedalValues.clt * 0.35; });
+
+        // Panel rect caches (cleared each frame)
+        const _rectCache = {};
+        const PANEL_SELECTORS = '.panel, .tacho-block, .commentary-inner, .leaderboard-panel, .datastream-panel, .pitbox-panel, .incidents-panel, .spotter-panel';
+        let _panelEls = null;
+
+        function getPanelRectUV(elementId) {
+          if (_rectCache[elementId]) return _rectCache[elementId];
+          const el = document.getElementById(elementId);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          const vw = window.innerWidth, vh = window.innerHeight;
+          const result = [r.left / vw, r.top / vh, r.width / vw, r.height / vh];
+          _rectCache[elementId] = result;
+          return result;
+        }
+
+        function getAllPanelRectsUV() {
+          if (!_panelEls) _panelEls = document.querySelectorAll(PANEL_SELECTORS);
+          const rects = [];
+          const vw = window.innerWidth, vh = window.innerHeight;
+          for (let i = 0; i < _panelEls.length && rects.length < 16; i++) {
+            const el = _panelEls[i];
+            // Skip hidden panels
+            if (el.offsetWidth === 0 || el.offsetHeight === 0) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            rects.push([r.left / vw, r.top / vh, r.width / vw, r.height / vh]);
+          }
+          return rects;
+        }
+
+        // Smooth telemetry interpolation
+        function lerpPFX(dt) {
+          const p = _pfx;
+          const lr = _pfxLerp;
+          p.speed   += (p.speedTarget   - p.speed)   * Math.min(1, lr.speed   * dt);
+          p.rpm     += (p.rpmTarget     - p.rpm)     * Math.min(1, lr.rpm     * dt);
+          p.latG    += (p.latGTarget    - p.latG)    * Math.min(1, lr.latG    * dt);
+          p.longG   += (p.longGTarget   - p.longG)   * Math.min(1, lr.longG   * dt);
+          p.yawRate += (p.yawRateTarget - p.yawRate) * Math.min(1, lr.yawRate * dt);
+          // Brake heat: accumulates during braking, slow decay
+          const braking = Math.max(0, _pedalValues.brk);
+          p.brakeHeat += braking * dt * 1.5;
+          p.brakeHeat *= Math.exp(-dt * 0.6);
+          p.brakeHeat = Math.min(p.brakeHeat, 1.0);
+        }
+
+        // Refresh panel element list periodically (panels may show/hide)
+        let _panelRefreshCounter = 0;
+
+        window._glareFXFrame = function(dt) {
+          _postfxTime += dt;
+          lerpPFX(dt);
+
+          // Refresh panel list every ~60 frames
+          _panelRefreshCounter++;
+          if (_panelRefreshCounter > 60) {
+            _panelRefreshCounter = 0;
+            _panelEls = null;
+          }
+
+          // Clear rect cache each frame
+          for (const k in _rectCache) delete _rectCache[k];
+
+          // Collect active glow sources (up to 8)
+          let count = 0;
+          const rects = [], colors = [];
+          for (let i = 0; i < _glareSources.length && count < 8; i++) {
+            const src = _glareSources[i];
+            const inten = src.getIntensity();
+            if (inten < 0.01) continue;
+            const rect = getPanelRectUV(src.elementId);
+            if (!rect) continue;
+            rects.push(rect);
+            colors.push([src.color[0], src.color[1], src.color[2], inten]);
+            count++;
+          }
+
+          // Get all panel rects for masking
+          const panelRects = getAllPanelRectsUV();
+
+          // Check if any effects are active
+          const hasGlow    = count > 0;
+          const hasEffects = _pfx.speed > 0.28 ||
+                             Math.abs(_pfx.latG) > 0.25 || Math.abs(_pfx.longG) > 0.25 ||
+                             _pfx.brakeHeat > 0.04 ||
+                             _pfx.rpm > 0.86;
+
+          if (!hasGlow && !hasEffects) {
+            if (gC.width > 0) {
+              gGL.clearColor(0, 0, 0, 0);
+              gGL.clear(gGL.COLOR_BUFFER_BIT);
+            }
+            return;
+          }
+
+          resizeCanvasScreen(gC, gGL);
+
+          gGL.clearColor(0, 0, 0, 0);
+          gGL.clear(gGL.COLOR_BUFFER_BIT);
+
+          gGL.useProgram(prog);
+          gGL.bindBuffer(gGL.ARRAY_BUFFER, buf);
+          gGL.enableVertexAttribArray(aPos);
+          gGL.vertexAttribPointer(aPos, 2, gGL.FLOAT, false, 0, 0);
+
+          // Glow source uniforms
+          gGL.uniform1f(uTime, _postfxTime);
+          gGL.uniform1i(uCount, count);
+          for (let i = 0; i < 8; i++) {
+            if (i < count) {
+              gGL.uniform4f(uRect[i], rects[i][0], rects[i][1], rects[i][2], rects[i][3]);
+              gGL.uniform4f(uColor[i], colors[i][0], colors[i][1], colors[i][2], colors[i][3]);
+            } else {
+              gGL.uniform4f(uRect[i], 0, 0, 0, 0);
+              gGL.uniform4f(uColor[i], 0, 0, 0, 0);
+            }
+          }
+
+          // Panel mask uniforms
+          gGL.uniform1i(uPanelCount, panelRects.length);
+          for (let i = 0; i < 16; i++) {
+            if (i < panelRects.length) {
+              gGL.uniform4f(uPanelRect[i], panelRects[i][0], panelRects[i][1], panelRects[i][2], panelRects[i][3]);
+            } else {
+              gGL.uniform4f(uPanelRect[i], 0, 0, 0, 0);
+            }
+          }
+
+          // Telemetry uniforms
+          gGL.uniform1f(uSpeed,     _pfx.speed);
+          gGL.uniform1f(uRpm,       _pfx.rpm);
+          gGL.uniform1f(uLatG,      _pfx.latG);
+          gGL.uniform1f(uLongG,     _pfx.longG);
+          gGL.uniform1f(uBrakeHeat, _pfx.brakeHeat);
+          gGL.uniform1f(uYawRate,   Math.abs(_pfx.yawRate));
+
+          gGL.drawArrays(gGL.TRIANGLE_STRIP, 0, 4);
+        };
+      }
+    }
+
+    /* ════════════════════════════════════════════
        FLAG ICON FX — waving flag with cloth shading
        ════════════════════════════════════════════ */
     const flagCtx = initGL('flagGlCanvas');
@@ -1925,6 +2376,7 @@
       if (window._incidentsFXFrame) window._incidentsFXFrame(dt);
       if (window._commTrailFXFrame) window._commTrailFXFrame(dt);
       if (window._gridFlagFXFrame) window._gridFlagFXFrame(dt);
+      if (window._glareFXFrame) window._glareFXFrame(dt);
       requestAnimationFrame(fxLoop);
     }
     requestAnimationFrame((now) => { _lastFXTime = now; requestAnimationFrame(fxLoop); });
@@ -1935,5 +2387,22 @@
       _pedalValues.thr = thr;
       _pedalValues.brk = brk;
       _pedalValues.clt = clt;
+    };
+
+    /** Extended telemetry feed for post-processing pipeline.
+     *  Call from poll-engine alongside updateGLFX.
+     *  @param {object} t — telemetry snapshot:
+     *    speed  : mph (raw)
+     *    rpm    : 0–1 ratio
+     *    latG   : lateral G (signed, positive = right turn)
+     *    longG  : longitudinal G (signed, negative = braking)
+     *    yawRate: rad/s */
+    window.updatePostFX = function(t) {
+      if (!t) return;
+      if (t.speed !== undefined) _pfx.speedTarget = Math.min(t.speed / 200, 1.0);
+      if (t.rpm   !== undefined) _pfx.rpmTarget   = t.rpm;
+      if (t.latG  !== undefined) _pfx.latGTarget   = t.latG;
+      if (t.longG !== undefined) _pfx.longGTarget  = t.longG;
+      if (t.yawRate !== undefined) _pfx.yawRateTarget = t.yawRate;
     };
   })();

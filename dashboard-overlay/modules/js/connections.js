@@ -433,44 +433,31 @@
       pb.classList.add('pb-' + secVert, 'pb-' + secHoriz);
     }
 
-    // ── 5. Incidents: same vertical edge, opposite horizontal edge ──
-    const incVert  = isCenter ? 'bottom' : (isBottom ? 'bottom' : 'top');
-    const incHoriz = isCenter ? 'left'   : (isRight  ? 'left'   : 'right');
+    // ── 5. Incidents: same vertical edge as sec-container, always opposite
+    //       horizontal edge from it (diagonal from main HUD) ──
+    const incVert  = secVert;
+    const incHoriz = secHoriz === 'right' ? 'left' : 'right';
 
     const inc = document.getElementById('incidentsPanel');
     if (inc) {
       inc.classList.remove('inc-top', 'inc-bottom', 'inc-left', 'inc-right');
       inc.classList.add('inc-' + incVert);
       inc.classList.add('inc-' + incHoriz);
+      // Explicit inline resets — CEF/Electron can hold stale values after
+      // class removal; force every position property so nothing lingers.
+      inc.style.top    = incVert  === 'top'   ? '' : 'auto';
+      inc.style.bottom = incVert  === 'bottom'? '' : 'auto';
+      inc.style.left   = incHoriz === 'left'  ? '' : 'auto';
+      inc.style.right  = incHoriz === 'right' ? '' : 'auto';
       inc.style.marginTop = '';
       inc.style.marginBottom = '';
+      console.log('[layout] incidents → ' + incVert + '-' + incHoriz +
+        ' (sec=' + secVert + '-' + secHoriz + ', pos=' + pos + ')');
     }
 
-    // ── 6. Spotter: next to incidents, same vertical edge ──
-    const sp = document.getElementById('spotterPanel');
-    if (sp) {
-      sp.classList.remove('sp-top', 'sp-bottom');
-      sp.classList.add('sp-' + incVert);
-      sp.style.marginTop = '';
-      sp.style.marginBottom = '';
-    }
-
-    // ── 7. Deferred layout (needs rendered widths) ──
-    requestAnimationFrame(function() {
-      if (sp && inc) {
-        const edgeZ = getComputedStyle(document.documentElement).getPropertyValue('--edge-z');
-        const edge  = parseInt(edgeZ) || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--edge')) || 10;
-        const gap   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-gap')) || 6;
-        const incW = inc.offsetWidth || 0;
-        if (incHoriz === 'left') {
-          sp.style.left  = (edge + incW + gap) + 'px';
-          sp.style.right = '';
-        } else {
-          sp.style.right = (edge + incW + gap) + 'px';
-          sp.style.left  = '';
-        }
-      }
-    });
+    // ── 6. Spotter: co-located with race control at top center ──
+    // Positioning is handled entirely by CSS (top: 8px, left: 50%, transform).
+    // No layout-dependent positioning needed.
   }
 
   function updateLayoutPosition(value) {

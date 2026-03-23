@@ -902,30 +902,44 @@ function startAmbientCapture() {
   _ambientEnabled = true;
   logToFile(`[K10] Ambient light capture started (preview=${_ambientPreviewMode})`);
 
+  // Self-scheduling async loop — each tick awaits the previous
+  // captureAmbientFrame() before scheduling the next one, preventing
+  // overlapping desktopCapturer.getSources() calls.
+  const TARGET_INTERVAL = 33; // ~30fps target
+
   const tick = async () => {
-    if (!overlayWindow || overlayWindow.isDestroyed() || !_ambientEnabled) return;
-    const result = await captureAmbientFrame();
-    if (result) {
-      if (result.color) {
-        overlayWindow.webContents.send('ambient-color', result.color);
-      }
-      if (result.previewDataUrl) {
-        overlayWindow.webContents.send('ambient-preview-frame', result.previewDataUrl);
-      }
+    if (!overlayWindow || overlayWindow.isDestroyed() || !_ambientEnabled) {
+      _ambientTimer = null;
+      return;
     }
+    const start = Date.now();
+    try {
+      const result = await captureAmbientFrame();
+      if (result) {
+        if (result.color) {
+          overlayWindow.webContents.send('ambient-color', result.color);
+        }
+        if (result.previewDataUrl) {
+          overlayWindow.webContents.send('ambient-preview-frame', result.previewDataUrl);
+        }
+      }
+    } catch (e) {
+      logToFile(`[K10] Ambient capture error: ${e.message}`);
+    }
+    // Schedule next tick, accounting for time spent in this capture
+    const elapsed = Date.now() - start;
+    const delay = Math.max(1, TARGET_INTERVAL - elapsed);
+    _ambientTimer = setTimeout(tick, delay);
   };
 
-  // ~30fps for responsive color changes (was 8fps/15fps)
-  const interval = 33;
-  _ambientTimer = setInterval(tick, interval);
   // Fire immediately so the first frame appears without delay
-  tick();
+  _ambientTimer = setTimeout(tick, 0);
 }
 
 function stopAmbientCapture() {
   _ambientEnabled = false;
   if (_ambientTimer) {
-    clearInterval(_ambientTimer);
+    clearTimeout(_ambientTimer);
     _ambientTimer = null;
     logToFile('[K10] Ambient light capture stopped');
   }

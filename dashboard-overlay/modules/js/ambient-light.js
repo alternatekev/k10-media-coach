@@ -44,28 +44,18 @@
     none:      { r: 0.45, g: 0.55, b: 0.75 },
   };
 
-  // ── Boost dark colors so glow is always visible ──
-  function boostColor(r, g, b) {
-    const maxC = Math.max(r, g, b, 0.001);
-    const MIN_BRIGHTNESS = 0.5;
-    if (maxC < MIN_BRIGHTNESS) {
-      const scale = MIN_BRIGHTNESS / maxC;
-      return {
-        r: Math.min(r * scale, 1),
-        g: Math.min(g * scale, 1),
-        b: Math.min(b * scale, 1)
-      };
-    }
-    return { r, g, b };
-  }
-
   // ── Update CSS vars that drive glow + reflection tint on panels ──
+  // No brightness floor — dark sampled colors darken the modules.
+  // --ambient-lum (0-1) tells CSS how bright the ambient light is,
+  // so panels can dim their background when the lighting source is dark.
   function updateReflectionColor(r, g, b) {
-    const boosted = boostColor(r, g, b);
     const root = document.documentElement.style;
-    root.setProperty('--ambient-r', String(Math.round(boosted.r * 255)));
-    root.setProperty('--ambient-g', String(Math.round(boosted.g * 255)));
-    root.setProperty('--ambient-b', String(Math.round(boosted.b * 255)));
+    root.setProperty('--ambient-r', String(Math.round(r * 255)));
+    root.setProperty('--ambient-g', String(Math.round(g * 255)));
+    root.setProperty('--ambient-b', String(Math.round(b * 255)));
+    // Perceptual luminance (rec. 709)
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    root.setProperty('--ambient-lum', lum.toFixed(3));
   }
 
   function clearReflectionColor() {

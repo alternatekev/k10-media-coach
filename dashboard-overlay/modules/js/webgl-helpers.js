@@ -540,7 +540,10 @@
   }
   window._splitPathIntoSectors = _splitPathIntoSectors;
 
-  function updateTrackMap(svgPath, playerX, playerY, opponentStr) {
+  // Smoothed zoom radius for the local map
+  let _mapZoomRadius = 15;
+
+  function updateTrackMap(svgPath, playerX, playerY, opponentStr, speedMph) {
     // Update track outline (only when path changes — new track or first load)
     if (svgPath && svgPath !== _mapLastPath) {
       _mapLastPath = svgPath;
@@ -624,13 +627,20 @@
       zoomPlayer.setAttribute('cy', sy.toFixed(1));
     }
 
-    // Update zoom map viewBox to track the player (±15 unit window) — use smoothed position
+    // Update zoom map viewBox — speed-dependent zoom radius
+    // Slow/stopped → tight zoom (10), fast → wider zoom (22)
+    // North-oriented: no rotation applied, map stays fixed orientation.
     const zoomSvg = document.getElementById('zoomMapSvg');
     if (zoomSvg) {
-      const zr = 15; // zoom radius
+      const spd = typeof speedMph === 'number' ? speedMph : 0;
+      // Map speed 0–150mph to zoom radius 10–22
+      const targetZR = 10 + Math.min(spd / 150, 1.0) * 12;
+      // Smooth the zoom radius so it doesn't jitter
+      _mapZoomRadius += (targetZR - _mapZoomRadius) * 0.08;
+      const zr = _mapZoomRadius;
       const vx = Math.max(0, Math.min(100 - zr * 2, sx - zr));
       const vy = Math.max(0, Math.min(100 - zr * 2, sy - zr));
-      zoomSvg.setAttribute('viewBox', vx.toFixed(1) + ' ' + vy.toFixed(1) + ' ' + (zr * 2) + ' ' + (zr * 2));
+      zoomSvg.setAttribute('viewBox', vx.toFixed(1) + ' ' + vy.toFixed(1) + ' ' + (zr * 2).toFixed(1) + ' ' + (zr * 2).toFixed(1));
     }
 
     // Parse and render opponents
