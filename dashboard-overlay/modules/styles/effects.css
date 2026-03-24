@@ -640,16 +640,18 @@
   .spotter-panel {
     position: fixed;
     z-index: 52;
-    max-width: 200px;
+    max-width: 280px;
     width: auto;
     pointer-events: none;
     transition: opacity 0.4s ease;
+    /* Co-located with race control banner at top center */
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .spotter-panel.section-hidden { display: none; }
-  .spotter-panel.sp-bottom { bottom: var(--edge-z, var(--edge)); }
-  .spotter-panel.sp-top { top: var(--edge-z, var(--edge)); }
-  .spotter-panel.sp-left { left: var(--edge-z, var(--edge)); }
-  .spotter-panel.sp-right { right: var(--edge-z, var(--edge)); }
+  /* When RC banner is visible, push spotter below it */
+  body.rc-active .spotter-panel { top: 100px; }
 
   .sp-gl-canvas {
     position: absolute;
@@ -664,11 +666,9 @@
 
   .sp-stack {
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     gap: 6px;
   }
-  /* When panel is at top of screen, stack downward instead */
-  .spotter-panel.sp-top .sp-stack { flex-direction: column; }
 
   .sp-inner {
     position: relative;

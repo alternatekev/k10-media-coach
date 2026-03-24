@@ -10,8 +10,7 @@
   JS API (call from SimHub JavascriptExtensions or NCalc bindings):
 
     updateTacho(pct)              — 0.0-1.0, drives tachometer segments + RPM color
-    renderHist(id, data[])        — 20-element array of 0.0-1.0 values for pedal histograms
-                                    IDs: 'throttleHist', 'brakeHist', 'clutchHist'
+    updateGLFX(rpm, thr, brk, clt)   — pedal level meter bars + trace rendered via WebGL shader
     updateIRBar(iRating)          — integer iRating value, bar fills 0-5000 range
     updateSRPie(srValue)          — 0.0-4.0 safety rating value
     cycleRatingPos()              — toggle between iRating/SR page and Position page
@@ -59,6 +58,8 @@
 
 <!-- Ambient light glow — full viewport WebGL canvas behind all panels -->
 <canvas class="ambient-canvas" id="ambientGlCanvas"></canvas>
+<!-- Full-screen glare canvas — renders all panel edge glows in one pass -->
+<canvas id="glareCanvas" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60;"></canvas>
 
 <!-- Capture area selection overlay — shown when user clicks "Draw Region" -->
 <div id="captureAreaOverlay" class="capture-area-overlay" style="display:none;">
@@ -156,26 +157,6 @@
       </div>
       <div class="panel pedals-area" id="pedalsArea">
         <canvas class="gl-overlay" id="pedalsGlCanvas"></canvas>
-        <div class="pedal-labels-row">
-          <div class="pedal-label-group">
-            <div class="pedal-channel-label throttle">THROTTLE</div>
-            <div class="pedal-pct" style="color:var(--green);">0%</div>
-          </div>
-          <div class="pedal-label-group">
-            <div class="pedal-channel-label brake">BRAKE</div>
-            <div class="pedal-pct" style="color:var(--red);">0%</div>
-          </div>
-          <div class="pedal-label-group" id="clutchLabelGroup">
-            <div class="pedal-channel-label clutch">CLUTCH</div>
-            <div class="pedal-pct" style="color:var(--blue);">0%</div>
-          </div>
-        </div>
-        <div class="pedal-viz-stack">
-          <div class="pedal-viz-layer throttle-layer" id="throttleHist"></div>
-          <div class="pedal-viz-layer brake-layer" id="brakeHist"></div>
-          <div class="pedal-viz-layer clutch-layer" id="clutchHist"></div>
-          <canvas class="pedal-trace-canvas" id="pedalTraceCanvas" width="240" height="80"></canvas>
-        </div>
       </div>
     </div>
 
@@ -647,8 +628,8 @@
   </div>
 </div>
 
-<!-- COMPONENT: Spotter Panel (stacking voice messages) -->
-<div class="spotter-panel sp-bottom sp-left" id="spotterPanel">
+<!-- COMPONENT: Spotter Panel (stacking voice messages, co-located with race control) -->
+<div class="spotter-panel" id="spotterPanel">
   <canvas class="sp-gl-canvas" id="spotterGlCanvas"></canvas>
   <div class="sp-stack" id="spotterStack"></div>
 </div>
@@ -822,8 +803,14 @@
       <div class="settings-row"><span class="settings-label">Car Manufacturer</span><div class="settings-toggle on" data-section="carLogoSquare" data-key="showCarLogo" onclick="toggleSetting(this)"></div></div>
       <div class="settings-row"><span class="settings-label">Game Logo</span><div class="settings-toggle on" data-key="showGameLogo" onclick="toggleGameLogo(this)"></div></div>
       <div class="settings-row"><span class="settings-label">WebGL Effects</span><div class="settings-toggle on" data-key="showWebGL" onclick="toggleWebGL(this)"></div></div>
-      <div class="settings-row"><span class="settings-label">Ambient Light</span><div class="settings-toggle on" data-key="showAmbientLight" id="ambientLightToggle" onclick="toggleAmbientLight(this)"></div></div>
-      <div class="settings-hint">Ambient glare + glass reflections on panels</div>
+      <div class="settings-row"><span class="settings-label">Ambient Light</span>
+        <select class="settings-select" id="settingsAmbientMode" onchange="updateAmbientMode(this.value)">
+          <option value="reflective">Reflective</option>
+          <option value="matte">Matte</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+      <div class="settings-hint">Reflective = full glare, Matte = subtle, Off = none</div>
       <div class="settings-row"><span class="settings-label">Capture Area</span><button class="settings-btn" id="btnSetCaptureArea" onclick="startCaptureAreaSelection()">Draw Region</button></div>
       <div class="settings-hint">Draw a screen region to sample ambient color from</div>
       <div class="ambient-preview-container" id="ambientPreviewContainer">

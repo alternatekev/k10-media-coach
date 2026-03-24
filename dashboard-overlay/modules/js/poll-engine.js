@@ -160,23 +160,21 @@
     }
 
     if (_pollFrame % 2 === 0) {
-      _thrHist.shift(); _thrHist.push(thr);
-      _brkHist.shift(); _brkHist.push(brk);
-      _cltHist.shift(); _cltHist.push(clt);
-      renderHist('throttleHist', _thrHist);
-      renderHist('brakeHist', _brkHist);
-      if (!_clutchHidden) renderHist('clutchHist', _cltHist);
+      // Update trace circular buffer + WebGL texture
       renderPedalTrace(thr, brk, _clutchHidden ? 0 : clt);
-    }
-    const pcts = document.querySelectorAll('.pedal-pct');
-    if (pcts.length >= 3) {
-      pcts[0].textContent = (Math.round(thr * 100) | 0) + '%';
-      pcts[1].textContent = (Math.round(brk * 100) | 0) + '%';
-      pcts[2].textContent = (Math.round(clt * 100) | 0) + '%';
     }
 
     // ─── WebGL FX update ───
     if (window.updateGLFX) window.updateGLFX(rpmRatio, thr, brk, clt);
+    // Post-processing pipeline — feed smoothed telemetry for screen effects
+    if (window.updatePostFX) window.updatePostFX({
+      speed: speed,
+      rpm: rpmRatio,
+      latG: +(p[dsPre + 'LatG']) || 0,
+      longG: +(p[dsPre + 'LongG']) || 0,
+      yawRate: +(p[dsPre + 'YawRate']) || 0,
+      steer: Math.max(-1, Math.min(1, +(p['DataCorePlugin.GameRawData.Telemetry.SteeringWheelAngle']) || 0))
+    });
 
     // ─── Fuel — server-computed (DS.FuelPct, DS.FuelLapsRemaining) ───
     const fuel = +d('DataCorePlugin.GameData.Fuel', 'Demo.Fuel') || 0;
@@ -261,14 +259,14 @@
       const el = document.querySelector('#ctrlABS .ctrl-value');
       const absBox = document.getElementById('ctrlABS');
       if (el) {
-        // For cars with absNoAdjust (ABS exists but not adjustable), show "active" when engaging
+        // For cars with absNoAdjust (ABS exists but not adjustable), show bar state only
         if (_carAdj && _carAdj.absNoAdjust) {
           if (absActive > 0) {
-            el.textContent = 'active';
+            el.textContent = '';
             el.classList.remove('ctrl-value-fixed');
             absBox.style.setProperty('--ctrl-pct', '100%');
           } else {
-            el.textContent = 'standby';
+            el.textContent = '';
             el.classList.add('ctrl-value-fixed');
             absBox.style.setProperty('--ctrl-pct', '0%');
           }
@@ -757,7 +755,7 @@
       const mapPX   = +v('K10MediaBroadcaster.Plugin.TrackMap.PlayerX') || 50;
       const mapPY   = +v('K10MediaBroadcaster.Plugin.TrackMap.PlayerY') || 50;
       const mapOpp  = vs('K10MediaBroadcaster.Plugin.TrackMap.Opponents') || '';
-      updateTrackMap(mapPath, mapPX, mapPY, mapOpp);
+      updateTrackMap(mapPath, mapPX, mapPY, mapOpp, speed);
     }
     const mapNameEl = document.getElementById('mapTrackName');
     if (mapNameEl) {

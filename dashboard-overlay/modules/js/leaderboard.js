@@ -262,25 +262,42 @@
   function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
   // ── Offline demo: keep leaderboard alive when plugin server is unreachable ──
-  // This lets you test layout settings (max rows, focus, expand-to-fill)
-  // by opening dashboard.html directly in a browser — no server needed.
+  // Only active when opened directly in a browser with no server (truly offline).
+  // Does NOT auto-start — only starts if no poll data arrives within 5 seconds.
   let _offlineLbTimer = null;
   let _lbHasLiveData = false;
 
   // Called by pollUpdate when we get real data — suppresses offline demo
-  function _markLbLive() { _lbHasLiveData = true; }
+  function _markLbLive() {
+    const wasOffline = !_lbHasLiveData && _offlineLbTimer;
+    _lbHasLiveData = true;
+    // Kill offline demo if it was running
+    if (_offlineLbTimer) {
+      clearInterval(_offlineLbTimer);
+      _offlineLbTimer = null;
+    }
+    // Clear stale demo rows so they don't persist when real data has no leaderboard
+    if (wasOffline) {
+      const c = document.getElementById('lbRows');
+      if (c) c.innerHTML = '';
+      _lbLastJson = '';
+    }
+  }
 
   function _startOfflineLbDemo() {
-    if (_offlineLbTimer) return;
+    if (_offlineLbTimer || _lbHasLiveData) return;
     _offlineLbTimer = setInterval(() => {
-      if (_lbHasLiveData) return; // live data came in, stay quiet
+      if (_lbHasLiveData) {
+        clearInterval(_offlineLbTimer);
+        _offlineLbTimer = null;
+        return;
+      }
       const lbPanel = document.getElementById('leaderboardPanel');
       if (!lbPanel || lbPanel.classList.contains('section-hidden')) return;
       const raw = _buildDemoLeaderboard();
-      // Forge a minimal props object and call the renderer directly
       updateLeaderboard({ 'K10MediaBroadcaster.Plugin.Leaderboard': raw }, true);
     }, 250);
   }
 
-  // Auto-start after a brief delay to give the server a chance to connect
-  setTimeout(_startOfflineLbDemo, 3000);
+  // Only start offline demo if no server data arrives within 5 seconds
+  setTimeout(() => { if (!_lbHasLiveData) _startOfflineLbDemo(); }, 5000);

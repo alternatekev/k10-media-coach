@@ -62,14 +62,11 @@ test.describe('Page structure', () => {
     await expect(segs).toHaveCount(11);
   });
 
-  test('pedal histograms have correct bar count', async ({ page }) => {
+  test('pedal rolling histogram rendered via WebGL', async ({ page }) => {
     await load(page);
-    const throttleBars = page.locator('#throttleHist .pedal-hist-bar');
-    const brakeBars = page.locator('#brakeHist .pedal-hist-bar');
-    const clutchBars = page.locator('#clutchHist .pedal-hist-bar');
-    await expect(throttleBars).toHaveCount(20);
-    await expect(brakeBars).toHaveCount(20);
-    await expect(clutchBars).toHaveCount(20);
+    // Rolling bar histogram is drawn by the pedals WebGL shader.
+    const hasFn = await page.evaluate(() => typeof window._pedalsFXFrame === 'function');
+    expect(hasFn).toBeTruthy();
   });
 
   test('K10 logo image is present', async ({ page }) => {
@@ -205,12 +202,11 @@ test.describe('Telemetry rendering', () => {
     await expect(irs.nth(1)).toHaveText('2530 iR');
   });
 
-  test('pedal percentages display', async ({ page }) => {
+  test('pedal area has no text labels (full-graphics mode)', async ({ page }) => {
     await load(page);
-    const pcts = page.locator('.pedal-pct');
-    await expect(pcts.nth(0)).toHaveText('82%');
-    await expect(pcts.nth(1)).toHaveText('0%');
-    await expect(pcts.nth(2)).toHaveText('0%');
+    // Pedal labels + percentages removed; module is fully graphics
+    const labels = page.locator('.pedal-pct');
+    await expect(labels).toHaveCount(0);
   });
 });
 
@@ -797,7 +793,7 @@ test.describe('Window API', () => {
     await load(page);
     const fns = await page.evaluate(() => [
       typeof window.updateTacho,
-      typeof window.renderHist,
+      typeof window._pedalsFXFrame,
       typeof window.showCommentary,
       typeof window.hideCommentary,
       typeof window.cycleRatingPos,
