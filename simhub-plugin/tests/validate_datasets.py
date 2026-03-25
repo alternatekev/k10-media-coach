@@ -15,7 +15,7 @@ import colorsys
 import unittest
 from pathlib import Path
 
-DATASET_DIR = Path(__file__).resolve().parent.parent / "dataset"
+DATASET_DIR = Path(__file__).resolve().parent.parent / "k10-media-broadcaster-data"
 TOPICS_PATH = DATASET_DIR / "commentary_topics.json"
 FRAGMENTS_PATH = DATASET_DIR / "commentary_fragments.json"
 SENTIMENTS_PATH = DATASET_DIR / "sentiments.json"
@@ -23,10 +23,10 @@ SENTIMENTS_PATH = DATASET_DIR / "sentiments.json"
 VALID_CATEGORIES = {"hardware", "game_feel", "car_response", "racing_experience"}
 
 VALID_CONDITIONS = {
-    ">", "<", "==", "change", "increase", "spike", "sudden_drop", "extreme",
-    "rapid_change", "personal_best", "player_gain_position", "player_lost_position",
-    "player_entering", "off_track", "yellow_flag", "black_flag", "race_start",
-    "close_proximity",
+    ">", "<", "==", "change", "increase", "decrease", "spike", "sudden_drop",
+    "extreme", "rapid_change", "sustained", "personal_best",
+    "player_gain_position", "player_lost_position", "player_entering",
+    "off_track", "yellow_flag", "black_flag", "race_start", "close_proximity",
 }
 
 # Flag hue ranges to avoid (±15° around each flag color)
@@ -217,11 +217,17 @@ class TestFragmentsDataset(unittest.TestCase):
         self.assertGreater(len(self.fragment_map), 0)
 
     def test_every_topic_has_fragments(self):
-        """Every topic in commentary_topics.json should have matching fragments."""
-        missing = self.topic_ids - set(self.fragment_map.keys())
+        """Every topic that doesn't use commentaryPrompts should have fragments."""
+        # Topics with commentaryPrompts use LLM-generated commentary instead of fragments
+        prompt_topics = {
+            t["id"] for t in self.topics_data.get("topics", [])
+            if "commentaryPrompts" in t
+        }
+        fragment_required = self.topic_ids - prompt_topics
+        missing = fragment_required - set(self.fragment_map.keys())
         self.assertEqual(
             missing, set(),
-            f"Topics missing from fragments: {missing}",
+            f"Topics missing from fragments (excluding commentaryPrompts topics): {missing}",
         )
 
     def test_no_orphan_fragments(self):

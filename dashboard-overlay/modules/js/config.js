@@ -329,11 +329,6 @@ let _prevBB = -1, _prevTC = -1, _prevABS = -1;
 let _clutchSeenActive = false;
 let _clutchHidden = false;
 
-// Telemetry history
-let _thrHist = new Array(20).fill(0);
-let _brkHist = new Array(20).fill(0);
-let _cltHist = new Array(20).fill(0);
-
 // Flag & race control
 let _lastFlagState = 'none';
 let _greenFlagTimeout = null;

@@ -158,7 +158,7 @@ test.describe('Telemetry rendering', () => {
 
   test('best lap time formats correctly', async ({ page }) => {
     await load(page);
-    const bestLap = page.locator('.pos-meta-row .val.purple').first();
+    const bestLap = page.locator('.best-row .val').first();
     const text = await bestLap.textContent();
     // 92.347s = 1:32.347
     expect(text).toBe('1:32.347');
@@ -202,11 +202,11 @@ test.describe('Telemetry rendering', () => {
     await expect(irs.nth(1)).toHaveText('2530 iR');
   });
 
-  test('pedal area has no text labels (full-graphics mode)', async ({ page }) => {
+  test('pedal area shows percentage labels for each channel', async ({ page }) => {
     await load(page);
-    // Pedal labels + percentages removed; module is fully graphics
+    // DOM histogram shows throttle, brake, clutch percentage labels
     const labels = page.locator('.pedal-pct');
-    await expect(labels).toHaveCount(0);
+    await expect(labels).toHaveCount(3);
   });
 });
 
