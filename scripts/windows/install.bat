@@ -104,20 +104,20 @@ if exist "%PLUGIN_DIR%\K10MediaBroadcaster.Plugin.pdb" (
 )
 
 :: -------------------------------------------------------------------
-:: 5. Copy dataset folder
+:: 5. Copy data folder
 :: -------------------------------------------------------------------
 
 echo  [2/2] Installing dataset files...
 
-if exist "%PLUGIN_DIR%\dataset" (
-    xcopy /E /Y /I /Q "%PLUGIN_DIR%\dataset" "%SIMHUB_DIR%\dataset" >NUL
+if exist "%PLUGIN_DIR%\k10-media-broadcaster-data" (
+    xcopy /E /Y /I /Q "%PLUGIN_DIR%\k10-media-broadcaster-data" "%SIMHUB_DIR%\k10-media-broadcaster-data" >NUL
     if !ERRORLEVEL! NEQ 0 (
-        echo        FAILED - could not copy dataset folder.
+        echo        FAILED - could not copy data folder.
         goto :error
     )
-    echo        OK - dataset\
+    echo        OK - k10-media-broadcaster-data\
 ) else (
-    echo        FAILED - dataset folder not found.
+    echo        FAILED - k10-media-broadcaster-data folder not found.
     goto :error
 )
 

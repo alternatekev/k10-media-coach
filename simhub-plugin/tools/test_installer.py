@@ -43,11 +43,11 @@ INSTALL_MANIFEST = {
     "dll": "MediaBroadcaster.Plugin.dll",
     "pdb": "MediaBroadcaster.Plugin.pdb",  # optional
     "dataset_files": [
-        "dataset/commentary_topics.json",
-        "dataset/commentary_fragments.json",
-        "dataset/sentiments.json",
-        "dataset/channel_notes.json",
-        "dataset/commentary_sources.json",
+        "k10-media-broadcaster-data/commentary_topics.json",
+        "k10-media-broadcaster-data/commentary_fragments.json",
+        "k10-media-broadcaster-data/sentiments.json",
+        "k10-media-broadcaster-data/channel_notes.json",
+        "k10-media-broadcaster-data/commentary_sources.json",
     ],
     "dashboard_files": [
         "DashTemplates/media broadcaster/media broadcaster.djson",
@@ -170,7 +170,7 @@ class TestInstallerStructure(unittest.TestCase):
     def test_install_bat_references_dataset(self):
         with open(INSTALL_BAT, "r") as f:
             content = f.read()
-        self.assertIn("dataset", content)
+        self.assertIn("k10-media-broadcaster-data", content)
 
     def test_install_bat_references_dashtemplates(self):
         with open(INSTALL_BAT, "r") as f:
@@ -324,8 +324,8 @@ class TestSimulatedInstall(unittest.TestCase):
                 f.write(b"STUB_PDB_FOR_TESTING")
 
         # Step 2: Copy dataset
-        dataset_src = os.path.join(REPO_ROOT, "dataset")
-        dataset_dst = os.path.join(self.simhub, "dataset")
+        dataset_src = os.path.join(REPO_ROOT, "k10-media-broadcaster-data")
+        dataset_dst = os.path.join(self.simhub, "k10-media-broadcaster-data")
         shutil.copytree(dataset_src, dataset_dst, dirs_exist_ok=True)
 
         # Step 3: Copy DashTemplates
@@ -487,7 +487,7 @@ class TestSimulatedExport(unittest.TestCase):
         """Dataset files live in the repo and are pushed TO SimHub.
         Export should never copy dataset FROM SimHub back to repo."""
         self._simulate_export()
-        dataset_dir = os.path.join(self.fake_repo, "dataset")
+        dataset_dir = os.path.join(self.fake_repo, "k10-media-broadcaster-data")
         self.assertFalse(os.path.isdir(dataset_dir),
                          "Export should not copy dataset from SimHub to repo")
 
@@ -539,7 +539,7 @@ class TestLiveInstall(unittest.TestCase):
         self.assertTrue(os.path.isfile(
             os.path.join(self.simhub, "MediaBroadcaster.Plugin.dll")))
         self.assertTrue(os.path.isdir(
-            os.path.join(self.simhub, "dataset")))
+            os.path.join(self.simhub, "k10-media-broadcaster-data")))
 
     def test_install_bat_fails_without_dll(self):
         """If the DLL is missing from repo root, installer should fail."""

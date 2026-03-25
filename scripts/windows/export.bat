@@ -183,7 +183,7 @@ echo    %PLUGIN_DIR%\DashTemplates\k10 media broadcaster\
 echo    %PLUGIN_DIR%\DashTemplates\k10 media broadcaster\
 echo.
 echo  NOTE: Dataset files are NOT exported from SimHub.
-echo  The dataset/ folder in the repo is the source of
+echo  The k10-media-broadcaster-data/ folder in the repo is the source of
 echo  truth. Edit dataset files in the repo, then use
 echo  install.bat or rebuild.bat to push them to SimHub.
 echo.
