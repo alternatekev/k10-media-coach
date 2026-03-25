@@ -747,16 +747,35 @@
 
 <!-- COMPONENT: Settings Overlay (configuration panel) -->
 <div class="settings-overlay" id="settingsOverlay">
-  <div class="settings-panel">
-    <div class="settings-title">K10 Motorsports</div>
-    <div class="settings-subtitle">Toggle HUD sections and configure the overlay</div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-titlebar" id="settingsTitlebar">
+      <div class="settings-titlebar-logo" id="settingsTitlebarLogo"></div>
+      <div style="flex:1">
+        <div class="settings-title">K10 Motorsports</div>
+        <div class="settings-subtitle">Configure the overlay</div>
+      </div>
+      <button class="settings-popout-btn" id="settingsPopoutBtn" onclick="popoutSettings()" title="Open on secondary display">⧉</button>
+    </div>
 
     <div class="settings-conn-warn" id="settingsConnWarn">
       <div><span class="warn-icon"></span><span class="warn-title">Can't reach SimHub</span></div>
-      <div class="warn-detail">Make sure SimHub is running and the K10 Motorsports plugin is installed. Check the connection URL in the System tab.</div>
+      <div class="warn-detail">Make sure SimHub is running and the K10 Motorsports plugin is installed. Check the connection URL in the Connections section.</div>
       <div class="warn-url" id="settingsConnWarnUrl"></div>
     </div>
 
+    <div class="settings-body">
+      <div class="settings-sidebar">
+        <div class="settings-sidebar-item active" data-tab="sections" onclick="switchSettingsTab(this)">Sections</div>
+        <div class="settings-sidebar-item" data-tab="layout" onclick="switchSettingsTab(this)">Layout</div>
+        <div class="settings-sidebar-item" data-tab="commentary" onclick="switchSettingsTab(this)">Commentary</div>
+        <div class="settings-sidebar-item" data-tab="connections" onclick="switchSettingsTab(this)">Connections</div>
+        <div class="settings-sidebar-item disabled" data-tab="iracing" id="iracingTab" onclick="switchSettingsTab(this)">iRacing</div>
+        <div class="settings-sidebar-item" data-tab="keys" onclick="switchSettingsTab(this)">Keys</div>
+        <div class="settings-sidebar-item" data-tab="system" onclick="switchSettingsTab(this)">System</div>
+      </div>
+      <div class="settings-content">
+
+    <!-- Old tab bar (hidden — replaced by sidebar) -->
     <div class="settings-tabs">
       <div class="settings-tab active" data-tab="sections" onclick="switchSettingsTab(this)">Sections</div>
       <div class="settings-tab" data-tab="layout" onclick="switchSettingsTab(this)">Layout</div>
@@ -1077,9 +1096,70 @@
 
     </div>
 
-    <button class="settings-close" onclick="toggleSettings()">Close Settings</button>
+    <!-- ── Tab: Commentary — settings migrated from SimHub plugin ── -->
+    <div class="settings-tab-content" id="settingsTabCommentary">
+      <div class="settings-group-label">Display</div>
+      <div class="settings-row">
+        <span class="settings-label">Prompt Duration</span>
+        <div class="settings-range-row">
+          <input type="range" class="settings-range" id="settingsPromptDuration" min="5" max="120" step="1" value="15"
+            oninput="updateCommentarySetting('promptDuration', +this.value); document.getElementById('promptDurationVal').textContent = this.value + 's'">
+          <span class="settings-range-val" id="promptDurationVal">15s</span>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Show Topic Title</span>
+        <div class="settings-toggle on" data-key="commentaryShowTitle" onclick="toggleCommentarySetting(this, 'showTopicTitle')"></div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Event Only Mode</span>
+        <div class="settings-toggle" data-key="commentaryEventOnly" onclick="toggleCommentarySetting(this, 'eventOnlyMode')"></div>
+      </div>
 
-    <div class="settings-version">K10 Motorsports v1.0.0 — Original Dashboard</div>
+      <div class="settings-group-label">Categories</div>
+      <div class="settings-row">
+        <span class="settings-label">Hardware</span>
+        <div class="settings-toggle on" data-key="catHardware" onclick="toggleCommentaryCategory(this, 'hardware')"></div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Game Feel</span>
+        <div class="settings-toggle on" data-key="catGameFeel" onclick="toggleCommentaryCategory(this, 'game_feel')"></div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Car Response</span>
+        <div class="settings-toggle on" data-key="catCarResponse" onclick="toggleCommentaryCategory(this, 'car_response')"></div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Racing Experience</span>
+        <div class="settings-toggle on" data-key="catRacingExperience" onclick="toggleCommentaryCategory(this, 'racing_experience')"></div>
+      </div>
+
+      <div class="settings-group-label">Driver Name</div>
+      <div class="settings-hint">Used for 3rd-person commentary. Auto-populated from iRacing.</div>
+      <div class="settings-row">
+        <span class="settings-label">First</span>
+        <input type="text" class="settings-input" id="settingsDriverFirst" placeholder="First name"
+          oninput="updateCommentarySetting('driverFirstName', this.value)">
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Last</span>
+        <input type="text" class="settings-input" id="settingsDriverLast" placeholder="Last name"
+          oninput="updateCommentarySetting('driverLastName', this.value)">
+      </div>
+
+      <div class="settings-group-label">Demo</div>
+      <div class="settings-row">
+        <span class="settings-label">Demo Mode</span>
+        <div class="settings-toggle" data-key="commentaryDemoMode" onclick="toggleCommentarySetting(this, 'demoMode')"></div>
+      </div>
+    </div>
+
+    <button class="settings-close" onclick="toggleSettings()">Close</button>
+
+    </div><!-- /settings-content -->
+    </div><!-- /settings-body -->
+
+    <div class="settings-version">K10 Motorsports v0.0.8 — Original Dashboard</div>
 
   </div>
 </div>

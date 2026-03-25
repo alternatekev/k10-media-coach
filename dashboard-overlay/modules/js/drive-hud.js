@@ -67,17 +67,44 @@
     if (lastEl) lastEl.textContent = lastLap > 0 ? _fmtLapTime(lastLap) : '—';
     if (lapEl) lapEl.textContent = curLap > 0 ? curLap : '—';
 
-    // Sectors (from plugin)
+    // Sectors (from plugin — N-sector support)
     var curSector = +(p[dsPre + 'CurrentSector']) || 1;
-    var splits = [+(p[dsPre + 'SectorSplitS1']) || 0, +(p[dsPre + 'SectorSplitS2']) || 0, +(p[dsPre + 'SectorSplitS3']) || 0];
-    var deltas = [+(p[dsPre + 'SectorDeltaS1']) || 0, +(p[dsPre + 'SectorDeltaS2']) || 0, +(p[dsPre + 'SectorDeltaS3']) || 0];
-    var states = [+(p[dsPre + 'SectorStateS1']) || 0, +(p[dsPre + 'SectorStateS2']) || 0, +(p[dsPre + 'SectorStateS3']) || 0];
+    var sectorCount = +(p[dsPre + 'SectorCount']) || 3;
+    var splitsStr = p[dsPre + 'SectorSplits'] || '';
+    var splits, deltas, states;
+    if (splitsStr) {
+      splits = splitsStr.split(',').map(Number);
+      deltas = (p[dsPre + 'SectorDeltas'] || '').split(',').map(Number);
+      states = (p[dsPre + 'SectorStates'] || '').split(',').map(Number);
+    } else {
+      splits = [+(p[dsPre + 'SectorSplitS1']) || 0, +(p[dsPre + 'SectorSplitS2']) || 0, +(p[dsPre + 'SectorSplitS3']) || 0];
+      deltas = [+(p[dsPre + 'SectorDeltaS1']) || 0, +(p[dsPre + 'SectorDeltaS2']) || 0, +(p[dsPre + 'SectorDeltaS3']) || 0];
+      states = [+(p[dsPre + 'SectorStateS1']) || 0, +(p[dsPre + 'SectorStateS2']) || 0, +(p[dsPre + 'SectorStateS3']) || 0];
+    }
     var stateClass = ['', 'dh-s-pb', 'dh-s-faster', 'dh-s-slower'];
     var currentLapTime = isDemo
       ? (+(p['K10Motorsports.Plugin.Demo.CurrentLapTime']) || 0)
       : (+(p['DataCorePlugin.GameData.CurrentLapTime']) || 0);
 
-    for (var si = 1; si <= 3; si++) {
+    // Dynamically create/update drive HUD sector cells
+    var dhSectorsEl = document.querySelector('.dh-sectors');
+    if (dhSectorsEl) {
+      var existingCells = dhSectorsEl.querySelectorAll('.dh-sector');
+      if (existingCells.length !== sectorCount) {
+        dhSectorsEl.innerHTML = '';
+        for (var ci = 1; ci <= sectorCount; ci++) {
+          var cell = document.createElement('div');
+          cell.className = 'dh-sector';
+          cell.id = 'dhS' + ci;
+          cell.innerHTML = '<div class="dh-sec-label">S' + ci + '</div>' +
+            '<div class="dh-sec-time" id="dhS' + ci + 'Time">—</div>' +
+            '<div class="dh-sec-delta" id="dhS' + ci + 'Delta"></div>';
+          dhSectorsEl.appendChild(cell);
+        }
+      }
+    }
+
+    for (var si = 1; si <= sectorCount; si++) {
       var cell = document.getElementById('dhS' + si);
       var timeEl = document.getElementById('dhS' + si + 'Time');
       var sDeltaEl = document.getElementById('dhS' + si + 'Delta');
@@ -154,10 +181,21 @@
       if (dhTrack && svgPath && dhTrack.getAttribute('d') !== svgPath) {
         dhTrack.setAttribute('d', svgPath);
         if (typeof _splitPathIntoSectors === 'function') {
-          var sPaths = _splitPathIntoSectors(svgPath);
-          for (var i = 1; i <= 3; i++) {
-            var el = document.getElementById('dhSector' + i);
-            if (el) el.setAttribute('d', sPaths[i - 1]);
+          var boundaryPcts = Array.isArray(window._sectorBoundaries) ? window._sectorBoundaries : null;
+          var sPaths = _splitPathIntoSectors(svgPath, boundaryPcts);
+          // Dynamically create/update sector paths in the drive HUD SVG
+          var dhSvg = document.getElementById('dhMapSvg');
+          if (dhSvg) {
+            dhSvg.querySelectorAll('.map-sector').forEach(function(el) { el.remove(); });
+            var dhOpp = document.getElementById('dhMapOpponents');
+            for (var i = 0; i < sPaths.length; i++) {
+              var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              path.classList.add('map-sector');
+              path.id = 'dhSector' + (i + 1);
+              path.setAttribute('d', sPaths[i]);
+              if (dhOpp) dhSvg.insertBefore(path, dhOpp);
+              else dhSvg.appendChild(path);
+            }
           }
         }
       }
@@ -219,7 +257,7 @@
       if (window._sectorData) {
         var sd = window._sectorData;
         var sColors = ['transparent', 'hsl(280,60%,55%)', 'hsl(130,60%,50%)', 'hsl(0,65%,50%)'];
-        for (var j = 1; j <= 3; j++) {
+        for (var j = 1; j <= sd.sectorCount; j++) {
           var sEl = document.getElementById('dhSector' + j);
           if (!sEl) continue;
           sEl.setAttribute('stroke', j === sd.curSector ? 'hsla(0,0%,100%,0.25)' : (sColors[sd.states[j-1]] || 'transparent'));

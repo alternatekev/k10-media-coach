@@ -18,12 +18,13 @@
     'lmu':     'le-mans-ultimate.svg'
   };
 
-  // Opposite corner mapping: dashboard position → logo position
+  // Horizontal opposite mapping: dashboard position → logo position
+  // Logo goes on the same vertical edge but the opposite horizontal side
   var OPPOSITE_CORNER = {
-    'top-right':       'bottom-left',
-    'top-left':        'bottom-right',
-    'bottom-right':    'top-left',
-    'bottom-left':     'top-right',
+    'top-right':       'top-left',
+    'top-left':        'top-right',
+    'bottom-right':    'bottom-left',
+    'bottom-left':     'bottom-right',
     'absolute-center': 'bottom-left'
   };
 

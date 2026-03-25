@@ -51,6 +51,20 @@ contextBridge.exposeInMainWorld('k10', {
   getRemoteServerInfo: () => ipcRenderer.invoke('get-remote-server-info'),
   startRemoteServer: (opts) => ipcRenderer.invoke('start-remote-server', opts),
   stopRemoteServer: () => ipcRenderer.invoke('stop-remote-server'),
+  // Settings popout window (secondary display)
+  openSettingsPopout: () => ipcRenderer.invoke('open-settings-popout'),
+  closeSettingsPopout: () => ipcRenderer.invoke('close-settings-popout'),
+  notifySettingsChanged: (settings) => ipcRenderer.invoke('settings-changed', settings),
+  onSettingsSync: (callback) => {
+    ipcRenderer.on('settings-sync', (event, settings) => callback(settings));
+  },
+  onSettingsPopoutClosed: (callback) => {
+    ipcRenderer.on('settings-popout-closed', () => callback());
+  },
+  // Detect if this window was opened as a popout
+  isSettingsPopout: () => {
+    return new URLSearchParams(window.location.search).get('settingsPopout') === '1';
+  },
   // Ambient light — screen capture moved to C# plugin (ScreenColorSampler).
   // Color data now arrives via poll JSON (DS.AmbientR/G/B), no IPC needed.
 });

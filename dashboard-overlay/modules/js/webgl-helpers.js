@@ -542,33 +542,44 @@
   const _sectorColors = ['transparent', 'hsl(280,60%,55%)', 'hsl(130,60%,50%)', 'hsl(0,65%,50%)'];
   const _sectorActiveColor = 'hsla(0,0%,100%,0.25)';
 
-  // Split an SVG path string into 3 sector sub-paths.
-  // Uses iRacing native sector boundary percentages if available (s2Pct, s3Pct),
-  // otherwise falls back to equal thirds by point count.
+  // Split an SVG path string into N sector sub-paths.
+  // boundaryPcts is an array of N-1 boundary percentages (e.g. [0.33, 0.67] for 3 sectors).
+  // Falls back to equal thirds if no boundaries provided.
   // Track map points are evenly distributed by LapDistPct, so point index ≈ pct * count.
-  function _splitPathIntoSectors(svgPath, s2Pct, s3Pct) {
+  function _splitPathIntoSectors(svgPath, boundaryPcts) {
     const coords = svgPath.match(/[\d.]+[,\s]+[\d.]+/g);
-    if (!coords || coords.length < 6) return ['', '', ''];
+    if (!coords || coords.length < 6) return [];
 
-    // Use native boundaries if provided, else thirds
-    var b1 = (s2Pct > 0 && s2Pct < 1) ? Math.round(s2Pct * coords.length) : Math.floor(coords.length / 3);
-    var b2 = (s3Pct > s2Pct && s3Pct < 1) ? Math.round(s3Pct * coords.length) : Math.floor(coords.length * 2 / 3);
+    // Determine boundary indices from percentages
+    var pcts = (Array.isArray(boundaryPcts) && boundaryPcts.length >= 1)
+      ? boundaryPcts
+      : [0.333, 0.667]; // default to 3 sectors
+    var indices = pcts.map(function(p) { return Math.round(p * coords.length); });
 
-    var parts = [coords.slice(0, b1), coords.slice(b1, b2), coords.slice(b2)];
-    return parts.map(function(pts, i) {
-      var startIdx = i === 0 ? 0 : (i === 1 ? b1 : b2);
-      var startPt = i === 0 ? pts[0] : coords[startIdx - 1];
+    // Build N sector sub-paths
+    var result = [];
+    var prevIdx = 0;
+    for (var s = 0; s <= indices.length; s++) {
+      var endIdx = s < indices.length ? indices[s] : coords.length;
+      var pts = coords.slice(prevIdx, endIdx);
+      if (pts.length === 0) { result.push(''); prevIdx = endIdx; continue; }
+      var startPt = prevIdx === 0 ? pts[0] : coords[prevIdx - 1];
       var d = 'M ' + startPt;
-      for (var j = (i === 0 ? 1 : 0); j < pts.length; j++) d += ' L ' + pts[j];
-      return d;
-    });
+      for (var j = (prevIdx === 0 ? 1 : 0); j < pts.length; j++) d += ' L ' + pts[j];
+      result.push(d);
+      prevIdx = endIdx;
+    }
+    return result;
   }
   window._splitPathIntoSectors = _splitPathIntoSectors;
 
   // Smoothed zoom radius for the local map
   let _mapZoomRadius = 15;
 
-  function updateTrackMap(svgPath, playerX, playerY, opponentStr, speedMph) {
+  // Smoothed heading for local map rotation
+  let _mapSmoothedHeading = 0;
+
+  function updateTrackMap(svgPath, playerX, playerY, opponentStr, speedMph, headingDeg) {
     // Update track outline (only when path changes — new track or first load)
     if (svgPath && svgPath !== _mapLastPath) {
       _mapLastPath = svgPath;
@@ -578,13 +589,26 @@
       if (fullTrack) fullTrack.setAttribute('d', svgPath);
       if (zoomTrack) zoomTrack.setAttribute('d', svgPath);
 
-      // Split path into 3 sector sub-paths using native iRacing boundaries if available
-      const s2p = window._sectorBoundaries ? window._sectorBoundaries.s2 : 0;
-      const s3p = window._sectorBoundaries ? window._sectorBoundaries.s3 : 0;
-      const sectorPaths = _splitPathIntoSectors(svgPath, s2p, s3p);
-      for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById('mapSector' + i);
-        if (el) el.setAttribute('d', sectorPaths[i - 1]);
+      // Split path into N sector sub-paths using native iRacing boundaries
+      const boundaryPcts = Array.isArray(window._sectorBoundaries) ? window._sectorBoundaries : null;
+      const sectorPaths = _splitPathIntoSectors(svgPath, boundaryPcts);
+      const sectorCount = sectorPaths.length;
+
+      // Dynamically create/update sector path elements in the full map SVG
+      const fullSvg = document.getElementById('fullMapSvg');
+      if (fullSvg) {
+        // Remove old sector paths
+        fullSvg.querySelectorAll('.map-sector').forEach(el => el.remove());
+        // Insert new sector paths before the opponents group
+        const oppGroup = document.getElementById('fullMapOpponents');
+        for (let i = 0; i < sectorCount; i++) {
+          const path = document.createElementNS(_SVG_NS, 'path');
+          path.classList.add('map-sector');
+          path.id = 'mapSector' + (i + 1);
+          path.setAttribute('d', sectorPaths[i]);
+          if (oppGroup) fullSvg.insertBefore(path, oppGroup);
+          else fullSvg.appendChild(path);
+        }
       }
 
       // Position start/finish marker at the first point of the path (LapDistPct=0)
@@ -607,7 +631,7 @@
     // Update sector colors from live performance data (set by poll-engine)
     if (window._sectorData) {
       const sd = window._sectorData;
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= sd.sectorCount; i++) {
         const el = document.getElementById('mapSector' + i);
         if (!el) continue;
         if (i === sd.curSector) {
@@ -653,19 +677,33 @@
     }
 
     // Update zoom map viewBox — speed-dependent zoom radius
-    // Slow/stopped → tight zoom (10), fast → wider zoom (22)
-    // North-oriented: no rotation applied, map stays fixed orientation.
+    // Slow/stopped → very tight zoom (4), fast → moderate zoom (14)
+    // Locked to driving direction via CSS rotation on the SVG container.
     const zoomSvg = document.getElementById('zoomMapSvg');
     if (zoomSvg) {
       const spd = typeof speedMph === 'number' ? speedMph : 0;
-      // Map speed 0–150mph to zoom radius 10–22
-      const targetZR = 10 + Math.min(spd / 150, 1.0) * 12;
-      // Smooth the zoom radius so it doesn't jitter
-      _mapZoomRadius += (targetZR - _mapZoomRadius) * 0.08;
+      // Map speed 0–150mph to zoom radius 4–14 (much tighter than before)
+      const targetZR = 4 + Math.min(spd / 150, 1.0) * 10;
+      // Fast LERP (0.25) for responsive zoom changes
+      _mapZoomRadius += (targetZR - _mapZoomRadius) * 0.25;
       const zr = _mapZoomRadius;
       const vx = Math.max(0, Math.min(100 - zr * 2, sx - zr));
       const vy = Math.max(0, Math.min(100 - zr * 2, sy - zr));
       zoomSvg.setAttribute('viewBox', vx.toFixed(1) + ' ' + vy.toFixed(1) + ' ' + (zr * 2).toFixed(1) + ' ' + (zr * 2).toFixed(1));
+
+      // Rotate local map to lock driving direction up
+      // iRacing yaw: 0 = north, positive = clockwise → CSS rotation = -heading
+      if (typeof headingDeg === 'number' && headingDeg !== 0) {
+        // Smooth heading to prevent jitter (LERP with wrapping for 360° boundary)
+        let diff = headingDeg - _mapSmoothedHeading;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        _mapSmoothedHeading += diff * 0.3;
+        // Normalize to 0-360
+        _mapSmoothedHeading = ((_mapSmoothedHeading % 360) + 360) % 360;
+        zoomSvg.style.transform = 'rotate(' + (-_mapSmoothedHeading).toFixed(1) + 'deg)';
+        zoomSvg.style.transformOrigin = sx.toFixed(1) + '% ' + sy.toFixed(1) + '%';
+      }
     }
 
     // Parse and render opponents

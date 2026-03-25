@@ -126,7 +126,9 @@
 
   function switchSettingsTab(tab) {
     const tabName = tab.dataset.tab;
-    document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t === tab));
+    // Update both sidebar items and legacy tab bar
+    document.querySelectorAll('.settings-sidebar-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
     document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.toggle('active', c.id === 'settingsTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)));
     // Refresh connection status when switching to Connections tab
     if (tabName === 'connections') updateConnectionsTab();
@@ -171,6 +173,104 @@
       const key = el.dataset.dsField;
       const show = _settings[key] !== false;
       el.style.display = show ? '' : 'none';
+    });
+  }
+
+  // ── Draggable settings panel ──
+  (function initSettingsDrag() {
+    let _isDragging = false, _dragOffX = 0, _dragOffY = 0;
+    document.addEventListener('DOMContentLoaded', function() {
+      const bar = document.getElementById('settingsTitlebar');
+      const panel = document.getElementById('settingsPanel');
+      if (!bar || !panel) return;
+      bar.addEventListener('mousedown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        _isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        _dragOffX = e.clientX - rect.left;
+        _dragOffY = e.clientY - rect.top;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!_isDragging) return;
+        panel.style.position = 'fixed';
+        panel.style.left = (e.clientX - _dragOffX) + 'px';
+        panel.style.top = (e.clientY - _dragOffY) + 'px';
+        panel.style.margin = '0';
+      });
+      document.addEventListener('mouseup', function() { _isDragging = false; });
+    });
+  })();
+
+  // ── Commentary settings (migrated from SimHub plugin) ──
+  // These settings are sent to the plugin via the HTTP bridge.
+  function updateCommentarySetting(key, value) {
+    var url = (window._simhubUrlOverride || SIMHUB_URL) + '?action=setSetting&key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value);
+    fetch(url).catch(function() {});
+  }
+  function toggleCommentarySetting(el, key) {
+    var isOn = el.classList.contains('on');
+    el.classList.toggle('on', !isOn);
+    updateCommentarySetting(key, !isOn ? '1' : '0');
+  }
+  function toggleCommentaryCategory(el, category) {
+    var isOn = el.classList.contains('on');
+    el.classList.toggle('on', !isOn);
+    updateCommentarySetting('category_' + category, !isOn ? '1' : '0');
+  }
+
+  // Load K10 logo into settings titlebar
+  document.addEventListener('DOMContentLoaded', function() {
+    var logoEl = document.getElementById('settingsTitlebarLogo');
+    if (logoEl) {
+      var img = document.createElement('img');
+      img.src = 'images/branding/logomark.png';
+      img.alt = 'K10';
+      logoEl.appendChild(img);
+    }
+  });
+
+  // ── Popout settings to secondary display ──
+  function popoutSettings() {
+    if (window.k10 && window.k10.openSettingsPopout) {
+      window.k10.openSettingsPopout();
+      // Close the inline settings panel on the main overlay
+      var overlay = document.getElementById('settingsOverlay');
+      if (overlay && overlay.classList.contains('open')) {
+        toggleSettings();
+      }
+    }
+  }
+
+  // ── Popout window initialisation ──
+  // When this page loads with ?settingsPopout=1, switch into popout mode:
+  // hide all dashboard panels, auto-open settings, fill the window.
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.k10 && window.k10.isSettingsPopout && window.k10.isSettingsPopout()) {
+      document.body.classList.add('settings-popout');
+      // Force settings open (the overlay CSS rules handle the rest)
+      var overlay = document.getElementById('settingsOverlay');
+      if (overlay) overlay.classList.add('open');
+      document.body.classList.add('settings-active');
+    }
+  });
+
+  // ── Cross-window settings sync ──
+  // When the other window changes settings, apply them here.
+  if (window.k10 && window.k10.onSettingsSync) {
+    window.k10.onSettingsSync(function(newSettings) {
+      if (newSettings && typeof newSettings === 'object') {
+        Object.assign(_settings, newSettings);
+        applySettings();
+      }
+    });
+  }
+
+  // When the popout window is closed, re-enable the popout button
+  if (window.k10 && window.k10.onSettingsPopoutClosed) {
+    window.k10.onSettingsPopoutClosed(function() {
+      var btn = document.getElementById('settingsPopoutBtn');
+      if (btn) btn.disabled = false;
     });
   }
 

@@ -116,6 +116,7 @@ function saveBounds(bounds) {
 
 // ── State ────────────────────────────────────────────────────
 let overlayWindow = null;
+let settingsWindow = null;   // detached settings on secondary display
 let settingsMode = false;
 let greenScreenMode = false;
 // Single dashboard: vanilla TypeScript build (Vite-bundled, single-file HTML)
@@ -432,6 +433,91 @@ ipcMain.handle('release-interactive', async () => {
   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
   overlayWindow.setFocusable(false);
   console.log('[K10] Interactive mode OFF — click-through restored');
+});
+
+// ── IPC: Detach settings to secondary display ──
+function openSettingsWindow() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  // Pick the secondary display, fall back to primary if only one monitor
+  const displays = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
+  const secondary = displays.find(d => d.id !== primary.id) || primary;
+
+  const winW = 620;
+  const winH = 700;
+  const sx = secondary.bounds.x + Math.round((secondary.bounds.width - winW) / 2);
+  const sy = secondary.bounds.y + Math.round((secondary.bounds.height - winH) / 2);
+
+  settingsWindow = new BrowserWindow({
+    width: winW,
+    height: winH,
+    x: sx,
+    y: sy,
+    icon: path.join(__dirname, 'images', 'branding', 'icon.png'),
+    frame: false,
+    resizable: true,
+    movable: true,
+    alwaysOnTop: false,
+    transparent: false,
+    backgroundColor: '#1a1a1a',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  // Load the same dashboard with a query flag so renderer knows to show settings only
+  settingsWindow.loadFile(path.join(__dirname, getDashboardFile()), {
+    query: { settingsPopout: '1' }
+  });
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+    // Tell main overlay that the popout closed
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      overlayWindow.webContents.send('settings-popout-closed');
+    }
+    logToFile('[K10] Settings popout window closed');
+  });
+
+  logToFile(`[K10] Settings popout opened on display "${secondary.label || secondary.id}" at (${sx}, ${sy})`);
+}
+
+function closeSettingsWindow() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.close();
+    settingsWindow = null;
+  }
+}
+
+ipcMain.handle('open-settings-popout', async () => {
+  openSettingsWindow();
+  return true;
+});
+
+ipcMain.handle('close-settings-popout', async () => {
+  closeSettingsWindow();
+  return true;
+});
+
+// Relay settings changes from either window to the other
+ipcMain.handle('settings-changed', async (event, settings) => {
+  // Persist
+  saveSettingsSync(settings);
+  // Forward to the OTHER window
+  const senderWC = event.sender;
+  if (overlayWindow && !overlayWindow.isDestroyed() && overlayWindow.webContents !== senderWC) {
+    overlayWindow.webContents.send('settings-sync', settings);
+  }
+  if (settingsWindow && !settingsWindow.isDestroyed() && settingsWindow.webContents !== senderWC) {
+    settingsWindow.webContents.send('settings-sync', settings);
+  }
+  return true;
 });
 
 // ── IPC: Driver profile / car history persistence ──

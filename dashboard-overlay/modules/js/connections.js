@@ -574,6 +574,10 @@
     if (window.k10 && window.k10.saveSettings) {
       await window.k10.saveSettings(_settings);
     }
+    // Broadcast to the other window (overlay ↔ popout) via main process relay
+    if (window.k10 && window.k10.notifySettingsChanged) {
+      window.k10.notifySettingsChanged(_settings);
+    }
     // Also save to localStorage
     try { localStorage.setItem('k10-broadcast-settings', JSON.stringify(_settings)); } catch(e) {}
   }

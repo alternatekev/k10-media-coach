@@ -76,6 +76,9 @@ namespace K10Motorsports.Plugin.Engine
         /// <summary>Player Y position in SVG coords (0–100).</summary>
         public double PlayerY => _playerY;
 
+        /// <summary>Player heading in degrees (0 = north, clockwise positive). Used for driving-direction map rotation.</summary>
+        public double PlayerHeadingDeg { get; private set; }
+
         /// <summary>
         /// Compact opponent string: "x1,y1,p1;x2,y2,p2;..." where p=1 if in pit.
         /// Dashboard parses this to place opponent dots.
@@ -170,6 +173,9 @@ namespace K10Motorsports.Plugin.Engine
             bool playerInPitLane = false)
         {
             if (_demoMode) return; // demo positions handled separately
+
+            // Expose heading in degrees for dashboard map rotation (driving direction lock)
+            if (!double.IsNaN(yaw)) PlayerHeadingDeg = yaw * (180.0 / Math.PI);
 
             // ── Dead reckoning: rotate car-local velocity by heading → world position ──
             // iRacing VelocityX = lateral (car-local), VelocityZ = forward (car-local)

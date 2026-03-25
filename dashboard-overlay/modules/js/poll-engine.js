@@ -518,10 +518,10 @@
       const lapDelta = +(p[dsPre + 'LapDelta']) || 0;
       const sectorCount = +(p[dsPre + 'SectorCount']) || 3;
 
-      // Build sector arrays: use N-sector arrays if available, else legacy 3-sector
+      // Build sector arrays: always use N-sector arrays if available, fallback to legacy 3-sector
       let splits, deltas, states;
       const splitsStr = p[dsPre + 'SectorSplits'];
-      if (sectorCount > 3 && splitsStr) {
+      if (splitsStr) {
         splits = splitsStr.split(',').map(Number);
         deltas = (p[dsPre + 'SectorDeltas'] || '').split(',').map(Number);
         states = (p[dsPre + 'SectorStates'] || '').split(',').map(Number);
@@ -535,9 +535,16 @@
 
       // Store for track map sector coloring + boundaries for path splitting
       window._sectorData = { curSector, splits, deltas, states, sectorCount };
-      const s2Pct = +(p[dsPre + 'SectorS2StartPct']) || 0;
-      const s3Pct = +(p[dsPre + 'SectorS3StartPct']) || 0;
-      if (s2Pct > 0 && s3Pct > s2Pct) window._sectorBoundaries = { s2: s2Pct, s3: s3Pct };
+      // Read N-sector boundary pcts (comma-separated) or fall back to legacy S2/S3
+      const boundaryStr = p[dsPre + 'SectorBoundaryPcts'] || '';
+      if (boundaryStr) {
+        const pcts = boundaryStr.split(',').map(Number).filter(v => v > 0 && v < 1);
+        if (pcts.length >= 1) window._sectorBoundaries = pcts;
+      } else {
+        const s2Pct = +(p[dsPre + 'SectorS2StartPct']) || 0;
+        const s3Pct = +(p[dsPre + 'SectorS3StartPct']) || 0;
+        if (s2Pct > 0 && s3Pct > s2Pct) window._sectorBoundaries = [s2Pct, s3Pct];
+      }
 
       // Read current lap time for live sector elapsed
       const currentLapTime = _demo
@@ -652,12 +659,10 @@
         if (sectorEl) sectorEl.style.display = 'none';
         if (gapAhead) gapAhead.style.display = '';
         if (gapBehind) gapBehind.style.display = '';
-        // Clear sector map highlights
+        // Clear sector map highlights (dynamic N-sector support)
         window._sectorData = null;
-        for (let si = 1; si <= 3; si++) {
-          const el = document.getElementById('mapSector' + si);
-          if (el) el.setAttribute('stroke', 'transparent');
-        }
+        const mapSectorEls = document.querySelectorAll('.map-sector');
+        mapSectorEls.forEach(el => el.setAttribute('stroke', 'transparent'));
         _gapsNonRaceMode = false;
         _gapsWorstLap = 0;
         _gapsLastLap = 0;
@@ -842,7 +847,8 @@
       const mapPX   = +v('K10Motorsports.Plugin.TrackMap.PlayerX') || 50;
       const mapPY   = +v('K10Motorsports.Plugin.TrackMap.PlayerY') || 50;
       const mapOpp  = vs('K10Motorsports.Plugin.TrackMap.Opponents') || '';
-      updateTrackMap(mapPath, mapPX, mapPY, mapOpp, speed);
+      const mapHeading = +v('K10Motorsports.Plugin.TrackMap.PlayerHeading') || 0;
+      updateTrackMap(mapPath, mapPX, mapPY, mapOpp, speed, mapHeading);
     }
     const mapNameEl = document.getElementById('mapTrackName');
     if (mapNameEl) {

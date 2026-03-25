@@ -998,8 +998,8 @@ private readonly TrackMapProvider  _trackMap = new TrackMapProvider();
                     Jp(sb, "K10Motorsports.Plugin.DS.SectorStateS3", s.SectorStateS3);
                     Jp(sb, "K10Motorsports.Plugin.DS.SectorS2StartPct", s.SectorS2StartPct, ic);
                     Jp(sb, "K10Motorsports.Plugin.DS.SectorS3StartPct", s.SectorS3StartPct, ic);
-                    // N-sector arrays (serialized as comma-separated for tracks with >3 sectors)
-                    if (s.SectorSplits != null && s.SectorCount > 3)
+                    // N-sector arrays (always sent — dashboard handles any sector count)
+                    if (s.SectorSplits != null)
                     {
                         sb.Append("\"K10Motorsports.Plugin.DS.SectorSplits\":\"");
                         for (int si = 0; si < s.SectorSplits.Length; si++)
@@ -1197,6 +1197,7 @@ private readonly TrackMapProvider  _trackMap = new TrackMapProvider();
                     Jp(sb, "K10Motorsports.Plugin.TrackMap.SvgPath", Escape(_trackMap.SvgPath ?? ""));
                     Jp(sb, "K10Motorsports.Plugin.TrackMap.PlayerX", _trackMap.PlayerX, ic);
                     Jp(sb, "K10Motorsports.Plugin.TrackMap.PlayerY", _trackMap.PlayerY, ic);
+                    Jp(sb, "K10Motorsports.Plugin.TrackMap.PlayerHeading", _trackMap.PlayerHeadingDeg, ic);
                     Jp(sb, "K10Motorsports.Plugin.TrackMap.Opponents", Escape(_trackMap.OpponentData ?? ""));
 
                     // ── Leaderboard ──
