@@ -123,12 +123,25 @@
     if (incEl) incEl.innerHTML = incCount + '<span class="dh-inc-x">x</span>';
     var penEl = document.getElementById('dhIncToPen');
     var dqEl = document.getElementById('dhIncToDQ');
-    var sdkPen = +(p[dsPre + 'IncidentLimitPenalty']) || 0;
-    var sdkDQ  = +(p[dsPre + 'IncidentLimitDQ']) || 0;
-    var penLimit = sdkPen > 0 ? sdkPen : ((typeof _settings !== 'undefined' && _settings.incPenalty) || 17);
-    var dqLimit  = sdkDQ  > 0 ? sdkDQ  : ((typeof _settings !== 'undefined' && _settings.incDQ)      || 25);
-    if (penEl) penEl.textContent = Math.max(0, penLimit - incCount);
-    if (dqEl) dqEl.textContent = Math.max(0, dqLimit - incCount);
+    var isNonRace = !!(+(p[dsPre + 'IsNonRaceSession']) || 0);
+    var sdkPen = isNonRace ? 0 : (+(p[dsPre + 'IncidentLimitPenalty']) || 0);
+    var sdkDQ  = isNonRace ? 0 : (+(p[dsPre + 'IncidentLimitDQ']) || 0);
+    var dhThresh = document.querySelector('.dh-inc-thresholds');
+    if (sdkPen > 0 && sdkDQ > 0) {
+      // Both penalty and DQ
+      if (penEl) penEl.textContent = Math.max(0, sdkPen - incCount);
+      if (dqEl) dqEl.textContent = Math.max(0, sdkDQ - incCount);
+      if (dhThresh) dhThresh.style.display = '';
+      if (penEl) penEl.nextSibling.textContent = ' to pen ';
+    } else if (sdkDQ > 0) {
+      // DQ only — hide penalty, show DQ
+      if (penEl) { penEl.textContent = ''; penEl.nextSibling.textContent = ''; }
+      if (dqEl) dqEl.textContent = Math.max(0, sdkDQ - incCount);
+      if (dhThresh) dhThresh.style.display = '';
+    } else {
+      // No limits (practice, test, etc.) — hide thresholds row
+      if (dhThresh) dhThresh.style.display = 'none';
+    }
 
     // Track map — local zoom view centered on player + opponents
     var mapReady = +v('K10MediaBroadcaster.Plugin.TrackMap.Ready') || 0;

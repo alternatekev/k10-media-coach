@@ -37,6 +37,8 @@ const DS_TELEMETRY = {
   'K10MediaBroadcaster.Plugin.DS.SteerTorque': 12.4,
   'K10MediaBroadcaster.Plugin.DS.TrackTemp': 38.5,
   'K10MediaBroadcaster.Plugin.DS.IncidentCount': 4,
+  'K10MediaBroadcaster.Plugin.DS.IncidentLimitPenalty': 17,
+  'K10MediaBroadcaster.Plugin.DS.IncidentLimitDQ': 25,
   'K10MediaBroadcaster.Plugin.DS.AbsActive': 0,
   'K10MediaBroadcaster.Plugin.DS.TcActive': 0,
   'K10MediaBroadcaster.Plugin.DS.LapDelta': -0.234,

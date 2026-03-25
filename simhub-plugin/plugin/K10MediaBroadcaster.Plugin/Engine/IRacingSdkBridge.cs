@@ -306,18 +306,29 @@ namespace K10MediaBroadcaster.Plugin.Engine
 
                     // Incident limits — iRacing returns "unlimited" or a number string
                     // IncidentLimit is the DQ threshold (e.g. "25" or "unlimited")
-                    // There's no separate warn/penalty count in the SDK model;
-                    // iRacing uses ~68% of DQ limit as the penalty threshold
+                    // There's no separate penalty/warn field in the SDK; iRacing
+                    // only exposes the DQ limit. For higher DQ limits (>= 20),
+                    // iRacing also enforces a penalty (drive-through) at ~68% —
+                    // e.g. DQ 25 → penalty at 17. For lower limits (e.g. DQ 17),
+                    // iRacing typically has DQ only with no separate penalty tier.
                     if (!string.IsNullOrEmpty(opts.IncidentLimit) &&
                         int.TryParse(opts.IncidentLimit, out int dqLimit) && dqLimit > 0)
                     {
                         IncidentLimitDQ = dqLimit;
-                        // Standard iRacing penalty threshold: ~68% of DQ limit, rounded to nearest odd
-                        // e.g. 25 → 17, 17 → 12, 8 → 5
-                        IncidentLimitPenalty = (int)Math.Round(dqLimit * 0.68);
-                        // Make it odd if the original 17/25 pattern holds
-                        if (IncidentLimitPenalty % 2 == 0) IncidentLimitPenalty--;
-                        if (IncidentLimitPenalty < 1) IncidentLimitPenalty = 1;
+
+                        if (dqLimit >= 20)
+                        {
+                            // Standard iRacing penalty threshold: ~68% of DQ limit, rounded to nearest odd
+                            // e.g. 25 → 17
+                            IncidentLimitPenalty = (int)Math.Round(dqLimit * 0.68);
+                            if (IncidentLimitPenalty % 2 == 0) IncidentLimitPenalty--;
+                            if (IncidentLimitPenalty < 1) IncidentLimitPenalty = 1;
+                        }
+                        else
+                        {
+                            // Lower DQ limits (e.g. 17, 8) — DQ only, no separate penalty
+                            IncidentLimitPenalty = 0;
+                        }
                     }
                     else
                     {
