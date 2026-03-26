@@ -152,7 +152,11 @@
     var ds = function(key) { return d['K10Motorsports.Plugin.DS.' + key]; };
     var gd = function(key) { return d['DataCorePlugin.GameData.' + key]; };
 
-    var units = parseInt(ds('DisplayUnits')) || 1; // 0=imperial, 1=metric
+    // 0=imperial, 1=metric. Cannot use `|| 1` fallback here because 0 is a
+    // valid value (imperial) — `0 || 1` would incorrectly evaluate to metric.
+    var rawUnits = ds('DisplayUnits');
+    var units = (rawUnits !== '' && rawUnits !== null && rawUnits !== undefined)
+      ? parseInt(rawUnits) : 1;
 
     // ════════════════════════════════════════
     //  TYRES TAB
