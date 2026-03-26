@@ -242,7 +242,7 @@
     if (window.k10 && window.k10.getVersion) {
       window.k10.getVersion().then(function(ver) {
         var el = document.getElementById('settingsVersionLabel');
-        if (el && ver) el.textContent = 'K10 Motorsports v' + ver + ' \u2014 Original Dashboard';
+        if (el && ver) el.textContent = 'K10 Motorsports v' + ver + ' \u2014 Media Overlay';
       });
     }
   });
