@@ -193,9 +193,14 @@
       });
       document.addEventListener('mousemove', function(e) {
         if (!_isDragging) return;
+        var rawLeft = e.clientX - _dragOffX;
+        var rawTop  = e.clientY - _dragOffY;
+        // Clamp so the panel can't be dragged fully off-screen
+        var maxLeft = window.innerWidth  - 40;
+        var maxTop  = window.innerHeight - 40;
         panel.style.position = 'fixed';
-        panel.style.left = (e.clientX - _dragOffX) + 'px';
-        panel.style.top = (e.clientY - _dragOffY) + 'px';
+        panel.style.left = Math.max(-panel.offsetWidth + 40, Math.min(maxLeft, rawLeft)) + 'px';
+        panel.style.top  = Math.max(0, Math.min(maxTop, rawTop)) + 'px';
         panel.style.margin = '0';
       });
       document.addEventListener('mouseup', function() { _isDragging = false; });

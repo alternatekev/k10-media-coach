@@ -460,7 +460,7 @@ function openSettingsWindow() {
     frame: false,
     resizable: true,
     movable: true,
-    alwaysOnTop: false,
+    alwaysOnTop: true,
     transparent: false,
     backgroundColor: '#1a1a1a',
     webPreferences: {
