@@ -1,6 +1,6 @@
-# K10 Motorsports MCP Server
+# K10 Broadcaster MCP Server
 
-A Model Context Protocol (MCP) server providing structured access to the K10 Motorsports dashboard overlay source code. This MCP enables Claude to understand the overlay's architecture, modules, styling, and configuration without parsing raw HTML or manually reading files.
+Part of the [K10 Motorsports](https://github.com/alternatekev/media-coach-simhub-plugin) sim racing platform. A Model Context Protocol (MCP) server providing structured access to the K10 Motorsports dashboard overlay source code — 28+ JavaScript modules, 10 CSS modules, WebGL shaders, and the Electron main process. Enables Claude to understand the overlay's architecture, module relationships, and styling without parsing raw HTML or manually reading files.
 
 ## Location
 

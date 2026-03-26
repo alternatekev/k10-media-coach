@@ -13,7 +13,7 @@ using SimHub.Plugins;
 
 namespace K10Motorsports.Plugin
 {
-    [PluginDescription("Displays real-time commentary prompts while sim racing, timed to telemetry events.")]
+    [PluginDescription("Broadcast-grade sim racing HUD with real-time telemetry, AI commentary, race strategy, WebGL effects, and HomeKit smart lighting.")]
     [PluginAuthor("K10Motorsports")]
     [PluginName("K10 Motorsports")]
     public class Plugin : IPlugin, IDataPlugin, IWPFSettingsV2

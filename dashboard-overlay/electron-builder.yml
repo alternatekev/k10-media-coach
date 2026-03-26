@@ -26,7 +26,7 @@ win:
         - x64
 
 mac:
-  category: public.app-category.utilities
+  category: public.app-category.games
   icon: images/branding/icon.png
   darkModeSupport: true
   target:

@@ -2,8 +2,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("K10Motorsports.Plugin")]
-[assembly: AssemblyDescription("Real-time commentary prompts for sim racing streams")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyDescription("Broadcast-grade sim racing HUD — telemetry, strategy, AI commentary, and smart lighting")]
+[assembly: AssemblyCompany("K10 Motorsports")]
 [assembly: AssemblyProduct("K10 Motorsports")]
 [assembly: AssemblyCopyright("")]
 [assembly: ComVisible(false)]

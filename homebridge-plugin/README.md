@@ -1,6 +1,6 @@
 # Homebridge K10 Motorsports Lights Plugin
 
-A Homebridge plugin that maps SimHub K10 Motorsports telemetry to HomeKit-connected smart lights. Control light colors based on race flags, driver proximity, and event severity in real-time.
+Part of the [K10 Motorsports](https://github.com/alternatekev/media-coach-simhub-plugin) sim racing platform. This Homebridge plugin maps real-time telemetry from the K10 Motorsports SimHub plugin to Apple HomeKit smart lights — race flags, proximity warnings, commentary severity, and strategy calls all drive light color and brightness in real-time.
 
 ## Features
 
@@ -195,6 +195,11 @@ The plugin expects SimHub K10 Motorsports plugin to expose these properties via 
 - `K10Motorsports.Plugin.CommentarySentimentColor` - Sentiment color (#AARRGGBB)
 - `K10Motorsports.Plugin.CurrentFlagState` - Race flag state (green/yellow/red/etc.)
 - `K10Motorsports.Plugin.NearestCarDistance` - Nearest opponent distance (0.0-1.0)
+- `K10Motorsports.Plugin.Strategy.CurrentSeverity` - Strategy call severity (0-5)
+
+## Part of K10 Motorsports
+
+This plugin is one component of the K10 Motorsports platform, which also includes a broadcast-grade transparent dashboard overlay (Electron), a real-time strategy engine, an AI commentary system, and a Next.js web presence. See the [main repository](https://github.com/alternatekev/media-coach-simhub-plugin) for the full project.
 
 ## License
 
@@ -202,8 +207,4 @@ MIT
 
 ## Author
 
-Kevin Conboy
-
----
-
-For more information on K10 Motorsports, visit: http://www.alternate.org
+Kevin Conboy — [k10motorsports.racing](https://k10motorsports.racing)

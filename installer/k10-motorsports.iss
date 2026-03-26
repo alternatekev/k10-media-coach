@@ -1,6 +1,7 @@
 ; ═══════════════════════════════════════════════════════════════
 ; K10 Motorsports — Inno Setup Installer Script
-; Installs both the SimHub plugin and the Electron overlay app.
+; Installs the SimHub plugin (telemetry engine, commentary, strategy)
+; and the Electron overlay app (transparent HUD with WebGL effects).
 ; ═══════════════════════════════════════════════════════════════
 ;
 ; Prerequisites (build these BEFORE compiling this installer):

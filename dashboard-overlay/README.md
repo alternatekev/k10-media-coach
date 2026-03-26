@@ -1,8 +1,8 @@
 # K10 Motorsports — Dashboard Overlay
 
-A standalone Electron overlay that renders real-time sim racing telemetry as a transparent HUD on top of your sim. Designed for stream overlays and broadcast production — it composites directly over the game window with no capture card or secondary monitor required.
+A standalone Electron overlay that renders real-time sim racing telemetry as a transparent HUD on top of your sim. Designed for stream overlays and broadcast production — it composites directly over the game window with no capture card or secondary monitor required. Also functions as a dedicated driving display in fullscreen Drive HUD mode.
 
-![Dashboard Screenshot](../../simhub-plugin/docs/dashboard-screenshot.png)
+![Dashboard Screenshot](../simhub-plugin/docs/dashboard-screenshot.png)
 
 ## Overview
 
@@ -17,7 +17,7 @@ The `dashboard.html` file powers three deployment modes: the Electron overlay (t
 - Node.js 18+
 - SimHub running with the K10 Motorsports plugin enabled
 - The plugin's HTTP server active on port 8889 (starts automatically with the plugin)
-- **iRacing users:** The [iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) plugin by RomainRob (required for iRating and Safety Rating display). Copy `RSC.iRacingExtraProperties.dll` into your SimHub folder while SimHub is closed.
+- **iRacing users:** The [iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) plugin by RomainRob (required for iRating and Safety Rating display)
 
 ### Install and Run
 
@@ -27,22 +27,19 @@ npm install
 npm start
 ```
 
-**Platform launchers** (double-click to run — auto-install dependencies and build dashboards):
+**Platform launchers** (double-click to run — auto-install dependencies):
 
 - **macOS:** `scripts/mac/K10 Motorsports.command`
 - **Windows:** `scripts/windows/start.bat`
 
-The overlay appears in the top-right corner of your primary display. If you see a crash on ARM hardware, use the safe mode launcher:
-
-```bash
-npm run start:safe
-```
+The overlay appears in the top-right corner of your primary display. For ARM hardware, use safe mode: `npm run start:safe`
 
 ### Hotkeys
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+Shift+S` | Toggle settings/move mode — drag the overlay to reposition, resize from edges |
+| `Ctrl+Shift+S` | Toggle settings/move mode — drag to reposition, resize from edges |
+| `Ctrl+Shift+F` | Toggle Drive HUD mode (fullscreen driving-focused display) |
 | `Ctrl+Shift+H` | Hide or show the overlay |
 | `Ctrl+Shift+G` | Toggle green-screen mode (restarts) |
 | `Ctrl+Shift+R` | Reset overlay position and size to defaults |
@@ -51,190 +48,194 @@ npm run start:safe
 
 ## Dashboard Panels
 
-The HUD is organized as a compact horizontal strip with the following panels, reading right to left:
+### Main HUD
 
-### Logo Column
+**Tachometer and Speed** — Large gear indicator (top-left), RPM readout (top-right), speed below. The tachometer bar segments fill from green through yellow to red as RPM approaches redline, flashing when RPM exceeds 95% of max.
 
-Two stacked squares showing the K10 logomark (top) and the detected manufacturer logo (bottom). The manufacturer auto-detects from the car model name — Porsche, BMW, Ferrari, McLaren, Mazda, Nissan, and Dallara are supported with custom emblems. Unknown manufacturers show a generic racing flag.
+**Live Lap Timer** — Current lap time displayed with a real-time delta-to-best overlay. The delta is color-coded: purple (PB pace), green (faster than best), amber (slightly slower), red (1s+ slower). Absolutely positioned so it never affects the lap counter layout regardless of digit count.
 
-### Tachometer and Speed
+**Rating and Gaps (Cycling)** — Alternates between two pages every 45 seconds. Page 1 shows iRating with a horizontal fill bar (scaled 0–5000) and Safety Rating with a circular progress indicator (0–4.00). Page 2 shows current race position, gap to car ahead and behind with driver names and iRating values. Gaps flash green on overtakes and red when losing positions.
 
-Large gear indicator (top-left), RPM readout (top-right), speed in MPH below. The tachometer bar segments along the bottom fill from green through yellow to red as RPM approaches the redline. The bar flashes when RPM exceeds 95% of max.
+**Track Map** — SVG minimap rendered from the plugin's track path data. The player's car appears as a bright dot, centered at all times with heading-up rotation so the direction of travel always points upward. Opponents appear as smaller dim dots. Smooth 150ms CSS transition on rotation.
 
-### Rating and Gaps (Cycling)
+**Sector Timing** — Per-sector split times with brightness-coded performance indicators. Supports native iRacing sector boundaries (up to 7+ sectors) with automatic fallback to equidistant 3-sector splits. Resets cleanly on track changes.
 
-This panel cycles between two pages every 45 seconds:
+**Pedal Traces** — Three side-by-side histogram columns showing throttle (green), brake (red), and clutch (blue) input traces. Each is a rolling 20-sample window. Current percentage displayed above each column.
 
-**Page 1 — iRating and Safety Rating:** iRating as a numeric value with a horizontal fill bar (scaled 0–5000). Safety Rating as a numeric value with a circular progress indicator (scaled 0–4.00).
+**Controls (BB / TC / ABS)** — Brake bias percentage, traction control level, and ABS level with small vertical fill indicators. TC and ABS auto-hide if the car doesn't expose those channels.
 
-**Page 2 — Position and Gaps:** Current race position prominently displayed. Gap to the car ahead (negative seconds) and behind (positive seconds), with driver names and iRating values. Gap values flash green on overtakes and red when losing positions.
+**Fuel** — Current fuel level in liters with a color-transitioning bar (green → amber → red). Below: average consumption per lap, estimated laps remaining, and a "PIT in ~N laps" warning when fuel won't last the race distance.
 
-### Track Map
+**Tyres** — 2×2 grid of tyre temperatures in °F with heat-map background coloring (blue → green → red). Wear percentage drives cell opacity — worn tyres appear muted.
 
-A miniature track outline rendered from the plugin's SVG path data. The player's car appears as a bright dot, opponents as smaller dim dots. The map auto-scales to fit the panel and rotates to match the track's natural orientation. Only appears when track map data is available from the plugin.
+**Logo Column** — K10 logomark (top) and auto-detected manufacturer logo (bottom). Supports Porsche, BMW, Ferrari, McLaren, Mazda, Nissan, Dallara, and more. The game logo is placed in the diagonally opposite corner from the dashboard to avoid overlapping secondary panels.
 
-### Pedal Traces
+### Secondary Panels
 
-Three side-by-side histogram columns showing throttle (green), brake (red), and clutch (blue) input traces. Each histogram is a rolling 20-sample window, giving a visual history of recent pedal inputs. Current percentage is displayed above each column.
+**Leaderboard** — Full-field position table with interval gaps and gap-to-leader columns. Updates in real-time as positions change.
 
-### Controls (BB / TC / ABS)
+**Datastream** — Live telemetry data stream showing raw and computed values for debugging and analysis.
 
-Brake bias percentage, traction control level, and ABS level. Each shows a numeric value with a small vertical fill indicator. TC and ABS panels auto-hide if the current car doesn't expose those telemetry channels (they appear once a non-zero value is detected).
+**Incidents** — Incident count tracker with configurable penalty and DQ thresholds.
 
-### Fuel
+**Spotter** — Proximity overlay showing nearby cars with directional indicators.
 
-Current fuel level in liters with a horizontal bar (color transitions from green to amber to red as fuel depletes). Below: average fuel consumption per lap and estimated laps remaining. A "PIT in ~N laps" warning appears when fuel won't last the remaining race distance.
+**Pitbox** — Pit strategy management panel with tabbed navigation for fuel, tires, and pit options. Navigable via wheel buttons or Stream Deck through the plugin's registered actions.
 
-### Tyres
+### Race Overlays
 
-A 2×2 grid showing all four tyre temperatures in °F. Each cell background colors from blue (cold) through green (optimal) to red (overheating), based on temperature thresholds. Tyre wear percentage drives the cell opacity — worn tyres appear more muted.
+**Race Control Banner** — Full-width overlay for race control messages (flags, cautions, session changes).
 
-### Commentary
+**Pit Limiter** — Speed overlay that activates when the pit limiter is engaged, showing current speed against the pit lane limit.
 
-An expandable panel that slides in from the left when the commentary engine fires an event. Shows the topic title, commentary text, and category label. The panel border and background tint match the event's sentiment color (orange for warnings, red for critical, blue for informational). The panel auto-dismisses when the plugin clears the commentary visibility flag.
+**Race End Screen** — Results display at the end of a race session.
+
+### Commentary Panel
+
+Slides in from the edge when the commentary engine fires an event. Shows topic title, commentary text, and category label. The panel border and background tint match the event's sentiment color — orange for warnings, red for critical, blue for informational, amber for strategy calls. Auto-dismisses when the event expires.
+
+### Drive HUD Mode
+
+Toggle with `Ctrl+Shift+F` for a fullscreen driving-focused display. Shows only track map with sectors, lap delta, position, spotter, and incident count — designed for direct racing without stream production elements.
+
+## Visual Effects
+
+### WebGL Post-Processing
+
+A fullscreen WebGL2 fragment shader system (`webgl.js`) provides real-time visual effects driven by telemetry:
+
+- **Center glow** and **bloom pulse** — dynamic brightness based on RPM and throttle
+- **Light sweep** — periodic sweep effect across the dashboard
+- **Panel glow** — individual panel illumination that responds to telemetry values
+- **Dome specular** — simulated glass dome highlight
+- **G-force vignette** — screen edge darkening proportional to lateral G-forces
+- **RPM redline** — intensified glow effect at high RPM
+
+The glare canvas renders at half device-pixel-ratio for performance. Per-frame timing and draw call counts are exposed via `window._glarePerf` for monitoring.
+
+### Ambient Light Engine
+
+The Electron main process captures a configurable screen region at ~4fps using `desktopCapturer`, extracts the dominant color, and sends it to the renderer via IPC. The ambient light module (`ambient-light.js`) uses LERP color interpolation to smooth transitions and updates CSS custom variables that drive glass refraction `::after` pseudo-elements on all panels. Two modes: matte and reflective.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│  SimHub + K10 Motorsports Plugin    │
-│  ┌────────────────────────────────┐ │
-│  │ HTTP Server (port 8889)        │ │
-│  │ GET /k10mediabroadcaster/            │ │
-│  │ → flat JSON: 77+ properties    │ │
-│  └────────────────────────────────┘ │
-└──────────────────┬──────────────────┘
-                   │ HTTP GET (~30fps)
-┌──────────────────▼──────────────────┐
-│  K10 Motorsports (Electron)        │
-│  ┌────────────────────────────────┐ │
-│  │ main.js         (main process) │ │
-│  │ • Window management            │ │
-│  │ • Transparency / chroma key    │ │
-│  │ • Settings persistence (IPC)   │ │
-│  │ • Global hotkeys               │ │
-│  │ • Crash recovery               │ │
-│  ├────────────────────────────────┤ │
-│  │ preload.js      (context bridge)│ │
-│  │ • k10.getSettings()            │ │
-│  │ • k10.saveSettings()           │ │
-│  │ • k10.onSettingsMode()         │ │
-│  ├────────────────────────────────┤ │
-│  │ dashboard.html   (renderer)    │ │
-│  │ • All CSS + layout             │ │
-│  │ • Polling loop (fetchProps)    │ │
-│  │ • Data rendering functions     │ │
-│  │ • Settings overlay UI          │ │
-│  └────────────────────────────────┘ │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  SimHub + K10 Motorsports Plugin         │
+│  ┌─────────────────────────────────────┐ │
+│  │ HTTP Server (port 8889)             │ │
+│  │ GET /k10mediabroadcaster/           │ │
+│  │ → flat JSON: 100+ properties        │ │
+│  │   (telemetry, commentary, strategy) │ │
+│  └─────────────────────────────────────┘ │
+└───────────────────┬──────────────────────┘
+                    │ HTTP GET (~30fps)
+┌───────────────────▼──────────────────────┐
+│  K10 Motorsports (Electron)              │
+│  ┌─────────────────────────────────────┐ │
+│  │ main.js         (main process)      │ │
+│  │ • Window management + transparency  │ │
+│  │ • Screen capture (ambient light)    │ │
+│  │ • Settings persistence (IPC)        │ │
+│  │ • Global hotkeys                    │ │
+│  │ • Crash recovery                    │ │
+│  │ • Remote LAN server                 │ │
+│  ├─────────────────────────────────────┤ │
+│  │ preload.js      (context bridge)    │ │
+│  │ • k10.getSettings()                 │ │
+│  │ • k10.saveSettings()               │ │
+│  │ • k10.onSettingsMode()             │ │
+│  │ • k10.onAmbientColor()            │ │
+│  ├─────────────────────────────────────┤ │
+│  │ dashboard.html   (renderer)         │ │
+│  │ • 28+ JS modules (no build step)   │ │
+│  │ • 10 CSS modules                    │ │
+│  │ • WebGL2 shader pipeline            │ │
+│  │ • Polling loop (fetchProps ~30fps)  │ │
+│  │ • Settings overlay UI               │ │
+│  └─────────────────────────────────────┘ │
+└──────────────────────────────────────────┘
 ```
 
 ### Data Flow
 
-1. The SimHub plugin runs an `HttpListener` on port 8889 that serves all telemetry and commentary state as a flat JSON object at `/k10mediabroadcaster/`.
+1. The SimHub plugin serves all telemetry, commentary, and strategy state as a flat JSON object at `/k10mediabroadcaster/` over HTTP on port 8889.
 
-2. The dashboard's `fetchProps()` function issues a single HTTP GET every 33ms (~30fps). When the plugin is in demo mode, the dashboard reads from `K10Motorsports.Plugin.Demo.*` properties instead of `DataCorePlugin.GameData.*` properties — the switching is transparent.
+2. The dashboard's `fetchProps()` function issues a single HTTP GET every 33ms (~30fps). In demo mode, the dashboard reads from `K10Motorsports.Plugin.Demo.*` properties instead — the switching is transparent.
 
-3. Each poll cycle, `pollUpdate()` maps the JSON values to DOM elements: updating text content, CSS custom properties, SVG transforms, and class toggles. Animations (tachometer color, commentary slide-in, gap flashes) are handled by CSS transitions triggered by class changes.
+3. Each poll cycle, `pollUpdate()` routes JSON values to the appropriate module: updating DOM elements, CSS custom properties, SVG transforms, class toggles, and WebGL shader uniforms. Animations are driven by CSS transitions triggered by class changes.
 
-4. The connection uses exponential backoff on failure (1s, 2s, 4s, 8s, capped at 10s) to avoid socket exhaustion when SimHub isn't running.
+4. The connection uses exponential backoff on failure (1s → 2s → 4s → 8s, capped at 10s) to avoid socket exhaustion when SimHub isn't running.
 
-### Files
+### Modules
 
-| File | Purpose |
-|------|---------|
-| `main.js` | Electron main process — window creation, transparency, hotkeys, IPC, crash recovery |
-| `preload.js` | Context bridge — exposes settings IPC to the renderer securely |
-| `dashboard.html` | Main dashboard — vanilla JS, no build step |
-| `modules/js/` | JavaScript modules (20+ files: config, polling, rendering, etc.) |
-| `modules/styles/` | CSS stylesheets (8 files: base, layout, effects, etc.) |
-| `scripts/mac/` | macOS launcher scripts (install, start) |
-| `scripts/windows/` | Windows launcher scripts (install, start) |
-| `package.json` | Node.js manifest with `start`, `dev`, and launcher scripts |
+| Module | Purpose |
+|--------|---------|
+| `poll-engine.js` | Telemetry polling, data routing, commentary/strategy display |
+| `config.js` | Property subscriptions, state management, demo mode switching |
+| `webgl.js` | WebGL2 fragment shader — glare, bloom, glow, vignette |
+| `webgl-helpers.js` | Shader compilation, icon atlas generation |
+| `ambient-light.js` | Screen color sampling, LERP interpolation, CSS variable updates |
+| `ambient-capture.js` | Capture region UI configuration |
+| `drive-hud.js` | Fullscreen driving-focused HUD mode |
+| `leaderboard.js` | Full-field position/gap leaderboard |
+| `datastream.js` | Live telemetry data stream |
+| `spotter.js` | Proximity overlay |
+| `pitbox.js` | Pit strategy management |
+| `sector-hud.js` | Sector timing display |
+| `track-map.js` | SVG minimap with heading-up rotation |
+| `game-logo.js` | Manufacturer detection + logo rendering |
+| `car-logos.js` | Manufacturer name → logo path resolution |
+| `game-detect.js` | Active sim detection |
+| `settings.js` | Settings panel UI + persistence |
+| `connections.js` | Connection management + remote access |
+| `keyboard.js` | Global hotkey handling |
+| `commentary.js` | Commentary panel slide-in/out animation |
 
 ## Configuration
 
 ### In-App Settings
 
-Press `Ctrl+Shift+S` to enter settings mode, then click the gear icon to open the settings panel. Toggle individual dashboard sections on or off:
+Press `Ctrl+Shift+S` to enter settings mode, then click the gear icon to open the settings panel. Toggle individual dashboard sections on or off: fuel, tyres, controls, pedal traces, track map, position/gaps, tachometer, commentary, K10 logo, car logo, leaderboard, datastream, incidents, and spotter.
 
-- Fuel gauge
-- Tyre temperatures
-- Car controls (BB/TC/ABS)
-- Pedal traces
-- Track map
-- Position and gaps
-- Tachometer
-- Commentary panel
-- K10 logo
-- Car manufacturer logo
+You can also change the SimHub API URL for remote setups (e.g., `http://playbox.local:8889/k10mediabroadcaster`).
 
-You can also change the SimHub API URL if the plugin is running on a different machine (e.g., `http://playbox.local:8889/k10mediabroadcaster`). The plugin is part of the K10 Motorsports suite.
-
-Settings persist between sessions — they're saved via Electron IPC to a JSON file in the app's user data directory, with a localStorage fallback when running in a browser.
+Settings persist between sessions via Electron IPC to a JSON file, with localStorage fallback in browser mode.
 
 ### Layout Position
 
-The settings panel includes a **Position** dropdown that places the dashboard in any screen corner or centered along the top/bottom edge:
-
-| Position | Logo Side | Commentary Side |
-|----------|-----------|-----------------|
-| Top Right (default) | Right edge | Extends left |
-| Top Left | Left edge | Extends right |
-| Bottom Right | Right edge | Extends left, grows upward |
-| Bottom Left | Left edge | Extends right, grows upward |
-| Top Center | Depends on flow | Depends on flow |
-| Bottom Center | Depends on flow | Depends on flow, grows upward |
-
-For center positions, a **Flow Direction** selector appears — choose "Left to Right" (logo on left, content flows right) or "Right to Left" (logo on right, content flows left). Corner positions determine flow automatically based on which side of the screen the dashboard occupies.
-
-The **Swap Vertical** toggle reverses the top and bottom halves of all stacked panel columns. When enabled, tyres move above fuel, pedal traces above car controls, gaps above iRating/Safety, and the car logo above the K10 logo. This is useful when you want specific data closer to the screen edge — for example, placing tyre temps in the top row when the dashboard is at the bottom of the screen so they're closest to the game view. Single-height panels (the tachometer) are unaffected.
+The settings panel includes a **Position** dropdown for screen corner or edge-center placement. For center positions, a **Flow Direction** selector appears. The **Swap Vertical** toggle reverses the top and bottom halves of all stacked panel columns.
 
 ### Window Position
 
-In settings mode (`Ctrl+Shift+S`), drag the overlay anywhere on screen and resize it from the edges. The position and size persist between sessions. Use `Ctrl+Shift+R` to reset to the default position (top-right corner).
+In settings mode, drag the overlay anywhere on screen and resize from edges. Position and size persist between sessions. `Ctrl+Shift+R` resets to defaults.
 
 ## ARM Compatibility
 
-On ARM64 Windows devices (Qualcomm Snapdragon, Microsoft SQ processors), Chromium's native transparency is broken due to GPU compositor limitations. The overlay automatically detects ARM and switches to chroma key mode:
+On ARM64 Windows devices, the overlay automatically switches to chroma key mode (green background, solid panel backgrounds, software rendering). For OBS: add a Window Capture source → Filters → Color Key → green `#00FF00`.
 
-- Window background becomes `#00FF00` (green)
-- Panel backgrounds switch to solid (no blur/transparency)
-- Hardware acceleration is disabled
-- The `--no-sandbox` flag is applied (required for Chromium on ARM)
-
-### OBS Setup for ARM
-
-1. Add a **Window Capture** source pointing to the K10 Motorsports window
-2. Right-click the source → **Filters**
-3. Add **Color Key** filter
-4. Set key color to green (`#00FF00`)
-5. Adjust similarity and smoothness until the green background is fully transparent
-
-On x64 systems, the overlay uses native transparency and composites directly — no OBS filter needed.
+On x64 systems, native transparency composites directly — no OBS filter needed.
 
 ## Deployment Modes
 
-### Electron Overlay (Primary)
+**Electron Overlay (Primary)** — Standalone app, always-on-top, click-through, hotkey controls. Best for streaming and broadcast.
 
-The standalone Electron app described in this document. Best for streaming and broadcast — always on top, click-through, with hotkey controls.
+**SimHub Dashboard Template** — The same `dashboard.html` installs as a SimHub dashboard template. Uses SimHub's `$prop()` API instead of HTTP polling.
 
-### SimHub Dashboard Template
+**Browser Access** — Open `dashboard.html` in any browser while SimHub is running. Auto-detects non-SimHub environment and falls back to HTTP polling.
 
-The same `dashboard.html` is installed as a SimHub dashboard template (in `DashTemplates/k10 motorsports/`) as part of the K10 Motorsports suite. When opened inside SimHub's dashboard viewer, it uses SimHub's `$prop()` API for data instead of HTTP polling. No Electron needed — SimHub handles the rendering.
-
-### Browser Access
-
-Open `dashboard.html` directly in any browser while SimHub and the plugin are running. The dashboard auto-detects that it's not inside SimHub and falls back to HTTP polling mode. Useful for testing or for rendering on a second machine.
+**LAN Remote** — The Electron app includes a built-in HTTP server for serving the dashboard to other devices on the local network.
 
 ## Troubleshooting
 
-**Dashboard shows no data:** Verify the plugin's HTTP server is running — open `http://localhost:8889/k10mediabroadcaster/` in a browser. You should see a JSON blob with 77+ properties. If not, check that the K10 Motorsports plugin is enabled in SimHub.
+**Dashboard shows no data:** Open `http://localhost:8889/k10mediabroadcaster/` in a browser. You should see a JSON blob with 100+ properties. If not, verify the K10 Motorsports plugin is enabled in SimHub.
 
-**K10 Motorsports overlay crashes on launch (ARM):** Use `npm run start:safe` which forces software rendering. If that still fails, check that you're running Electron 33+ which includes the ARM compatibility fixes.
+**Overlay crashes on launch (ARM):** Use `npm run start:safe` for software rendering. Requires Electron 33+.
 
-**Commentary panel never appears:** Enable Demo Mode in the SimHub plugin settings to trigger test commentary events. The commentary panel only slides in when `K10Motorsports.Plugin.CommentaryVisible` is set to 1 by the engine.
+**Commentary panel never appears:** Enable Demo Mode in the plugin settings to trigger test events.
 
-**Overlay covers clicks:** The overlay should be click-through by default. If you accidentally entered settings mode (`Ctrl+Shift+S`), press `Ctrl+Shift+S` again to lock the overlay and restore click-through behavior.
+**Overlay covers clicks:** Press `Ctrl+Shift+S` to exit settings mode and restore click-through behavior.
 
-**OBS shows black/solid K10 Motorsports overlay:** On x64, make sure you're using **Game Capture** or **Window Capture** with "Allow Transparency" enabled. On ARM, use the Color Key filter approach described above.
+**OBS shows black/solid overlay:** On x64, use Window Capture with "Allow Transparency" enabled. On ARM, use the Color Key filter.
+
+**Drive HUD shows no map:** Track map data must be available from the plugin. Some tracks may not have SVG path data — export maps from the plugin's SimHub settings panel.

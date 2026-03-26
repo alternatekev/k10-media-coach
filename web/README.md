@@ -1,9 +1,9 @@
 # K10 Motorsports — Web
 
-Next.js 16 site for [k10motorsports.racing](https://k10motorsports.racing) with subdomain routing:
+Part of the [K10 Motorsports](https://github.com/alternatekev/media-coach-simhub-plugin) sim racing platform. Next.js 16 site for [k10motorsports.racing](https://k10motorsports.racing) with subdomain routing:
 
-- **k10motorsports.racing** → Marketing site (public)
-- **drive.k10motorsports.racing** → K10 Pro Drive members app (Discord auth)
+- **k10motorsports.racing** — Marketing site (public): product overview, feature highlights, download links, and documentation for the broadcast-grade sim racing HUD
+- **drive.k10motorsports.racing** — K10 Pro Drive members app (Discord auth): exclusive content, setup guides, and community features
 
 Stack: Next.js 16, React 19, Tailwind CSS 4, NextAuth 5, Strapi CMS.
 

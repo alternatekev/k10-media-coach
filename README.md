@@ -6,102 +6,84 @@
 
 ![Dashboard](simhub-plugin/docs/dashboard-screenshot.png)
 
-Two plugins that work together: a **SimHub plugin** that generates real-time commentary prompts from sim racing telemetry, and a **Homebridge plugin** that drives Apple HomeKit smart lights from the same data. The SimHub plugin watches what happens on track — spins, overtakes, tyre wear, flag changes, close battles — and surfaces contextual commentary on a dashboard overlay. The Homebridge plugin translates that telemetry into light colors, so your room reacts to what's happening in the race.
+A broadcast-grade sim racing HUD and telemetry platform. K10 Motorsports replaces your in-sim dashboard with a transparent overlay that displays real-time telemetry, race strategy, AI-generated commentary, and ambient smart lighting — all from a single SimHub plugin.
 
-Built for iRacing with cross-game fallback support via SimHub's telemetry abstraction.
+Built for iRacing. Cross-game support via SimHub's telemetry abstraction.
 
-## What It Does
+## Overview
 
-### SimHub Commentary Plugin
+K10 Motorsports is four things in one repository:
 
-The plugin evaluates 33 telemetry-driven trigger conditions at ~100ms intervals during a sim session. When a condition fires (spin detected, position gained, tyres overheating, yellow flag), it assembles a commentary prompt from composable sentence fragments and displays it on a SimHub dashboard overlay. Severity-based interruption ensures catastrophic events (wall contact, black flag) override lower-priority observations. A cooldown system prevents prompt spam.
+**A SimHub plugin** that processes raw telemetry at ~100ms intervals — evaluating 33+ trigger conditions, tracking tire wear and fuel consumption, computing sector splits, estimating iRating, normalizing cross-game data, and serving everything over HTTP as a flat JSON API.
 
-The prompts are written in first person, present tense, technically grounded — matching the voice of a working sim racer talking through what's happening on track.
+**An Electron overlay** that renders that telemetry as a transparent, always-on-top HUD with WebGL post-processing effects, ambient light sampling, drive mode, leaderboard, and a modular panel system — 28+ JavaScript modules, no build step, running at ~30fps.
 
-### Homebridge HomeKit Light Plugin
+**A Homebridge plugin** that maps the same telemetry to Apple HomeKit smart lights, so your room reacts to race flags, proximity warnings, and event severity in real-time.
 
-The companion plugin reads the same telemetry properties via SimHub's HTTP API and translates them into HomeKit light colors: flags as colored lights, severity as brightness, proximity as red/orange warning indicators. Multiple lights can run different modes independently, so one light can show flags while another responds to the full telemetry stream.
+**A marketing site** at [k10motorsports.racing](https://k10motorsports.racing) with a Discord-authenticated Pro Drive members area.
 
-### K10 Motorsports — Stream Overlay Dashboard
+## Feature Highlights
 
-A standalone Electron overlay that renders the full telemetry HUD as a transparent window on top of the sim. The dashboard shows gear, speed, and RPM with a color-coded tachometer; pedal input traces; fuel level with per-lap consumption and pit stop estimates; four-corner tyre temperatures with heat-map coloring; brake bias, traction control, and ABS settings; race position with gap times to the cars ahead and behind; iRating and Safety Rating; and the commentary engine's live prompts. The commentary panel slides in from the left when events fire, tinted to match the event's sentiment color.
+### Telemetry Engine (C# / .NET 4.8)
 
-The overlay runs at ~30fps, polling the plugin's HTTP API on port 8889. It supports native transparency on x64 and green-screen chroma keying on ARM. The same dashboard HTML also works as a SimHub dashboard template or directly in a browser.
+The SimHub plugin captures telemetry snapshots every ~100ms and runs them through a multi-stage processing pipeline: commentary evaluation, sector timing, strategy computation, and state diffing. All processed data is served as 100+ JSON properties over an HTTP API on port 8889.
 
-Full setup and configuration: **[dashboard-overlay/README.md](dashboard-overlay/README.md)**
+Key systems include a **commentary engine** with composable sentence fragments (opener + body + closer), severity-based interruption, and cooldown management across 33 topics and 240+ prompt combinations; a **strategy engine** with real-time tire lifecycle tracking (grip degradation scoring, wear estimation, temperature state), fuel computation (burn variance, pit window calculation, fuel saving detection), and stint-aware evaluation with severity-graded coaching calls; a **sector tracker** that auto-detects native track boundaries from iRacing telemetry and falls back to equidistant sectors; an **iRating estimator** for pre-qualifying rating display; and **country flag normalization** mapping iRacing's full country names to ISO 2-letter codes for the flag sprite system.
 
-## Repository Structure
+The plugin exposes 10 configurable actions (prefixed `K10Motorsports.*`) for wheel button and Stream Deck mapping — dismiss prompts, cycle pitbox tabs, navigate pit strategy options, and provide commentary feedback.
 
-```
-├── dashboard-overlay/                    Electron overlay app + dashboard HUD
-│   ├── main.js                           Electron main process
-│   ├── preload.js                        IPC bridge
-│   ├── remote-server.js                  LAN HTTP server for remote access
-│   ├── dashboard.html                    Main overlay UI (vanilla JS, no build step)
-│   ├── modules/js/                       28 JavaScript modules (polling, commentary, drive mode, etc.)
-│   ├── modules/styles/                   8 CSS modules
-│   ├── data/                             Track + car research data for commentary
-│   ├── streamdeck/                       Elgato Stream Deck profile + icons
-│   └── images/                           Branding, car logos, flags
-├── simhub-plugin/                        SimHub C# plugin + data
-│   ├── plugin/K10Motorsports.Plugin/  C# source (NET Framework 4.8, WPF)
-│   │   └── Engine/                       Commentary engine, trigger evaluator, sectors, iRating
-│   ├── k10-motorsports-data/       Commentary topics, fragments, sentiments (JSON)
-│   ├── tests/                            C# unit tests + Python dataset validation
-│   ├── tools/                            Telemetry replay, fragment generation
-│   └── DashTemplates/                    SimHub dashboard templates
-├── homebridge-plugin/                    Homebridge platform plugin (TypeScript)
-│   ├── src/__tests__/                    Jest test suite (133 tests)
-│   └── docs/                             Homebridge-specific documentation
-├── src/agents/                           MCP servers (Model Context Protocol)
-│   ├── simhub-telemetry/                 Telemetry data reader
-│   ├── k10-plugin/                       SimHub plugin source inspector
-│   ├── k10-broadcaster/                  Dashboard component inspector
-│   └── claude-mcp-config.json            MCP server configuration
-├── installer/                            Inno Setup combined Windows installer
-│   └── k10-motorsports.iss         Installer script (plugin + overlay)
-├── scripts/                              Installation + launch scripts
-│   ├── mac/                              macOS install, launch, rebuild
-│   └── windows/                          Windows install, start, export, build-installer
-└── .github/workflows/                    CI pipelines + release workflow
-```
+### Dashboard Overlay (Electron / Vanilla JS)
+
+The overlay renders as a frameless, click-through, always-on-top window with native transparency on x64 Windows and chroma key fallback on ARM. The modular panel system includes:
+
+**Main HUD** — Tachometer with color-coded RPM segments and redline flash, large gear indicator, speed readout, pedal input traces (throttle/brake/clutch histograms), fuel gauge with per-lap consumption and pit window estimates, four-corner tyre temperatures with heat-map coloring, brake bias / TC / ABS controls, race position with live gap times, iRating and Safety Rating displays, and a live lap timer with color-coded delta-to-best.
+
+**Track Map** — SVG minimap centered on the player with heading-up rotation, opponent dots, and per-sector timing with brightness-coded performance indicators.
+
+**Secondary Panels** — Full-field leaderboard with interval and gap-to-leader columns, real-time telemetry datastream, incident tracker, spotter proximity overlay, and a pitbox panel for pit strategy management.
+
+**Race Overlays** — Full-width race control banner, pit limiter speed overlay, and end-of-race results screen.
+
+**Commentary Panel** — Slides in from the edge when the commentary engine fires, tinted to match event sentiment (amber for strategy calls, orange for warnings, red for critical). Auto-dismisses on expiry.
+
+**Visual Effects** — A WebGL2 fragment shader system provides glare, bloom pulse, light sweep, panel glow, dome specular highlights, g-force vignette, and RPM redline effects. An ambient light engine samples a configurable screen region at ~4fps and uses LERP interpolation to drive CSS variable updates across all panels for reactive glass refraction effects.
+
+**Drive HUD Mode** — A fullscreen driving-focused mode (Ctrl+Shift+F) showing only track map, sectors, lap delta, position, spotter, and incident count — designed for direct racing without stream production elements.
+
+### Homebridge HomeKit Lights (TypeScript)
+
+Maps telemetry to HomeKit light colors in real-time. Three modes: flags only (green/yellow/red/blue/white/debris), events only (proximity-based coloring), or combined (flags → severity → proximity priority chain). Supports blinking effects for urgent situations, per-light mode overrides, and multiple independent lights.
+
+### Web (Next.js 16)
+
+Marketing site at [k10motorsports.racing](https://k10motorsports.racing) built with Next.js 16, React 19, and Tailwind CSS 4. Includes a Discord-authenticated Pro Drive members area at drive.k10motorsports.racing with Strapi CMS backing the content layer.
 
 ## Install
 
 ### Windows Installer (Recommended)
 
-Download **K10-Motorsports-Setup.exe** from the [latest release](https://github.com/alternatekev/media-coach-simhub-plugin/releases/latest). The installer bundles both the SimHub plugin and the overlay application. You can choose to install either or both during setup. The installer auto-detects your SimHub installation and handles all file placement.
+Download **K10-Motorsports-Setup.exe** from the [latest release](https://github.com/alternatekev/media-coach-simhub-plugin/releases/latest). The installer bundles both the SimHub plugin and the Electron overlay. Choose to install either or both during setup — the installer auto-detects your SimHub installation and handles all file placement.
 
-The plugin includes a built-in **Check for updates** button in its SimHub settings panel. When an update is available, it downloads the latest K10 Motorsports installer and launches it — SimHub will restart automatically.
+The plugin includes a built-in **Check for updates** button in its SimHub settings panel that downloads and launches the latest installer automatically.
 
 ### Manual Install (SimHub Plugin Only)
 
 Prerequisites: [SimHub](https://www.simhubdash.com/) installed on Windows.
 
-**iRacing users:** Install the **iRacing Extra Properties** plugin by RomainRob to enable iRating, Safety Rating, and licence class display on the dashboard overlay. Without it, these fields will show as empty — all other telemetry works without it. [Download iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) — copy `RSC.iRacingExtraProperties.dll` into your SimHub installation folder (e.g. `C:\Program Files (x86)\SimHub`) while SimHub is closed. On next launch, SimHub will detect the new plugin — make sure it's enabled (green tab) and press OK.
+**iRacing users:** Install the [iRacing Extra Properties](https://drive.google.com/drive/folders/1AiIWHviD4j-_D-zgRrjJU1AFhJ_xmass) plugin by RomainRob for iRating and Safety Rating display. Copy `RSC.iRacingExtraProperties.dll` into your SimHub folder while SimHub is closed.
 
-**Double-click `install.bat`** (in `scripts/windows/`). The installer finds your SimHub installation, copies the plugin DLL, dataset files, and dashboard template to the correct locations. It checks whether SimHub is running and warns you to close it first if so.
+**Double-click `install.bat`** (in `scripts/windows/`). After installation, launch SimHub, enable "K10 Motorsports" in the plugin list, and configure display timing and category filters in the plugin settings panel.
 
-After installation:
+The plugin exposes all data as SimHub properties (prefixed `K10Motorsports.Plugin.*`), so you can build your own dashboard layout or integrate the properties into an existing one.
 
-1. Launch SimHub
-2. Enable "K10 Motorsports" in the plugin list
-3. Open the "k10 motorsports" dashboard template
-4. Configure display timing, category filters, and event-only mode in the plugin settings panel
+Build from source: **[simhub-plugin/docs/DEVELOPMENT.md](simhub-plugin/docs/DEVELOPMENT.md)**
 
-The plugin exposes all its data as SimHub properties (prefixed `K10Motorsports.Plugin.*`), so you can build your own dashboard layout or integrate the properties into an existing one.
-
-To build from source instead: **[simhub-plugin/docs/DEVELOPMENT.md](simhub-plugin/docs/DEVELOPMENT.md)**
-
-### Homebridge HomeKit Light Plugin
+### Homebridge HomeKit Lights
 
 Prerequisites: [Homebridge](https://homebridge.io/) (v1.6+), Node.js 18+, SimHub web server enabled, at least one color-capable smart light.
 
-**1. Install and configure the plugin:**
-
 ```bash
-cd homebridge-plugin
-npm install && npm run build && npm link
+cd homebridge-plugin && npm install && npm run build && npm link
 ```
 
 Add the `K10MotorsportsLights` platform to your Homebridge `config.json`:
@@ -117,40 +99,86 @@ Add the `K10MotorsportsLights` platform to your Homebridge `config.json`:
 }
 ```
 
-**2. Connect the virtual light to your physical lights.** The plugin creates a virtual light in HomeKit that reflects telemetry — it doesn't control physical bulbs directly. You connect them using one of two approaches depending on how your lights are set up:
+Full setup walkthrough with multi-light configuration and automation scripts: **[homebridge-plugin/docs/HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md)**
 
-**If your lights are managed by Homebridge** (homebridge-hue, homebridge-shelly, etc.) — use [homebridge-plugin-automation](https://github.com/grrowl/homebridge-plugin-automation) (free). Install it, enable Homebridge insecure mode (`-I`), and create a script that mirrors the virtual light's HSB values to your real lights. This runs entirely server-side with the lowest latency. See the [full setup guide](homebridge-plugin/docs/HOMEKIT.md) for the complete script.
+## Repository Structure
 
-**If your lights are paired directly to HomeKit** (Hue Bridge → HomeKit, Nanoleaf → HomeKit, etc.) — use a HomeKit automation app. [Eve](https://www.evehome.com/en/eve-app) (free) handles basic triggers; [Controller for HomeKit](https://controllerforhomekit.com/) or [Home+](https://hochgatterer.me/home+/) (paid) support full HSB value-passthrough for exact color mirroring.
-
-**3. Three light modes are available:**
-
-| Mode          | What It Shows                                                    |
-| ------------- | ---------------------------------------------------------------- |
-| `flags_only`  | iRacing flags as colored lights (green, yellow, red, blue, etc.) |
-| `events_only` | Proximity warnings and track events as color shifts              |
-| `all_colors`  | Flags + severity + proximity combined (recommended)              |
-
-Each light can override the global mode independently — run one light for flags and another for full telemetry. Blinking effects (flag pulses, proximity warnings) are configurable per-light.
-
-Full setup walkthrough with multi-light configuration, automation scripts, and troubleshooting: **[homebridge-plugin/docs/HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md)**
+```
+├── dashboard-overlay/                    Electron overlay app + dashboard HUD
+│   ├── main.js                           Electron main process (transparency, hotkeys, IPC, screen capture)
+│   ├── preload.js                        IPC bridge
+│   ├── remote-server.js                  LAN HTTP server for remote access
+│   ├── dashboard.html                    Main overlay UI (vanilla JS, no build step)
+│   ├── modules/js/                       28+ JavaScript modules
+│   │   ├── poll-engine.js                Telemetry polling + data routing (~30fps)
+│   │   ├── config.js                     Property subscriptions + state management
+│   │   ├── webgl.js                      WebGL2 glare/bloom/vignette fragment shader
+│   │   ├── ambient-light.js              Screen color sampling + LERP engine
+│   │   ├── drive-hud.js                  Fullscreen driving-focused HUD mode
+│   │   ├── leaderboard.js                Full-field position/gap table
+│   │   ├── datastream.js                 Live telemetry data stream
+│   │   ├── spotter.js                    Proximity overlay
+│   │   ├── pitbox.js                     Pit strategy management
+│   │   ├── sector-hud.js                 Sector timing display
+│   │   ├── track-map.js                  SVG minimap with heading-up rotation
+│   │   └── ...                           Commentary, settings, connections, game detection, etc.
+│   ├── modules/styles/                   10 CSS modules (base, dashboard, effects, ambient, pitbox, etc.)
+│   ├── data/                             Track + car research data
+│   ├── streamdeck/                       Elgato Stream Deck profile + icons
+│   └── images/                           Branding, car logos, country flags
+├── simhub-plugin/                        SimHub C# plugin + data
+│   ├── plugin/K10Motorsports.Plugin/     C# source (.NET Framework 4.8, WPF)
+│   │   ├── Plugin.cs                     Entry point, HTTP server, action registration
+│   │   └── Engine/                       Core systems
+│   │       ├── CommentaryEngine.cs       Trigger evaluation + prompt assembly
+│   │       ├── TelemetrySnapshot.cs      Cross-game telemetry normalization
+│   │       ├── SectorTracker.cs          Native + fallback sector boundary detection
+│   │       ├── IRacingSdkBridge.cs       Direct iRacing SDK integration
+│   │       ├── IRatingEstimator.cs       Pre-qualifying iRating estimation
+│   │       ├── TrackMapProvider.cs       SVG track map generation
+│   │       ├── PluginUpdater.cs          GitHub Release auto-updater
+│   │       └── Strategy/                 Real-time race strategy engine
+│   │           ├── StrategyCoordinator.cs  Stint lifecycle + call orchestration
+│   │           ├── TireTracker.cs          Grip scoring, wear estimation, temp monitoring
+│   │           ├── FuelComputer.cs         Burn stats, pit window, fuel saving detection
+│   │           └── StintData.cs            Per-stint telemetry history
+│   ├── k10-motorsports-data/             Commentary topics, fragments, sentiments (JSON)
+│   ├── tests/                            C# unit tests + Python dataset validation
+│   ├── tools/                            Telemetry replay, fragment generation
+│   └── DashTemplates/                    SimHub dashboard templates
+├── homebridge-plugin/                    Homebridge platform plugin (TypeScript)
+│   ├── src/__tests__/                    Jest test suite (133 tests)
+│   └── docs/                             Homebridge-specific documentation
+├── web/                                  Next.js 16 marketing site + Pro Drive members area
+│   └── src/                              React 19, Tailwind CSS 4, NextAuth 5, Strapi CMS
+├── src/agents/                           MCP servers (Model Context Protocol)
+│   ├── simhub-telemetry/                 Live telemetry data reader
+│   ├── k10-plugin/                       Plugin source + dataset inspector
+│   └── k10-broadcaster/                  Dashboard component inspector
+├── installer/                            Inno Setup combined Windows installer
+├── scripts/                              Platform install + launch scripts
+│   ├── mac/                              macOS install, launch, rebuild
+│   └── windows/                          Windows install, start, export, build-installer
+└── .github/workflows/                    CI pipelines + release workflow
+```
 
 ## Documentation
 
-| Document                                                                                       | Covers                                                                                         |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **SimHub Plugin**                                                                              |                                                                                                |
-| [simhub-plugin/docs/SIMHUB_PLUGIN.md](simhub-plugin/docs/SIMHUB_PLUGIN.md)                     | Plugin architecture, cross-game support, settings, dashboard properties                        |
-| [simhub-plugin/docs/COMMENTARY_ENGINE.md](simhub-plugin/docs/COMMENTARY_ENGINE.md)             | Trigger evaluation pipeline, severity interruption, fragment assembly, color system, cooldowns |
-| **Homebridge Plugin**                                                                          |                                                                                                |
-| [homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md](homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md)     | Platform architecture, color mapping, polling loop, per-light overrides                        |
-| [homebridge-plugin/docs/HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md)                         | Apple HomeKit setup instructions, light modes, multi-light configuration, troubleshooting      |
-| **Dashboard Overlay**                                                                          |                                                                                                |
-| [dashboard-overlay/README.md](dashboard-overlay/README.md)                                     | Electron overlay setup, panel reference, architecture, drive mode, Stream Deck, OBS integration |
-| **Shared**                                                                                     |                                                                                                |
-| [simhub-plugin/docs/DATASETS.md](simhub-plugin/docs/DATASETS.md)                               | Topic schema, trigger conditions, fragment format, sentiment reference, how to add new topics  |
-| [simhub-plugin/docs/TESTING.md](simhub-plugin/docs/TESTING.md)                                 | Test suites, CI integration                                                                   |
-| [simhub-plugin/docs/DEVELOPMENT.md](simhub-plugin/docs/DEVELOPMENT.md)                         | Building from source, project setup, contributor workflow                                      |
+| Document | Covers |
+| --- | --- |
+| **SimHub Plugin** | |
+| [SIMHUB_PLUGIN.md](simhub-plugin/docs/SIMHUB_PLUGIN.md) | Plugin architecture, cross-game support, settings, dashboard properties |
+| [COMMENTARY_ENGINE.md](simhub-plugin/docs/COMMENTARY_ENGINE.md) | Trigger evaluation pipeline, severity interruption, fragment assembly, cooldowns |
+| [AI_STRATEGIST_DESIGN.md](AI_STRATEGIST_DESIGN.md) | Strategy engine design — tire lifecycle, fuel strategy, pit optimizer, opponent intelligence |
+| **Dashboard Overlay** | |
+| [dashboard-overlay/README.md](dashboard-overlay/README.md) | Electron overlay setup, panel reference, architecture, drive mode, OBS, Stream Deck |
+| **Homebridge Plugin** | |
+| [HOMEBRIDGE_PLUGIN.md](homebridge-plugin/docs/HOMEBRIDGE_PLUGIN.md) | Platform architecture, color mapping, polling loop, per-light overrides |
+| [HOMEKIT.md](homebridge-plugin/docs/HOMEKIT.md) | Apple HomeKit setup, light modes, multi-light configuration, troubleshooting |
+| **Shared** | |
+| [DATASETS.md](simhub-plugin/docs/DATASETS.md) | Topic schema, trigger conditions, fragment format, how to add new topics |
+| [TESTING.md](simhub-plugin/docs/TESTING.md) | Test suites, CI integration |
+| [DEVELOPMENT.md](simhub-plugin/docs/DEVELOPMENT.md) | Building from source, project setup, contributor workflow |
 
 ## Testing
 
@@ -167,7 +195,7 @@ python3 simhub-plugin/tests/validate_datasets.py
 cd homebridge-plugin && npm test
 ```
 
-The C# test project uses standalone reimplementations of the plugin's engine logic (no SimHub dependencies), so it runs on any platform with the .NET 6.0 SDK. The Python tools test the actual JSON dataset files and reproduce the full trigger evaluation pipeline for offline verification.
+The C# test project uses standalone reimplementations of the plugin's engine logic (no SimHub dependencies), so it runs on any platform with the .NET 6.0 SDK.
 
 Full testing documentation: **[simhub-plugin/docs/TESTING.md](simhub-plugin/docs/TESTING.md)**
 
@@ -177,61 +205,55 @@ The commentary voice, phrase patterns, and fragment vocabulary are informed by t
 
 ### Sim Racing YouTube Creators
 
-| Channel                                                            | Style                                 | License                                  |
-| ------------------------------------------------------------------ | ------------------------------------- | ---------------------------------------- |
-| [Jimmy Broadbent](https://www.youtube.com/@JimmyBroadbent)         | High-energy, humorous race commentary | YouTube Standard License (auto-captions) |
-| [Matt Malone / MG Charoudin](https://www.youtube.com/@MGCharoudin) | Nürburgring-focused, technical        | YouTube Standard License                 |
-| [Jaaames](https://www.youtube.com/@jaaames)                        | Competitive iRacing, analytical       | YouTube Standard License                 |
-| [Traxion.GG](https://www.youtube.com/@Traxion)                     | Sim racing news and reviews           | YouTube Standard License                 |
-| [JustHun Gaming](https://www.youtube.com/@JustHunGaming)           | ACC competitive, setup-focused        | YouTube Standard License                 |
-| [Project Sim Racing](https://www.youtube.com/@ProjectSimRacing)    | Community broadcasts                  | YouTube Standard License                 |
-| [Just Sim Racing](https://www.youtube.com/@JustSimRacing)          | Multi-sim, wheel-to-wheel focus       | YouTube Standard License                 |
-| [Redd500 Gaming](https://www.youtube.com/@Redd500)                 | iRacing oval/road, narrative style    | YouTube Standard License                 |
+| Channel | Style | License |
+| --- | --- | --- |
+| [Jimmy Broadbent](https://www.youtube.com/@JimmyBroadbent) | High-energy, humorous race commentary | YouTube Standard License (auto-captions) |
+| [Matt Malone / MG Charoudin](https://www.youtube.com/@MGCharoudin) | Nürburgring-focused, technical | YouTube Standard License |
+| [Jaaames](https://www.youtube.com/@jaaames) | Competitive iRacing, analytical | YouTube Standard License |
+| [Traxion.GG](https://www.youtube.com/@Traxion) | Sim racing news and reviews | YouTube Standard License |
+| [JustHun Gaming](https://www.youtube.com/@JustHunGaming) | ACC competitive, setup-focused | YouTube Standard License |
+| [Project Sim Racing](https://www.youtube.com/@ProjectSimRacing) | Community broadcasts | YouTube Standard License |
+| [Just Sim Racing](https://www.youtube.com/@JustSimRacing) | Multi-sim, wheel-to-wheel focus | YouTube Standard License |
+| [Redd500 Gaming](https://www.youtube.com/@Redd500) | iRacing oval/road, narrative style | YouTube Standard License |
 
 ### Professional Broadcast Commentary
 
-| Source                                                                      | Style                                         | License                  |
-| --------------------------------------------------------------------------- | --------------------------------------------- | ------------------------ |
+| Source | Style | License |
+| --- | --- | --- |
 | [Global SimRacing Channel](https://www.youtube.com/@GlobalSimRacingChannel) | Professional sim racing broadcasts since 2013 | YouTube Standard License |
-| [RaceSpot TV](https://www.youtube.com/@RaceSpotTV)                          | eNASCAR official broadcast partner            | YouTube Standard License |
-| [Apex Racing TV](https://www.youtube.com/@ApexRacingTV)                     | iRacing league broadcasts                     | YouTube Standard License |
+| [RaceSpot TV](https://www.youtube.com/@RaceSpotTV) | eNASCAR official broadcast partner | YouTube Standard License |
+| [Apex Racing TV](https://www.youtube.com/@ApexRacingTV) | iRacing league broadcasts | YouTube Standard License |
 
 ### Coaching and Instructional
 
-| Source                                                                                  | Style                                           | License                  |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------ |
-| [Driver61](https://www.youtube.com/@Driver61)                                           | Professional racing coach, technique breakdowns | YouTube Standard License |
-| [Suellio Almeida / Virtual Racing School](https://www.youtube.com/@VirtualRacingSchool) | Data-driven coaching, telemetry analysis        | YouTube Standard License |
+| Source | Style | License |
+| --- | --- | --- |
+| [Driver61](https://www.youtube.com/@Driver61) | Professional racing coach, technique breakdowns | YouTube Standard License |
+| [Suellio Almeida / Virtual Racing School](https://www.youtube.com/@VirtualRacingSchool) | Data-driven coaching, telemetry analysis | YouTube Standard License |
 
 ### Structured Phrase Databases
 
-| Source                                                    | Usage                                                      | License                                                                   |
-| --------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Source | Usage | License |
+| --- | --- | --- |
 | [Crew Chief V4](https://gitlab.com/mr_belern/CrewChiefV4) | Spotter phrase patterns and audio composition architecture | [GPL-3.0](https://gitlab.com/mr_belern/CrewChiefV4/-/blob/master/LICENSE) |
 
-The composable fragment system (opener + body + closer) is directly inspired by Crew Chief V4's audio clip composition architecture, where pre-recorded audio fragments are assembled at runtime from folder hierarchies. The text fragment approach is an adaptation of that concept for written commentary.
-
-### User Content
-
-| Source                                    | Usage                                                          |
-| ----------------------------------------- | -------------------------------------------------------------- |
-| [alternate.org](http://www.alternate.org) | Voice matching reference for Kevin's personal commentary style |
+The composable fragment system (opener + body + closer) is directly inspired by Crew Chief V4's audio clip composition architecture.
 
 ### AI-Assisted Content
 
 Commentary fragments in `simhub-plugin/k10-motorsports-data/commentary_fragments.json` were generated using [Claude](https://claude.ai) (Anthropic's `claude-haiku-4-5` model) with the commentary topics, sentiment vocabulary, and channel style profiles as input. The generation is a one-time offline process — no AI API calls occur at runtime in the current version.
 
-Plugin codebase, test suites, dataset structures, documentation, and Homebridge companion plugin built with [Claude Code](https://claude.ai/claude-code) (Anthropic's `claude-opus-4-6`).
+Plugin codebase, test suites, dataset structures, documentation, dashboard overlay, strategy engine, and Homebridge companion plugin built with [Claude Code](https://claude.ai/claude-code) (Anthropic's `claude-opus-4-6`).
 
 ## Roadmap
 
-### Version 1.5 (current)
+### Current (v0.1.x)
 
-Composable sentence fragments assembled at runtime from pre-generated pools. 33 topics with refined thresholds, 240+ unique prompt combinations per topic, severity-based interruption, category+alpha color system, Homebridge integration with per-light mode overrides.
+Composable sentence fragments assembled at runtime from pre-generated pools. 33 topics with refined thresholds, 240+ unique prompt combinations per topic, severity-based interruption, category+alpha color system, Homebridge integration with per-light mode overrides. Phase 1 strategy engine with tire lifecycle tracking and fuel computation. WebGL post-processing with ambient light sampling. Drive HUD mode. Full leaderboard and datastream panels. Pitbox pit strategy management. Built-in auto-updater.
 
-### Version 2.0 (planned)
+### Next (v1.0)
 
-Live AI commentary via the Anthropic Messages API (`claude-haiku-4-5`). Instead of selecting from pre-generated fragments, the engine calls Haiku at event fire time (~200-400ms latency) with a context-aware prompt built from the current telemetry snapshot, fired topic, and channel style profile. Fire-and-forget with callback — the event exposition text shows immediately as a loading placeholder, then the generated line replaces it when the API responds. Falls back to the fragment system if the API key is empty, the network is down, or the response exceeds 1.5 seconds.
+Live AI commentary via the Anthropic Messages API (`claude-haiku-4-5`). Instead of selecting from pre-generated fragments, the engine calls Haiku at event fire time (~200-400ms latency) with a context-aware prompt built from the current telemetry snapshot, fired topic, and channel style profile. Falls back to the fragment system if the API key is empty, the network is down, or the response exceeds 1.5 seconds. Strategy Phase 2: opponent intelligence and pit strategy optimization. Corner-by-corner telemetry analysis.
 
 ## License
 
