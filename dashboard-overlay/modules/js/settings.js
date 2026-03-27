@@ -134,6 +134,15 @@
     if (tabName === 'connections') updateConnectionsTab();
   }
 
+  // Subtab switching within a settings tab (e.g. Dashboard → Main HUD / Leaderboard / etc.)
+  function switchSectionSubtab(el) {
+    const subtab = el.dataset.subtab;
+    const container = el.closest('.settings-tab-content');
+    if (!container) return;
+    container.querySelectorAll('.settings-subtab').forEach(t => t.classList.toggle('active', t.dataset.subtab === subtab));
+    container.querySelectorAll('.settings-subtab-page').forEach(p => p.classList.toggle('active', p.dataset.subtabPage === subtab));
+  }
+
   // ── Leaderboard settings ──
 
   function updateLbFocus(value) {
