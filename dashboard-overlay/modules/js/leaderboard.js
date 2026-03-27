@@ -161,17 +161,17 @@
         let pts = '';
         for (let i = 0; i < hist.length; i++) {
           const x = (i / (hist.length - 1)) * w;
-          const y = h2 - ((hist[i] - mn) / range) * h2;
+          const y = ((hist[i] - mn) / range) * h2;
           if (i === 0) {
             pts += x.toFixed(1) + ',' + y.toFixed(1);
           } else {
             // Step: horizontal to new x at old y, then vertical to new y
-            const prevY = h2 - ((hist[i - 1] - mn) / range) * h2;
+            const prevY = ((hist[i - 1] - mn) / range) * h2;
             pts += ' ' + x.toFixed(1) + ',' + prevY.toFixed(1);
             pts += ' ' + x.toFixed(1) + ',' + y.toFixed(1);
           }
         }
-        const lastY = h2 - ((hist[hist.length - 1] - mn) / range) * h2;
+        const lastY = ((hist[hist.length - 1] - mn) / range) * h2;
         let col = 'hsla(0,0%,100%,0.3)';
         if (isPlayer) {
           if (pos === 1) col = 'hsla(42,80%,55%,1)';

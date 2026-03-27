@@ -1,67 +1,60 @@
 /**
  * Issue #7 — Game logo opposite corner logic
  *
- * The OPPOSITE_CORNER map must flip only the horizontal axis so the logo
- * stays on the same vertical edge. Before the fix it was flipping both
- * axes (diagonal), sending top-right → bottom-left etc.
+ * The OPPOSITE_CORNER map flips the vertical axis so the logo sits on the
+ * opposite vertical edge from the dashboard, same horizontal side.
+ * Dashboard top-right → logo bottom-right, etc.
  */
 
 import { test, expect } from '@playwright/test';
 
-// Re-implementation of the fixed OPPOSITE_CORNER map from game-logo.js
+// Re-implementation of the OPPOSITE_CORNER map from game-logo.js
 const OPPOSITE_CORNER = {
-  'top-right':       'top-left',
-  'top-left':        'top-right',
-  'bottom-right':    'bottom-left',
-  'bottom-left':     'bottom-right',
-  'absolute-center': 'top-left',
+  'top-right':       'bottom-right',
+  'top-left':        'bottom-left',
+  'bottom-right':    'top-right',
+  'bottom-left':     'top-left',
+  'absolute-center': 'bottom-left',
 };
 
 test.describe('Issue #7 — Game logo opposite corner', () => {
 
-  test('top-right maps to top-left (same row, opposite column)', () => {
-    expect(OPPOSITE_CORNER['top-right']).toBe('top-left');
+  test('top-right maps to bottom-right (opposite row, same column)', () => {
+    expect(OPPOSITE_CORNER['top-right']).toBe('bottom-right');
   });
 
-  test('top-left maps to top-right (same row, opposite column)', () => {
-    expect(OPPOSITE_CORNER['top-left']).toBe('top-right');
+  test('top-left maps to bottom-left (opposite row, same column)', () => {
+    expect(OPPOSITE_CORNER['top-left']).toBe('bottom-left');
   });
 
-  test('bottom-right maps to bottom-left (same row, opposite column)', () => {
-    expect(OPPOSITE_CORNER['bottom-right']).toBe('bottom-left');
+  test('bottom-right maps to top-right (opposite row, same column)', () => {
+    expect(OPPOSITE_CORNER['bottom-right']).toBe('top-right');
   });
 
-  test('bottom-left maps to bottom-right (same row, opposite column)', () => {
-    expect(OPPOSITE_CORNER['bottom-left']).toBe('bottom-right');
+  test('bottom-left maps to top-left (opposite row, same column)', () => {
+    expect(OPPOSITE_CORNER['bottom-left']).toBe('top-left');
   });
 
-  test('opposite corner preserves vertical edge (top stays top, bottom stays bottom)', () => {
+  test('opposite corner flips vertical edge (top becomes bottom, bottom becomes top)', () => {
     for (const [from, to] of Object.entries(OPPOSITE_CORNER)) {
       if (from === 'absolute-center') continue;
       const fromEdge = from.split('-')[0];   // 'top' or 'bottom'
       const toEdge   = to.split('-')[0];
-      expect(toEdge).toBe(fromEdge);
+      expect(toEdge).not.toBe(fromEdge);
     }
   });
 
-  test('opposite corner flips horizontal side', () => {
+  test('opposite corner preserves horizontal side', () => {
     for (const [from, to] of Object.entries(OPPOSITE_CORNER)) {
       if (from === 'absolute-center') continue;
       const fromSide = from.split('-')[1];   // 'left' or 'right'
       const toSide   = to.split('-')[1];
-      expect(toSide).not.toBe(fromSide);
+      expect(toSide).toBe(fromSide);
     }
   });
 
-  test('absolute-center falls back to top-left', () => {
-    expect(OPPOSITE_CORNER['absolute-center']).toBe('top-left');
-  });
-
-  test('mapping is not diagonal (top-right must NOT map to bottom-left)', () => {
-    expect(OPPOSITE_CORNER['top-right']).not.toBe('bottom-left');
-    expect(OPPOSITE_CORNER['bottom-left']).not.toBe('top-right');
-    expect(OPPOSITE_CORNER['top-left']).not.toBe('bottom-right');
-    expect(OPPOSITE_CORNER['bottom-right']).not.toBe('top-left');
+  test('absolute-center falls back to bottom-left', () => {
+    expect(OPPOSITE_CORNER['absolute-center']).toBe('bottom-left');
   });
 
   test('applying opposite twice returns to original corner', () => {
