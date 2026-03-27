@@ -203,8 +203,9 @@ namespace K10Motorsports.Plugin.Engine
         {
             if (_demoMode) return; // demo positions handled separately
 
-            // Expose heading in degrees for dashboard map rotation (driving direction lock)
-            if (!double.IsNaN(yaw)) PlayerHeadingDeg = yaw * (180.0 / Math.PI);
+            // Heading is computed below from the SVG outline (not raw yaw) so the
+            // rotation is consistent with the track's SVG coordinate system.
+            // Raw yaw is only used for dead reckoning world-space integration.
 
             // ── Dead reckoning: rotate car-local velocity by heading → world position ──
             // iRacing VelocityX = lateral (car-local), VelocityZ = forward (car-local)
@@ -276,6 +277,20 @@ namespace K10Motorsports.Plugin.Engine
             {
                 _playerX += (pp.X - _playerX) * 0.5;
                 _playerY += (pp.Y - _playerY) * 0.5;
+            }
+
+            // Compute heading from a small forward sample on the SVG outline.
+            // This ensures the heading is in SVG coordinate space, so the dashboard
+            // rotation correctly shows the car always driving upward.
+            double aheadPct = (playerLapDistPct + 0.005) % 1.0;
+            var ahead = InterpolatePosition(aheadPct);
+            double hdx = ahead.X - pp.X;
+            double hdy = ahead.Y - pp.Y;
+            if (hdx != 0 || hdy != 0)
+            {
+                // atan2(dx, -dy): 0° = SVG up (negative Y), clockwise positive
+                double angleRad = Math.Atan2(hdx, -hdy);
+                PlayerHeadingDeg = angleRad * (180.0 / Math.PI);
             }
 
             // Opponents — with smoothing to reduce jitter
