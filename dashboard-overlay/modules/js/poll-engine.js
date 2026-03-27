@@ -355,7 +355,7 @@
       if (sp) sp.textContent = pos > 0 ? 'P' + pos : 'P—';
     });
     document.querySelectorAll('.pos-meta-row .val').forEach(el => {
-      if (el.closest('.best-row')) {
+      if (el.closest('.current-row')) {
         // Show current lap time; when running, also show differential vs best
         if (curLapTime > 0.5) {
           const diff = bestLap > 0 ? curLapTime - bestLap : null;
@@ -375,9 +375,9 @@
           if (bestLap > 0) el.classList.add(isSessionBest ? 'purple' : 'green');
         }
         // Centre-align this row
-        el.closest('.pos-meta-row').style.textAlign = 'center';
+        el.closest('.pos-meta-row').style.textAlign = 'left';
       }
-      else el.textContent = lap > 0 ? lap : '—';
+      else el.textContent = curLap > 0 ? curLap : '—';
     });
     if (pos !== _lastPosition && _lastPosition > 0 && pos > 0) {
       document.querySelectorAll('.pos-number').forEach(el => flashElement(el, pos < _lastPosition ? 'ahead-changed' : 'behind-changed'));

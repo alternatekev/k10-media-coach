@@ -156,9 +156,9 @@ test.describe('Telemetry rendering', () => {
     await expect(lapVal).toHaveText('8');
   });
 
-  test('best lap time formats correctly', async ({ page }) => {
+  test('current lap time formats correctly', async ({ page }) => {
     await load(page);
-    const bestLap = page.locator('.best-row .val').first();
+    const bestLap = page.locator('.current-row .val').first();
     const text = await bestLap.textContent();
     // 92.347s = 1:32.347
     expect(text).toBe('1:32.347');

@@ -794,13 +794,13 @@
   }
   .pos-meta-row .val.purple { color: var(--purple); }
   .pos-meta-row .val.green  { color: var(--green); }
-  .pos-meta-row.best-row {
+  .pos-meta-row.current-row {
     font-size: 16px;
     font-weight: var(--fw-semi);
     text-align: center;
     width: 100%;
   }
-  .pos-meta-row.best-row .val {
+  .pos-meta-row.current-row .val {
     font-family: var(--ff-mono);
     font-size: 20px;
     font-weight: 600;
