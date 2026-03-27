@@ -13,6 +13,11 @@
     } catch (e) { console.warn('Failed to load country flags:', e); }
   }
 
+  // Simulated green light holdover — when plugin doesn't send LightsPhase,
+  // we generate a synthetic sequence and hold it for 3 seconds
+  let _simLightsPhase = 0;
+  let _simLightsTimer = null;
+
   function updateGrid(p, isDemo) {
     const pre = isDemo ? 'K10Motorsports.Plugin.Demo.Grid.' : 'K10Motorsports.Plugin.Grid.';
     const sessionState = +(p[pre + 'SessionState']) || 0;
@@ -21,19 +26,24 @@
     const paceMode     = +(p[pre + 'PaceMode']) || 0;
     let lightsPhase    = +(p[pre + 'LightsPhase']) || 0;
     const startType    = (p[pre + 'StartType'] || 'rolling').toLowerCase();
+    const isRolling    = startType === 'rolling';
 
     const mod  = document.getElementById('gridModule');
     const info = document.getElementById('gridInfo');
     const lights = document.getElementById('startLights');
     if (!mod || !info || !lights) return;
 
-    // Detect transition from ParadeLaps (3) to Racing (4): this is when lights should show
-    // If plugin doesn't send LightsPhase, we trigger a simulated sequence
+    // Detect transition from ParadeLaps (3) to Racing (4): this is when lights should show.
+    // If plugin doesn't send LightsPhase, we generate a synthetic green sequence
+    // and hold it for 3 seconds so it's actually visible.
     const transitioningToRace = _gridPrevSessionState === 3 && sessionState === 4;
-    if (transitioningToRace && lightsPhase === 0) {
-      // Plugin hasn't sent lightsPhase, so simulate a quick green light sequence
-      lightsPhase = 7; // Jump straight to green (GO!) for rolling starts
+    if (transitioningToRace && lightsPhase === 0 && _simLightsPhase === 0) {
+      _simLightsPhase = 7;
+      clearTimeout(_simLightsTimer);
+      _simLightsTimer = setTimeout(() => { _simLightsPhase = 0; }, 3000);
     }
+    // Use synthetic phase when plugin isn't sending one
+    if (lightsPhase === 0 && _simLightsPhase > 0) lightsPhase = _simLightsPhase;
 
     // SessionState 3 = ParadeLaps (formation), or lights sequence active
     // Phase 8 = post-green holdover — keep module visible while it fades naturally
@@ -69,9 +79,21 @@
       clearTimeout(_gridFadeTimer);
       mod.classList.remove('grid-fadeout');
       mod.classList.add('grid-visible');
-      document.body.classList.add('grid-active');
+      // Rolling starts: don't dim the dashboard during formation — driver needs instruments.
+      // Only dim for standing starts or when the lights sequence is actively playing.
+      if (!isRolling || isLightsActive) {
+        document.body.classList.add('grid-active');
+      }
       _gridActive = true;
       if (window.setGridFlagGL) window.setGridFlagGL(true);
+    }
+    // If we're in a rolling formation and lights just started, apply dim now
+    if (isRolling && isLightsActive) {
+      document.body.classList.add('grid-active');
+    }
+    // If rolling formation without lights, ensure dashboard stays at 100%
+    if (isRolling && !isLightsActive && isFormation) {
+      document.body.classList.remove('grid-active');
     }
 
     // Toggle between info card and lights

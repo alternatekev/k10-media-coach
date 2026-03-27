@@ -6,6 +6,9 @@
   let _wasInPit = false;
   let _bonkersActive = false;
   let _sparkTimer = null;
+  // Bonkers holdover: when entering pit at speed, lock bonkers for 3s
+  // so the animation is visible even after the auto-limiter slows the car
+  let _bonkersHoldUntil = 0;
 
   function updatePitLimiter(p, isDemo) {
     const pre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
@@ -23,6 +26,15 @@
     // Pit limiter blue glow on tacho module
     const tacho = document.querySelector('.tacho-block');
     if (tacho) tacho.classList.toggle('pit-limiter-engaged', inPitLane && pitLimiterOn);
+
+    // Detect pit entry while speeding — lock bonkers for 3s so it's visible
+    // even after the car's auto-limiter kicks in and drops speed
+    const now = Date.now();
+    const isSpeeding = +(p[pre + 'IsPitSpeeding']) > 0 || (pitLimitKmh > 0 && speedKmh > pitLimitKmh);
+    if (!_wasInPit && inPitLane && isSpeeding) {
+      _bonkersHoldUntil = now + 3000;
+    }
+    const bonkersHeld = now < _bonkersHoldUntil;
 
     if (inPitLane) {
       banner.classList.add('pit-visible');
@@ -44,11 +56,8 @@
       }
 
       // ── State priority: BONKERS > WARNING > NORMAL ──
-      // Prefer server-computed DS.IsPitSpeeding, fallback to client check
-      const isSpeeding = +(p[pre + 'IsPitSpeeding']) > 0 || (pitLimitKmh > 0 && speedKmh > pitLimitKmh);
-
-      if (isSpeeding) {
-        // BONKERS — actually over the speed limit (regardless of limiter state)
+      if (isSpeeding || bonkersHeld) {
+        // BONKERS — over the speed limit, or held from entry
         banner.classList.add('pit-bonkers');
         banner.classList.remove('pit-warning');
         if (labelEl) labelEl.textContent = 'SPEEDING';
@@ -71,11 +80,23 @@
         if (window.setBonkersGL) window.setBonkersGL(false);
       }
     } else {
-      banner.classList.remove('pit-visible', 'pit-warning', 'pit-bonkers');
-      document.body.classList.remove('pit-mode');
-      if (labelEl) labelEl.textContent = 'Pit Limiter';
-      if (_bonkersActive) _stopBonkersSparks(banner);
-      if (window.setBonkersGL) window.setBonkersGL(false);
+      // Not in pit lane — but if approaching pit at speed, show early warning
+      if (pitLimitKmh > 0 && speedKmh > pitLimitKmh && bonkersHeld) {
+        // Holdover from entering pit — keep bonkers visible during transition
+        banner.classList.add('pit-visible', 'pit-bonkers');
+        banner.classList.remove('pit-warning');
+        if (labelEl) labelEl.textContent = 'SPEEDING';
+        if (speedEl) {
+          const mph = Math.round(+(p[pre + 'SpeedMph']) || speedKmh * 0.621371);
+          speedEl.textContent = mph > 0 ? mph + ' mph' : '';
+        }
+      } else {
+        banner.classList.remove('pit-visible', 'pit-warning', 'pit-bonkers');
+        document.body.classList.remove('pit-mode');
+        if (labelEl) labelEl.textContent = 'Pit Limiter';
+        if (_bonkersActive) _stopBonkersSparks(banner);
+        if (window.setBonkersGL) window.setBonkersGL(false);
+      }
     }
     _wasInPit = inPitLane;
   }
