@@ -342,6 +342,7 @@ let _gapsLapNum = 0;           // current lap number for gaps module
 let _gapsNonRaceMode = false;  // currently in non-race session
 let _lapStartIncidents = 0;   // incident count at start of current lap (for invalid detection)
 let _lapInvalid = false;       // true when incidents increased during current lap
+let _prevSectorSplits = [];    // previous poll's sector splits — survives iRacing clearing on lap cross
 let _startPosition = 0;
 let _prevBB = -1, _prevTC = -1, _prevABS = -1;
 let _clutchSeenActive = false;

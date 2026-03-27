@@ -337,7 +337,7 @@
     if (tcOk) _prevTC = +tc;
     if (absOk) _prevABS = +abs;
 
-    // ─── Position / Lap / Best Lap ───
+    // ─── Position / Lap / Current Lap Time ───
     // Snapshot previous position BEFORE it gets overwritten (used by grid viz)
     const _vizSnapPrevPos = _lastPosition;
     const pos = +d('DataCorePlugin.GameData.Position', 'Demo.Position') || 0;
@@ -699,9 +699,17 @@
           const exceedsBestLap = bestLap > 0 && split >= bestLap * 0.85;
           // Check 3: last sector with no other splits populated yet —
           // this is the classic case where iRacing sends cumulative time
-          // before the earlier sectors are filled in
+          // before the earlier sectors are filled in.
+          // BUT: in qualifying, iRacing clears previous sectors on lap cross
+          // right as the final split arrives. Use _prevSectorSplits to avoid
+          // false positives — if the previous poll had other sectors filled,
+          // this is a real split, not a cumulative time.
+          let prevOtherCount = 0;
+          for (let k = 0; k < _prevSectorSplits.length; k++) {
+            if (k !== si - 1 && _prevSectorSplits[k] > 0) prevOtherCount++;
+          }
           const lastSectorNoContext = si === sectorCount && sectorCount >= 2
-            && otherSplitCount === 0;
+            && otherSplitCount === 0 && prevOtherCount === 0;
           const looksLikeFullLap = exceedsOthers || exceedsBestLap || lastSectorNoContext;
           if (looksLikeFullLap) {
             // Suppress — never show a full lap time inside a sector cell
@@ -724,6 +732,10 @@
           if (deltaEl) deltaEl.textContent = '';
         }
       }
+
+      // Cache this poll's splits so next poll can distinguish a real final
+      // sector from a bogus cumulative time (iRacing clears splits on lap cross)
+      _prevSectorSplits = splits.slice();
 
       _gapsNonRaceMode = true;
     } else {

@@ -165,7 +165,13 @@
         }
         var exceedsOthers = sumOther > 0 && split >= sumOther;
         var exceedsBest = bestLap > 0 && split >= bestLap * 0.85;
-        var lastNoCtx = si === sectorCount && sectorCount >= 2 && otherCount === 0;
+        // Also check previous poll's splits — iRacing clears sectors on lap
+        // cross in qualifying, so otherCount can be 0 even for a real split
+        var prevOther = 0;
+        for (var pc = 0; pc < _prevSectorSplits.length; pc++) {
+          if (pc !== si - 1 && _prevSectorSplits[pc] > 0) prevOther++;
+        }
+        var lastNoCtx = si === sectorCount && sectorCount >= 2 && otherCount === 0 && prevOther === 0;
         if (exceedsOthers || exceedsBest || lastNoCtx) {
           timeEl.textContent = '—';
           if (sDeltaEl) sDeltaEl.textContent = '';
