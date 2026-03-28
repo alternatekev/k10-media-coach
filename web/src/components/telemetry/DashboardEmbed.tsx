@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTelemetry } from './TelemetryProvider'
 
-// Initial iframe size — large enough that the dashboard won't clip.
-// Once the iframe loads, we measure the actual content and adjust.
-const INIT_W = 3000
-const INIT_H = 500
+// Measured from CSS: 6 columns (160+240+96+150+140+98) + 5 gaps (4px each)
+// + small breathing room so nothing wraps at boundary.
+const NATIVE_W = 920
+const NATIVE_H = 290 // 200px main-row + 4px gap + ~80px timer-row + margin
 
 /**
  * Embeds the real dashboard HUD in an iframe, feeding it telemetry
@@ -17,36 +17,18 @@ export function DashboardEmbed() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { data, status } = useTelemetry()
-  const [scale, setScale] = useState(0) // 0 = not measured yet
-  const [contentW, setContentW] = useState(INIT_W)
-  const [contentH, setContentH] = useState(INIT_H)
+  const [scale, setScale] = useState(1)
 
-  // ── Measure actual dashboard content size from inside the iframe ──
-  const measure = useCallback(() => {
-    const iframe = iframeRef.current
-    if (!iframe?.contentDocument) return
-    const dash = iframe.contentDocument.querySelector('.dashboard') as HTMLElement
-    if (!dash) return
-    const w = dash.scrollWidth
-    const h = dash.scrollHeight
-    if (w > 10 && h > 10) {
-      setContentW(w)
-      setContentH(h)
-    }
-  }, [])
-
-  // ── Responsive scaling: container width / content width ──
+  // ── Responsive scaling: container width / native content width ──
   useEffect(() => {
     const el = containerRef.current
-    if (!el || contentW <= 10) return
-    const update = () => {
-      setScale(el.clientWidth / contentW)
-    }
-    update()
-    const observer = new ResizeObserver(() => update())
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      setScale(entry.contentRect.width / NATIVE_W)
+    })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [contentW])
+  }, [])
 
   // ── Post telemetry data to iframe on every update ──
   useEffect(() => {
@@ -58,35 +40,17 @@ export function DashboardEmbed() {
     )
   }, [data])
 
-  // ── Measure on iframe load, then periodically until stable ──
-  useEffect(() => {
-    const iframe = iframeRef.current
-    if (!iframe) return
-    const onLoad = () => {
-      // Measure a few times as JS inside the iframe initializes
-      measure()
-      setTimeout(measure, 200)
-      setTimeout(measure, 600)
-      setTimeout(measure, 1500)
-    }
-    iframe.addEventListener('load', onLoad)
-    return () => iframe.removeEventListener('load', onLoad)
-  }, [measure])
-
   return (
     <div className="flex flex-col gap-3">
       <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
         Live Dashboard Demo
       </span>
 
-      {/* Dashboard iframe — rendered at content size, scaled to fill container */}
+      {/* Dashboard iframe — sized to exact content dimensions, scaled to fill */}
       <div
         ref={containerRef}
         className="relative rounded-xl overflow-hidden border border-[var(--border-subtle)]"
-        style={{
-          background: '#000',
-          height: scale > 0 ? contentH * scale : 200,
-        }}
+        style={{ background: '#000', height: NATIVE_H * scale }}
       >
         {status !== 'live' && (
           <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: '#000' }}>
@@ -105,9 +69,9 @@ export function DashboardEmbed() {
             background: '#000',
             opacity: status === 'live' ? 1 : 0,
             transition: 'opacity 0.5s ease',
-            width: contentW,
-            height: contentH,
-            transform: scale > 0 ? `scale(${scale})` : 'scale(1)',
+            width: NATIVE_W,
+            height: NATIVE_H,
+            transform: `scale(${scale})`,
             transformOrigin: 'top left',
           }}
         />
