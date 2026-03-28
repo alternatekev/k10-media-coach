@@ -18,16 +18,21 @@ import { useTelemetry } from './TelemetryProvider'
 export function DashboardEmbed() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const lastWidthRef = useRef(0)
   const { data, status } = useTelemetry()
   const [height, setHeight] = useState(280)
 
-  // Send current container width to the iframe
+  // Send container width to iframe, but ONLY when width actually changes.
+  // Height changes (from setHeight) must NOT re-trigger this.
   const sendWidth = useCallback(() => {
     const el = containerRef.current
     const iframe = iframeRef.current
     if (!el || !iframe?.contentWindow) return
+    const w = el.clientWidth
+    if (w === lastWidthRef.current) return // width unchanged — skip
+    lastWidthRef.current = w
     iframe.contentWindow.postMessage(
-      { type: 'k10-container-width', width: el.clientWidth },
+      { type: 'k10-container-width', width: w },
       '*',
     )
   }, [])
