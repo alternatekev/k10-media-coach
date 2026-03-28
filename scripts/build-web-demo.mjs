@@ -316,7 +316,7 @@ ${allJS}
   function measure() {
     var dash = document.querySelector('.dashboard');
     if (!dash) return false;
-    // Remove any existing transform so we measure at native size
+    // Remove transform to measure at native size
     dash.style.transform = '';
     var w = dash.offsetWidth;
     var h = dash.offsetHeight;
@@ -332,12 +332,10 @@ ${allJS}
     if (!containerW) return;
     _lastContainerW = containerW;
     var dash = document.querySelector('.dashboard');
-    if (!dash) return;
-    if (!_naturalW) { if (!measure()) return; }
+    if (!dash || !_naturalW) return;
     var s = containerW / _naturalW;
     dash.style.transformOrigin = 'top left';
     dash.style.transform = 'scale(' + s + ')';
-    // Report scaled height to parent
     var h = Math.ceil(_naturalH * s) + 2;
     window.parent.postMessage({ type: 'k10-resize', height: h }, '*');
   }
@@ -345,31 +343,38 @@ ${allJS}
   // Listen for container width from parent
   window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'k10-container-width') {
+      // Always re-measure before scaling — panels may have appeared
+      measure();
       applyScale(e.data.width);
     }
   });
 
-  // Initial: measure, then ask parent to send its width
-  function init() {
+  // Periodically re-measure and re-apply. Panels render asynchronously
+  // (JS creates histogram bars, fonts load, etc.) so the natural width
+  // can change during the first few seconds. Keep checking.
+  function tick() {
+    var prevW = _naturalW;
     if (measure()) {
-      window.parent.postMessage({ type: 'k10-ready', naturalWidth: _naturalW }, '*');
-      // Re-apply if we already received a container width before measuring
+      // First measurement or width changed — tell parent we're ready
+      if (prevW !== _naturalW) {
+        window.parent.postMessage({ type: 'k10-ready', naturalWidth: _naturalW }, '*');
+      }
       if (_lastContainerW) applyScale(_lastContainerW);
     }
   }
 
-  // Wait for fonts, then measure. Retry several times for slow loads.
+  // Start after fonts, then keep retrying for 4 seconds
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function() { setTimeout(init, 50); });
+    document.fonts.ready.then(function() { setTimeout(tick, 50); });
   } else {
-    setTimeout(init, 200);
+    setTimeout(tick, 200);
   }
   var t = 0;
   var iv = setInterval(function() {
-    init();
-    t += 300;
-    if (t >= 2400) clearInterval(iv);
-  }, 300);
+    tick();
+    t += 250;
+    if (t >= 4000) clearInterval(iv);
+  }, 250);
 })();
 </script>
 
