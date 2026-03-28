@@ -303,60 +303,71 @@ ${allJS}
 </script>
 
 <script>
-// ─── Zoom-to-fit: scale dashboard to fill iframe viewport ───
-// Parent sends container width via postMessage. We measure the
-// dashboard's natural width ONCE (at zoom=1), cache it, then
-// zoom = containerWidth / naturalWidth. No resize listener inside
-// the iframe — that would loop because zoom changes trigger resize.
+// ─── Scale-to-fit: transform:scale the dashboard to fill the iframe ───
+// Uses CSS transform (not zoom). Transform doesn't change the element's
+// layout box, so measurements stay stable — no resize loops, no viewport
+// changes. Parent sends container width; we scale .dashboard to fit.
 (function() {
   var _naturalW = 0;
+  var _naturalH = 0;
+  var _lastContainerW = 0;
 
-  function measureNatural() {
+  function measure() {
     var dash = document.querySelector('.dashboard');
-    if (!dash) return 0;
-    document.body.style.zoom = 1;
-    var w = dash.scrollWidth;
-    return w > 100 ? w : 0;
+    if (!dash) return false;
+    // Remove any existing transform so we measure at native size
+    dash.style.transform = '';
+    var w = dash.offsetWidth;
+    var h = dash.offsetHeight;
+    if (w > 100 && h > 50) {
+      _naturalW = w;
+      _naturalH = h;
+      return true;
+    }
+    return false;
   }
 
-  function applyZoom(containerW) {
-    if (!_naturalW) _naturalW = measureNatural();
-    if (!_naturalW || !containerW) return;
-    var z = containerW / _naturalW;
-    document.body.style.zoom = z;
-    // Measure the dashboard element directly for accurate height
+  function applyScale(containerW) {
+    if (!containerW) return;
+    _lastContainerW = containerW;
     var dash = document.querySelector('.dashboard');
-    var h = dash ? dash.offsetHeight * z : document.documentElement.scrollHeight * z;
-    // Small buffer to prevent sub-pixel clipping
-    h = Math.ceil(h) + 2;
+    if (!dash) return;
+    if (!_naturalW) { if (!measure()) return; }
+    var s = containerW / _naturalW;
+    dash.style.transformOrigin = 'top left';
+    dash.style.transform = 'scale(' + s + ')';
+    // Report scaled height to parent
+    var h = Math.ceil(_naturalH * s) + 2;
     window.parent.postMessage({ type: 'k10-resize', height: h }, '*');
   }
 
   // Listen for container width from parent
   window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'k10-container-width') {
-      applyZoom(e.data.width);
+      applyScale(e.data.width);
     }
   });
 
-  // Initial: measure natural width, request parent to send its width
+  // Initial: measure, then ask parent to send its width
   function init() {
-    _naturalW = measureNatural();
-    if (_naturalW) {
+    if (measure()) {
       window.parent.postMessage({ type: 'k10-ready', naturalWidth: _naturalW }, '*');
+      // Re-apply if we already received a container width before measuring
+      if (_lastContainerW) applyScale(_lastContainerW);
     }
   }
+
+  // Wait for fonts, then measure. Retry several times for slow loads.
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function() { setTimeout(init, 50); });
   } else {
     setTimeout(init, 200);
   }
-  // Retry init a few times in case layout isn't settled
   var t = 0;
   var iv = setInterval(function() {
     init();
     t += 300;
-    if (t >= 1800) clearInterval(iv);
+    if (t >= 2400) clearInterval(iv);
   }, 300);
 })();
 </script>
