@@ -305,21 +305,28 @@ ${allJS}
 
 <script>
 // ─── Scale-to-fit: transform:scale the dashboard to fill the iframe ───
-// Uses CSS transform (not zoom). Transform doesn't change the element's
-// layout box, so measurements stay stable — no resize loops, no viewport
-// changes. Parent sends container width; we scale .dashboard to fit.
+// Measures .main-area (the actual row of fixed-width panel columns)
+// via scrollWidth — this is always the true content width regardless
+// of viewport size. Then scales .dashboard with CSS transform.
+// Transform doesn't affect layout, so offsetWidth/scrollWidth stay
+// stable across scale changes — no loops, no drift.
 (function() {
   var _naturalW = 0;
   var _naturalH = 0;
   var _lastContainerW = 0;
 
   function measure() {
+    // Measure the panel row directly — fixed-width children, always stable
+    var area = document.querySelector('.main-area');
     var dash = document.querySelector('.dashboard');
-    if (!dash) return false;
-    // Remove transform to measure at native size
-    dash.style.transform = '';
-    var w = dash.offsetWidth;
-    var h = dash.offsetHeight;
+    if (!area || !dash) return false;
+    var w = area.scrollWidth;
+    // Height: use dashboard's scrollHeight (main-row + gap + timer-row)
+    // Remove transform momentarily so scrollHeight isn't affected
+    var prevT = dash.style.transform;
+    dash.style.transform = 'none';
+    var h = dash.scrollHeight;
+    dash.style.transform = prevT;
     if (w > 100 && h > 50) {
       _naturalW = w;
       _naturalH = h;
@@ -340,22 +347,16 @@ ${allJS}
     window.parent.postMessage({ type: 'k10-resize', height: h }, '*');
   }
 
-  // Listen for container width from parent
   window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'k10-container-width') {
-      // Always re-measure before scaling — panels may have appeared
       measure();
       applyScale(e.data.width);
     }
   });
 
-  // Periodically re-measure and re-apply. Panels render asynchronously
-  // (JS creates histogram bars, fonts load, etc.) so the natural width
-  // can change during the first few seconds. Keep checking.
   function tick() {
     var prevW = _naturalW;
     if (measure()) {
-      // First measurement or width changed — tell parent we're ready
       if (prevW !== _naturalW) {
         window.parent.postMessage({ type: 'k10-ready', naturalWidth: _naturalW }, '*');
       }
@@ -363,7 +364,6 @@ ${allJS}
     }
   }
 
-  // Start after fonts, then keep retrying for 4 seconds
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function() { setTimeout(tick, 50); });
   } else {
