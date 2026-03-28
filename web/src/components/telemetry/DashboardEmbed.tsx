@@ -13,8 +13,8 @@ const AMBIENT_PRESETS = {
 
 type AmbientMode = keyof typeof AMBIENT_PRESETS
 
-// Color cycling speed (radians per second)
-const COLOR_CYCLE_SPEED = 0.15
+// Color cycling speed (radians per second) — fast enough to notice changes
+const COLOR_CYCLE_SPEED = 0.8
 
 // The dashboard is designed for a 1920px-wide viewport. We render the
 // iframe at this native width and scale it down to fit the container.
