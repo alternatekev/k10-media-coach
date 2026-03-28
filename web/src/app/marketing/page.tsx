@@ -97,7 +97,7 @@ export default async function HomePage() {
                 style={{ background: f.accent }}
               />
               <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-              <p className="text-sm text-[var(--text-dim)] leading-relaxed">{f.desc}</p>
+              <p className="text-base text-[var(--text-dim)] leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -110,32 +110,30 @@ export default async function HomePage() {
         <div className="space-y-8">
           <div>
             <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">1. Download the Installer</h3>
-            <p className="text-[var(--text-dim)] mb-3">
+            <p className="text-lg text-[var(--text-dim)] mb-3">
               The Windows installer bundles the SimHub plugin and the dashboard overlay. It auto-detects your SimHub installation and handles all file placement.
             </p>
-            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm border border-[var(--border-subtle)]">
-              <a href="https://github.com/alternatekev/media-coach-simhub-plugin/releases/latest" className="text-[var(--green)] hover:underline">
-                Download K10-Motorsports-Setup.exe →
-              </a>
-            </div>
+            <a
+              href="https://github.com/alternatekev/media-coach-simhub-plugin/releases/latest"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wider bg-[var(--k10-red)] text-white hover:brightness-110 transition-all"
+            >
+              Download K10-Motorsports-Setup.exe →
+            </a>
           </div>
 
           <div>
             <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">2. Enable in SimHub</h3>
-            <p className="text-[var(--text-dim)] mb-3">
+            <p className="text-lg text-[var(--text-dim)] mb-3">
               Launch SimHub, enable &ldquo;K10 Motorsports&rdquo; in the plugin list, and configure display timing, commentary categories, and strategy options in the settings panel.
             </p>
-            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm text-[var(--text-dim)] border border-[var(--border-subtle)]">
-              Optional: install <span className="text-white">iRacing Extra Properties</span> for iRating + Safety Rating
-            </div>
           </div>
 
           <div>
             <h3 className="text-xl font-bold mb-3 text-[var(--k10-red)]">3. Launch & Connect</h3>
-            <p className="text-[var(--text-dim)] mb-3">
+            <p className="text-lg text-[var(--text-dim)] mb-3">
               The overlay runs as a transparent window on top of your sim. Stream it to any browser on your network for multi-screen setups.
             </p>
-            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-sm text-[var(--text-dim)] border border-[var(--border-subtle)]">
+            <div className="bg-[var(--bg-surface)] rounded-lg p-4 font-mono text-base text-[var(--text-dim)] border border-[var(--border-subtle)]">
               Built-in auto-updater keeps you current — check for updates from the SimHub settings panel
             </div>
           </div>
