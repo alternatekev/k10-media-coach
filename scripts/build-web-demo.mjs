@@ -196,7 +196,7 @@ html, body {
   display: none !important;
 }
 
-/* Dashboard: relative position, no edge insets, no forced width */
+/* Dashboard: relative position, shrink to content width */
 .dashboard {
   position: relative !important;
   top: auto !important;
@@ -205,6 +205,7 @@ html, body {
   left: auto !important;
   margin: 0 !important;
   padding: 0 !important;
+  width: fit-content !important;
 }
 /* Kill the edge inset variable — we want zero margins in the embed */
 :root { --edge: 0px !important; --edge-z: 0px !important; }
