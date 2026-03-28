@@ -191,16 +191,31 @@ html, body {
   display: none !important;
 }
 
-/* Dashboard: take out of fixed positioning, flow naturally so
-   the iframe can size to content. Centered by body layout. */
+/* Dashboard: fill the entire iframe viewport */
 .dashboard {
-  position: relative !important;
+  position: absolute !important;
   top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  margin: 0 auto;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
 }
+
+/* Main row stretches to fill dashboard width */
+.main-row {
+  width: 100% !important;
+}
+.main-area {
+  width: 100% !important;
+}
+
+/* Panels grow to fill available space */
+.fuel-tyres-col    { flex: 1 1 160px !important; min-width: 0 !important; }
+.controls-pedals-block { flex: 1.5 1 240px !important; min-width: 0 !important; }
+.tacho-block       { flex: 0.9 1 140px !important; min-width: 0 !important; }
+.maps-col          { flex: 0.6 1 96px !important; min-width: 0 !important; }
+.pos-gaps-col      { flex: 1 1 150px !important; min-width: 0 !important; }
+.logo-col          { flex: 0 0 auto !important; }
 
 /* Ensure panels are visible (some toggled via settings) */
 .tacho-block,
