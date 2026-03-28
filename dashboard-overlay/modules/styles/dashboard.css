@@ -869,9 +869,6 @@
     letter-spacing: -0.02em;
     display: block;
     text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .pos-meta-row.delta-row {
     text-align: center;
