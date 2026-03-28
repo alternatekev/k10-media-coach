@@ -176,7 +176,7 @@ const DEMO_CSS = `
 /* ── Web demo overrides ── */
 html, body {
   margin: 0; padding: 0;
-  background: transparent !important;
+  background: #0a0a14 !important;
   overflow: hidden;
   /* Ensure dashboard fonts apply even if Google Fonts loads slowly */
   font-family: 'Barlow Condensed', 'Barlow Semi Condensed', system-ui, sans-serif;
@@ -196,14 +196,18 @@ html, body {
   display: none !important;
 }
 
-/* Dashboard: relative position, natural content size, no forced width */
+/* Dashboard: relative position, no edge insets, no forced width */
 .dashboard {
   position: relative !important;
   top: auto !important;
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
+/* Kill the edge inset variable — we want zero margins in the embed */
+:root { --edge: 0px !important; --edge-z: 0px !important; }
 
 /* Ensure panels are visible (some toggled via settings) */
 .tacho-block,

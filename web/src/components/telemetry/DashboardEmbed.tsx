@@ -124,7 +124,7 @@ export function DashboardEmbed() {
           className="border-0 block"
           sandbox="allow-scripts allow-same-origin"
           style={{
-            background: 'transparent',
+            background: '#0a0a14',
             width: '100%',
             height: '100%',
             opacity: status === 'live' ? 1 : 0,
