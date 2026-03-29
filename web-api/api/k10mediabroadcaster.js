@@ -359,9 +359,13 @@ function generateSnapshot(nowMs) {
   const position = Math.max(1, Math.min(DRIVERS.length, 4 + posJitter));
   const startPosition = 4;
 
-  // Build leaderboard
+  // Build leaderboard — gaps vary continuously within each lap
+  // lapSeed gives per-lap baseline, timeSeed adds smooth intra-lap drift
+  const timeSeed = Math.floor(nowMs / 2000); // changes every 2s
   const leaderboard = DRIVERS.map((d, i) => {
-    const gap = d.isPlayer ? 0 : d.baseGap + (seededRand(i * 97 + lapSeed) - 0.5) * d.jitter;
+    const lapJitter = (seededRand(i * 97 + lapSeed) - 0.5) * d.jitter;
+    const intraDrift = (seededRand(i * 53 + timeSeed) - 0.5) * d.jitter * 0.4;
+    const gap = d.isPlayer ? 0 : d.baseGap + lapJitter + intraDrift;
     return {
       pos: 0, name: d.name, ir: d.ir,
       best: bestLapTime + (d.isPlayer ? 0 : (i - 3) * 0.4),
@@ -562,8 +566,33 @@ function generateSnapshot(nowMs) {
   // Leaderboard
   p['K10Motorsports.Plugin.Leaderboard'] = JSON.stringify(lbArr);
 
-  // Flag
-  p['currentFlagState'] = 0; // green
+  // Flag — cycle through flag states to showcase the overlay
+  // Each flag event fires at a specific lap-time window, then clears
+  const FLAG_EVENTS = [
+    { lap: 3,  startPct: 0.40, durSec: 12, flag: 'yellow' },
+    { lap: 3,  startPct: 0.80, durSec:  5, flag: 'green' },
+    { lap: 7,  startPct: 0.20, durSec:  8, flag: 'blue' },
+    { lap: 12, startPct: 0.10, durSec: 15, flag: 'yellow' },
+    { lap: 12, startPct: 0.65, durSec:  5, flag: 'green' },
+    { lap: 15, startPct: 0.50, durSec: 10, flag: 'debris' },
+    { lap: 20, startPct: 0.30, durSec:  8, flag: 'blue' },
+    { lap: 25, startPct: 0.05, durSec: 20, flag: 'red' },
+    { lap: 29, startPct: 0.90, durSec: 30, flag: 'white' },
+  ];
+  let activeFlag = 'none';
+  for (const ev of FLAG_EVENTS) {
+    if (currentLap === ev.lap) {
+      const evStart = ev.startPct;
+      const evEnd = evStart + (ev.durSec / LAP_TIME_BASE);
+      if (lapPct >= evStart && lapPct < evEnd) {
+        activeFlag = ev.flag;
+        break;
+      }
+    }
+  }
+  // Checkered flag on the final lap
+  if (currentLap >= TOTAL_LAPS && lapPct > 0.85) activeFlag = 'checkered';
+  p['currentFlagState'] = activeFlag;
 
   // Grid (racing state = 4)
   p['K10Motorsports.Plugin.Grid.SessionState'] = 4;
