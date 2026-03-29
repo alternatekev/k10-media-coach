@@ -829,7 +829,8 @@
     }
 
     // ─── Flag Status → Gaps Block ───
-    const flagState = (_forceFlagState && _demo) ? _forceFlagState : (vs('currentFlagState') || 'none');
+    const rawFlag = (_forceFlagState && _demo) ? _forceFlagState : (vs('currentFlagState') || 'none');
+    const flagState = (!rawFlag || rawFlag === '0' || rawFlag === 0) ? 'none' : rawFlag;
     const gapsBlock = document.getElementById('gapsBlock');
     if (gapsBlock) {
       const flagLabels = { yellow: 'CAUTION', red: 'RED FLAG', blue: 'BLUE FLAG', white: 'LAST LAP', debris: 'DEBRIS', checkered: 'FINISH', black: 'BLACK FLAG', green: 'GREEN', meatball: 'MEATBALL', orange: 'LAPPED CAR' };
