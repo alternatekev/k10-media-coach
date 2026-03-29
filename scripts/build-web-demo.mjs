@@ -203,7 +203,7 @@ html, body {
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
-  margin: 0 !important;
+  margin: 0 auto !important;
   padding: 0 !important;
   width: fit-content !important;
 }
@@ -254,6 +254,40 @@ html, body {
   inset: 0;
   width: 100vw !important;
   height: 100vh !important;
+}
+
+/* ── Responsive breakpoints ──
+   Hide panels when viewport can no longer fit them.
+   Cumulative widths (incl. 4px gaps):
+     All 6:  904px
+     −logo:  802px
+     −maps:  702px
+     −fuel:  538px
+     −peds:  294px                                               */
+
+/* ≤ 903px — drop logo (remaining ≈ 802px) */
+@media (max-width: 903px) {
+  .logo-col { display: none !important; }
+}
+
+/* ≤ 801px — drop maps (remaining ≈ 702px) */
+@media (max-width: 801px) {
+  .maps-col { display: none !important; }
+}
+
+/* ≤ 701px — drop fuel & tyres (remaining ≈ 538px) */
+@media (max-width: 701px) {
+  .fuel-tyres-col { display: none !important; }
+}
+
+/* ≤ 537px — drop pedals/controls (remaining ≈ 294px) */
+@media (max-width: 537px) {
+  .controls-pedals-block { display: none !important; }
+}
+
+/* ≤ 293px — drop position, tacho only */
+@media (max-width: 293px) {
+  .pos-gaps-col { display: none !important; }
 }
 `;
 
@@ -310,81 +344,6 @@ ${dashboardHTML}
 ${allJS}
 </script>
 
-<script>
-// ─── Scale-to-fit: transform:scale the dashboard to fill the iframe ───
-// Measures .main-area (the actual row of fixed-width panel columns)
-// via scrollWidth — this is always the true content width regardless
-// of viewport size. Then scales .dashboard with CSS transform.
-// Transform doesn't affect layout, so offsetWidth/scrollWidth stay
-// stable across scale changes — no loops, no drift.
-(function() {
-  var _naturalW = 0;
-  var _naturalH = 0;
-  var _lastContainerW = 0;
-
-  function measure() {
-    // Measure the panel row directly — fixed-width children, always stable
-    var area = document.querySelector('.main-area');
-    var dash = document.querySelector('.dashboard');
-    if (!area || !dash) return false;
-    // scrollWidth rounds down; add 1px buffer for sub-pixel rounding
-    var w = area.scrollWidth + 1;
-    // Height: use dashboard's scrollHeight (main-row + gap + timer-row)
-    // Remove transform momentarily so scrollHeight isn't affected
-    var prevT = dash.style.transform;
-    dash.style.transform = 'none';
-    var h = dash.scrollHeight;
-    dash.style.transform = prevT;
-    if (w > 100 && h > 50) {
-      _naturalW = w;
-      _naturalH = h;
-      return true;
-    }
-    return false;
-  }
-
-  function applyScale(containerW) {
-    if (!containerW) return;
-    _lastContainerW = containerW;
-    var dash = document.querySelector('.dashboard');
-    if (!dash || !_naturalW) return;
-    var s = containerW / _naturalW;
-    dash.style.transformOrigin = 'top left';
-    dash.style.transform = 'scale(' + s + ')';
-    var h = Math.ceil(_naturalH * s) + 2;
-    window.parent.postMessage({ type: 'k10-resize', height: h }, '*');
-  }
-
-  window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'k10-container-width') {
-      measure();
-      applyScale(e.data.width);
-    }
-  });
-
-  function tick() {
-    var prevW = _naturalW;
-    if (measure()) {
-      if (prevW !== _naturalW) {
-        window.parent.postMessage({ type: 'k10-ready', naturalWidth: _naturalW }, '*');
-      }
-      if (_lastContainerW) applyScale(_lastContainerW);
-    }
-  }
-
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function() { setTimeout(tick, 50); });
-  } else {
-    setTimeout(tick, 200);
-  }
-  var t = 0;
-  var iv = setInterval(function() {
-    tick();
-    t += 250;
-    if (t >= 4000) clearInterval(iv);
-  }, 250);
-})();
-</script>
 
 </body>
 </html>`;

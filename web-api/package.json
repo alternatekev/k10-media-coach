@@ -5,6 +5,6 @@
   "type": "module",
   "description": "Mock K10 Motorsports telemetry server — serves the same data the SimHub plugin produces, driven by wall-clock time in a continuous loop.",
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "node dev-server.mjs"
   }
 }
