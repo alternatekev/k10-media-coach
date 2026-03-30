@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server'
  *   - racecor.io                     → /marketing/* (product site)
  *   - drive.racecor.io               → /drive/*     (Pro Drive members area)
  *   - k10motorsports.racing          → /k10/*       (org hub)
- *   - drive.k10motorsports.racing    → /drive/*     (fallback to drive.racecor.io)
+ *   - drive.k10motorsports.racing    → 308 redirect to drive.racecor.io (canonical for OAuth)
  *
  * Dev (via /etc/hosts):
  *   - dev.racecor.io:3000            → /marketing/*
@@ -20,9 +20,22 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || ''
   const pathname = request.nextUrl.pathname
+
+  // ── Domain redirect (runs BEFORE any path filtering) ──────────
+  // Redirect drive.k10motorsports.racing → drive.racecor.io so OAuth
+  // callbacks (including /api/auth/*) always resolve to a single
+  // canonical domain. Without this, Discord redirects back to the old
+  // domain and NextAuth returns a Configuration error.
+  if (host.includes('drive.k10motorsports.racing') || host.includes('dev.drive.k10motorsports.racing')) {
+    const racecorHost = host.replace(/drive\..*k10motorsports\.racing/, 'drive.racecor.io')
+    const dest = new URL(request.url)
+    dest.host = racecorHost
+    return NextResponse.redirect(dest, 308)
+  }
+
+  // ── Skip non-page routes ──────────────────────────────────────
   const subdomain = request.nextUrl.searchParams.get('subdomain')
 
-  // Skip Next.js internals and static files
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -31,12 +44,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── Subdomain rewriting ───────────────────────────────────────
   // Detect subdomain — prioritize query param, then host header
   let targetPath = '/marketing' // default
 
   if (host.includes('drive.') || subdomain === 'drive') {
     targetPath = '/drive'
-  } else if (host.includes('k10motorsports.racing') && !host.includes('drive.')) {
+  } else if (host.includes('k10motorsports.racing')) {
     targetPath = '/k10'
   }
 
@@ -49,5 +63,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|api|.*\\..*).*)'],
+  // Match everything EXCEPT Next.js internals and static files.
+  // api/auth on the old domain is handled by the domain redirect above,
+  // which must run before the path filter — so we include /api/auth here.
+  matcher: [
+    '/((?!_next|.*\\..*).*)',
+  ],
 }
