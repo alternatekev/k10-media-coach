@@ -69,6 +69,15 @@ async function main() {
   const sql = neon(dbUrl)
   const db = drizzle(sql)
 
+  // Ensure the track_maps table exists (run migration inline)
+  const migrationPath = path.resolve(__dirname, '../drizzle/0001_track_maps.sql')
+  if (fs.existsSync(migrationPath)) {
+    console.log('Running track_maps migration...')
+    const migrationSql = fs.readFileSync(migrationPath, 'utf-8')
+    await sql(migrationSql)
+    console.log('Migration applied (or table already exists).\n')
+  }
+
   const csvFiles = fs.readdirSync(CSV_DIR).filter(f => f.endsWith('.csv'))
   console.log(`Found ${csvFiles.length} track CSV files in ${CSV_DIR}\n`)
 
