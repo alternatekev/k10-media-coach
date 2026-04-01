@@ -853,10 +853,9 @@
     align-items: center;
     justify-content: center;
     width: var(--row-h);
-    height: var(--row-h);
+    flex: 0 0 var(--row-h);
     border-radius: 0;
     border: 1px solid var(--border);
-    flex-shrink: 0;
     overflow: hidden;
   }
   /* Manufacturer country flag — WebGL cloth ripple behind logo */
@@ -1716,23 +1715,22 @@
     gap: var(--gap);
     flex-shrink: 0;
     width: 96px;
-    align-self: stretch;
   }
   .map-panel {
-    flex: 1 1 0;
+    height: var(--row-h);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
     padding: 2px 0;
-    min-height: 0;
     overflow: hidden;
   }
-  .map-svg { width: 92%; flex: 1 1 0; min-height: 0; object-fit: contain; }
-  /* Full map label: flow below SVG instead of absolute-bottom */
+  .map-svg { width: 92%; flex: 1 1 0; min-height: 0; }
+  /* Full map label: flows below SVG — two-line names shrink the map above */
   .map-panel > .map-zoom-label {
     position: static;
+    flex: 0 0 auto;
     margin-top: 4px;
   }
   /* Track outline — three-layer rendering: thick outer edges, dark gap, thin center line */
@@ -1826,21 +1824,23 @@
   }
 
   .map-zoom-panel {
-    flex: 1;
+    height: var(--row-h);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     position: relative;
   }
   .map-zoom-svg {
-    width: 280px;
-    height: 280px;
+    width: 92%;
+    flex: 1 1 0;
+    min-height: 0;
   }
   .map-zoom-label {
-    position: absolute;
-    bottom: 4px;
-    left: 0; right: 0;
+    position: static;
+    flex: 0 0 auto;
+    margin-top: 4px;
     text-align: center;
     font-size: var(--fs-xs);
     color: var(--text-dim);
@@ -7986,48 +7986,95 @@ function _fmtLapTime(secs) {
   let _trackPathCoords = []; // [{x, y}, ...]
   const _OFF_TRACK_DIST = 4.0; // SVG units — beyond this, player is off-track
 
-  function _ensureTrailElement(parentId, refElId) {
+  // G threshold for "in a turn" — above this, a new trail segment begins
+  const _TURN_G_THRESHOLD = 0.5;
+
+  function _ensureTrailGroup(parentId, refElId) {
     const parent = document.getElementById(parentId);
     if (!parent) return null;
-    let trail = parent.querySelector('.map-gforce-trail');
-    if (trail) return trail;
-    trail = document.createElementNS(_SVG_NS, 'polyline');
-    trail.classList.add('map-gforce-trail');
-    trail.setAttribute('fill', 'none');
-    trail.setAttribute('stroke-linecap', 'round');
-    trail.setAttribute('stroke-linejoin', 'round');
-    // Insert before the player dot (last circle child) so trail draws behind it
+    let grp = parent.querySelector('.map-trail-group');
+    if (grp) return grp;
+    grp = document.createElementNS(_SVG_NS, 'g');
+    grp.classList.add('map-trail-group');
+    // Insert before the player dot so trail draws behind it
     const refEl = document.getElementById(refElId);
-    if (refEl) parent.insertBefore(trail, refEl);
-    else parent.appendChild(trail);
-    return trail;
+    if (refEl) parent.insertBefore(grp, refEl);
+    else parent.appendChild(grp);
+    return grp;
   }
 
-  function _renderMapTrail(trailEl, strokeWidth) {
-    if (!trailEl) return;
+  // Pool of reusable <line> elements per trail group
+  var _trailLinePool = new WeakMap();
+
+  function _renderMapTrail(grp, strokeWidth) {
+    if (!grp) return;
     const count = Math.min(_mapTrailCount, _MAP_TRAIL_LEN);
-    if (count < 2) { trailEl.setAttribute('points', ''); return; }
 
-    // Build points string — newest first (ring buffer)
-    let pts = '';
-    let avgG = 0;
-    for (let i = 0; i < count; i++) {
-      const idx = (_mapTrailIdx - 1 - i + _MAP_TRAIL_LEN) % _MAP_TRAIL_LEN;
-      pts += _mapTrailX[idx].toFixed(1) + ',' + _mapTrailY[idx].toFixed(1) + ' ';
-      avgG += _mapTrailG[idx];
+    // Get or create line pool for this group
+    var lines = _trailLinePool.get(grp);
+    if (!lines) { lines = []; _trailLinePool.set(grp, lines); }
+
+    if (count < 2) {
+      for (var h = 0; h < lines.length; h++) lines[h].setAttribute('visibility', 'hidden');
+      return;
     }
-    avgG /= count;
 
-    // Color: low G → cyan, high G → orange/red, modulated by intensity
-    const gNorm = Math.min(avgG / 2.5, 1.0);
-    const hue = Math.round(185 - gNorm * 155); // 185 (cyan) → 30 (orange)
-    const sat = Math.round(60 + gNorm * 30);
-    const lum = Math.round(50 + gNorm * 10);
-    const alpha = 0.25 + gNorm * 0.35;
+    // Walk samples newest→oldest, detect turn boundaries via G threshold.
+    // "distFromTurn" tracks how far (in samples) we are from the most recent
+    // high-G sample. Opacity starts bright at each turn and fades on straights.
+    var segments = count - 1;
+    var distFromTurn = 0;
+    var inTurn = false;
 
-    trailEl.setAttribute('points', pts);
-    trailEl.setAttribute('stroke', 'hsla(' + hue + ',' + sat + '%,' + lum + '%,' + alpha.toFixed(2) + ')');
-    trailEl.setAttribute('stroke-width', String(strokeWidth));
+    for (var i = 0; i < segments; i++) {
+      var idxA = (_mapTrailIdx - 1 - i     + _MAP_TRAIL_LEN) % _MAP_TRAIL_LEN;
+      var idxB = (_mapTrailIdx - 2 - i     + _MAP_TRAIL_LEN) % _MAP_TRAIL_LEN;
+      var gA = _mapTrailG[idxA];
+
+      // Detect turn boundary
+      if (gA >= _TURN_G_THRESHOLD) {
+        distFromTurn = 0;
+        inTurn = true;
+      } else {
+        distFromTurn++;
+        inTurn = false;
+      }
+
+      // Opacity: bright at turns, fading on straights
+      // At turn (distFromTurn=0): alpha = 0.7
+      // Fading linearly to 0.05 over ~12 samples on straights
+      var fadeAlpha = Math.max(0.05, 0.7 - distFromTurn * 0.055);
+      // Also fade older samples slightly (age-based)
+      var ageFade = 1.0 - (i / segments) * 0.3;
+      var alpha = fadeAlpha * ageFade;
+
+      // Color: in-turn → warm (orange), straight → cool (cyan)
+      var gNorm = Math.min(gA / 2.5, 1.0);
+      var hue = Math.round(185 - gNorm * 155);
+      var sat = Math.round(60 + gNorm * 30);
+      var lum = Math.round(50 + gNorm * 10);
+
+      // Ensure we have a <line> element
+      if (i >= lines.length) {
+        var ln = document.createElementNS(_SVG_NS, 'line');
+        ln.setAttribute('stroke-linecap', 'round');
+        grp.appendChild(ln);
+        lines.push(ln);
+      }
+      var el = lines[i];
+      el.setAttribute('x1', _mapTrailX[idxA].toFixed(1));
+      el.setAttribute('y1', _mapTrailY[idxA].toFixed(1));
+      el.setAttribute('x2', _mapTrailX[idxB].toFixed(1));
+      el.setAttribute('y2', _mapTrailY[idxB].toFixed(1));
+      el.setAttribute('stroke', 'hsla(' + hue + ',' + sat + '%,' + lum + '%,' + alpha.toFixed(2) + ')');
+      el.setAttribute('stroke-width', String(strokeWidth));
+      el.setAttribute('visibility', 'visible');
+    }
+
+    // Hide unused lines
+    for (var j = segments; j < lines.length; j++) {
+      lines[j].setAttribute('visibility', 'hidden');
+    }
   }
 
   // Parse SVG path string into an array of {x, y} coordinates
@@ -8113,7 +8160,7 @@ function _fmtLapTime(secs) {
   window._splitPathIntoSectors = _splitPathIntoSectors;
 
   // Smoothed zoom radius for the local map
-  let _mapZoomRadius = 15;
+  let _mapZoomRadius = 15.5;
 
   // Smoothed heading for local map rotation
   let _mapSmoothedHeading = 0;
@@ -8286,11 +8333,11 @@ function _fmtLapTime(secs) {
     _mapTrailIdx = (_mapTrailIdx + 1) % _MAP_TRAIL_LEN;
     _mapTrailCount++;
 
-    // Ensure trail SVG elements exist and render
+    // Ensure trail SVG groups exist and render
     // Full map: trail as sibling before player dot
-    if (!_fullMapTrailEl)  _fullMapTrailEl  = _ensureTrailElement('fullMapSvg', 'fullMapPlayer');
+    if (!_fullMapTrailEl)  _fullMapTrailEl  = _ensureTrailGroup('fullMapSvg', 'fullMapPlayer');
     // Zoom map: trail INSIDE the rotate group so it rotates with the track
-    if (!_zoomMapTrailEl) _zoomMapTrailEl = _ensureTrailElement('zoomMapRotateGroup', 'zoomMapOpponents');
+    if (!_zoomMapTrailEl) _zoomMapTrailEl = _ensureTrailGroup('zoomMapRotateGroup', 'zoomMapOpponents');
     _renderMapTrail(_fullMapTrailEl, 3);
     _renderMapTrail(_zoomMapTrailEl, 1.8);
 
@@ -8300,10 +8347,11 @@ function _fmtLapTime(secs) {
     const zoomSvg = document.getElementById('zoomMapSvg');
     if (zoomSvg) {
       const spd = typeof speedMph === 'number' ? speedMph : 0;
-      // Dynamic zoom: slow → tight (radius 16) for corner detail,
-      //               fast → wide (radius 38) to see track ahead.
-      // Creates a natural zoom-in effect when braking into corners.
-      const targetZR = 16 + Math.min(spd / 150, 1.0) * 22;
+      // Dynamic zoom: tighter when slow (corners), wider when fast (straights).
+      // 0 mph → 3× zoom (radius ~5.6), scales up to 75 mph → radius 16.7.
+      // Clamped at 75 mph — no further zoom-out beyond that.
+      const clampedSpd = Math.min(spd, 75);
+      const targetZR = 5.6 + (clampedSpd / 75) * (50 / 3 - 5.6);
       _mapZoomRadius += (targetZR - _mapZoomRadius) * 0.15;
       const zr = _mapZoomRadius;
 
@@ -9123,8 +9171,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Datastream field toggles
     applyDsFieldToggles();
 
-    // Logo-only startup: apply body class so CSS hides everything except logos
-    if (_settings.logoOnlyStart !== false) {
+    // Logo-only startup: apply body class so CSS hides everything except logos.
+    // Only add if we haven't already revealed — otherwise applySettings()
+    // re-applies logo-only every time a mode or setting changes.
+    if (_settings.logoOnlyStart !== false && !_logoOnlyRevealed) {
       document.body.classList.add('logo-only');
     }
 
