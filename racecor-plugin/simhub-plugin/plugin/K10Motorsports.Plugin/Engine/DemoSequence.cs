@@ -97,6 +97,8 @@ namespace K10Motorsports.Plugin.Engine
             raceStart.FuelPercent   = 1.0;
             raceStart.FuelLevel     = 45.0;
             raceStart.Position      = 4;
+            raceStart.SpeedKmh      = 48.0;   // ~30 mph — rolling start grid
+            raceStart.Throttle      = 0.40;
             steps.Add(new Step { TopicId = "race_start", Snapshot = raceStart, DelaySeconds = 0 });
 
             // ── 2. TC INTERVENTION — severity 1, slate grey ──────────────────────
@@ -105,12 +107,18 @@ namespace K10Motorsports.Plugin.Engine
             tcFire.TcActive    = true;
             tcFire.CurrentLap  = 1;
             tcFire.Position    = 4;
+            tcFire.SpeedKmh    = 95.0;    // ~59 mph — mid-corner TC kick
+            tcFire.Throttle    = 0.65;
+            tcFire.LatAccel    = 3.2;
             steps.Add(new Step { TopicId = "tc_intervention", Snapshot = tcFire, DelaySeconds = 18 });
 
             // ── 3. HIGH CORNERING LOAD — severity 2, blue ────────────────────────
             var highG = Base();
-            highG.LatAccel = 4.3;
+            highG.LatAccel   = 4.3;
             highG.CurrentLap = 3;
+            highG.SpeedKmh   = 72.0;    // ~45 mph — slow-speed hairpin
+            highG.Throttle   = 0.30;
+            highG.Brake      = 0.0;
             steps.Add(new Step { TopicId = "high_cornering_load", Snapshot = highG, DelaySeconds = 14 });
 
             // ── 4. CLOSE BATTLE — severity 3, orange ────────────────────────────
@@ -129,8 +137,11 @@ namespace K10Motorsports.Plugin.Engine
 
             // ── 5. POSITION GAINED — severity 4, amber ──────────────────────────
             var passedFwd = Base();
-            passedFwd.Position = 3;   // moved up from 4
+            passedFwd.Position   = 3;   // moved up from 4
             passedFwd.CurrentLap = 5;
+            passedFwd.SpeedKmh   = 241.0;  // ~150 mph — DRS straight overtake
+            passedFwd.Throttle   = 1.0;
+            passedFwd.Brake      = 0.0;
             steps.Add(new Step { TopicId = "position_gained", Snapshot = passedFwd, DelaySeconds = 20 });
 
             // ── 6. BRAKE BIAS CHANGE — severity 1, slate grey ───────────────────
@@ -197,8 +208,11 @@ namespace K10Motorsports.Plugin.Engine
             // ── 11. SPIN CATCH — severity 5, red ─────────────────────────────────
             // Second major interrupt — fires while ABS (sev 1) is still on screen.
             var spin = Base();
-            spin.YawRate   = 3.1;
+            spin.YawRate    = 3.1;
             spin.CurrentLap = 12;
+            spin.SpeedKmh   = 25.0;   // ~16 mph — slow-speed spin recovery
+            spin.Throttle   = 0.0;
+            spin.Brake      = 0.60;
             steps.Add(new Step
             {
                 TopicId = "spin_catch", Snapshot = spin,
@@ -223,6 +237,9 @@ namespace K10Motorsports.Plugin.Engine
             pitEntry.IsInPitLane = true;
             pitEntry.CurrentLap  = 15;
             pitEntry.FuelPercent = 0.22;
+            pitEntry.SpeedKmh   = 60.0;   // ~37 mph — pit lane speed limit
+            pitEntry.Throttle   = 0.20;
+            pitEntry.Brake      = 0.15;
             steps.Add(new Step { TopicId = "pit_entry", Snapshot = pitEntry, DelaySeconds = 22 });
 
             // ── 16. ABS SETTING CHANGE — severity 1, slate grey ─────────────────
