@@ -74,7 +74,7 @@ async function main() {
   if (fs.existsSync(migrationPath)) {
     console.log('Running track_maps migration...')
     const migrationSql = fs.readFileSync(migrationPath, 'utf-8')
-    await sql(migrationSql)
+    await sql.query(migrationSql, [])
     console.log('Migration applied (or table already exists).\n')
   }
 
