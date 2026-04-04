@@ -67,13 +67,13 @@ export async function GET(request: NextRequest) {
     missing = missing.filter(b => b.brandName.toLowerCase().includes(q) || b.brandKey.toLowerCase().includes(q))
   }
 
-  // Strip raw SVG/PNG from list view (send only metadata)
+  // Include SVG for preview (PNG excluded to keep response size reasonable)
   const logosForList = logos.map(l => ({
     id: l.id,
     brandKey: l.brandKey,
     brandName: l.brandName,
     brandColorHex: l.brandColorHex,
-    hasSvg: !!l.logoSvg,
+    logoSvg: l.logoSvg,
     hasPng: !!l.logoPng,
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,

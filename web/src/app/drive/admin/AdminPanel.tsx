@@ -28,7 +28,7 @@ interface LogoEntry {
   brandKey: string
   brandName: string
   brandColorHex: string | null
-  hasSvg: boolean
+  logoSvg: string | null
   hasPng: boolean
   createdAt: string
   updatedAt: string
@@ -319,9 +319,16 @@ function LogoCard({ logo, onDelete, onUpdate }: { logo: LogoEntry; onDelete: (k:
         className="rounded border border-[var(--border-subtle)] p-3 mb-2 flex items-center justify-center h-16"
         style={{ background: logo.brandColorHex || 'var(--bg-panel)' }}
       >
-        <span className="text-white text-xs font-bold uppercase tracking-wider opacity-60">
-          {logo.hasSvg ? 'SVG' : ''}{logo.hasSvg && logo.hasPng ? ' + ' : ''}{logo.hasPng ? 'PNG' : ''}
-        </span>
+        {logo.logoSvg ? (
+          <div
+            className="h-full w-full flex items-center justify-center [&_svg]:max-h-full [&_svg]:max-w-full [&_svg]:h-10 [&_svg]:w-auto"
+            dangerouslySetInnerHTML={{ __html: logo.logoSvg }}
+          />
+        ) : (
+          <span className="text-white text-xs font-bold uppercase tracking-wider opacity-60">
+            {logo.hasPng ? 'PNG' : 'No logo'}
+          </span>
+        )}
       </div>
 
       {/* Color editor */}
