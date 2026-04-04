@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     brandColorHex: l.brandColorHex,
     logoSvg: l.logoSvg,
     hasPng: !!l.logoPng,
+    games: brandGameMap.get(l.brandKey) || [],
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,
   }))
@@ -168,14 +169,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── PATCH /api/admin/logos — Update brand color or name ──
+// ── PATCH /api/admin/logos — Update brand color, name, or clear artwork ──
 export async function PATCH(request: NextRequest) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await request.json()
-    const { brandKey, brandName, brandColorHex } = body
+    const { brandKey, brandName, brandColorHex, clearLogo } = body
 
     if (!brandKey) {
       return NextResponse.json({ error: 'brandKey is required' }, { status: 400 })
@@ -188,6 +189,10 @@ export async function PATCH(request: NextRequest) {
     const updateData: Record<string, unknown> = { updatedAt: new Date() }
     if (brandName) updateData.brandName = brandName.trim()
     if (brandColorHex !== undefined) updateData.brandColorHex = brandColorHex || null
+    if (clearLogo === true) {
+      updateData.logoSvg = null
+      updateData.logoPng = null
+    }
 
     const updated = await db
       .update(schema.carLogos)

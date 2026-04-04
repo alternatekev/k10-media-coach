@@ -64,6 +64,7 @@ export const trackMaps = pgTable('track_maps', {
   contributorId: uuid('contributor_id').references(() => users.id, { onDelete: 'set null' }),
   gameName: varchar('game_name', { length: 64 }).default('iracing'),
   trackLengthKm: doublePrecision('track_length_km'),
+  sectorCount: integer('sector_count').default(3).notNull(),
   svgPreview: text('svg_preview'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

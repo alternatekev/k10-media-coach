@@ -69,10 +69,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure minimum font size across all text elements */
-* {
-  font-size: max(16px, 100%);
-}
+/* Note: previously had `* { font-size: max(16px, 100%); }` here but it
+   overrode every Tailwind size class (text-xs, text-sm, text-[10px], etc.)
+   making all fonts ~20% too large. Removed — the 16px base on html/body
+   is sufficient for accessible default sizing. */
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

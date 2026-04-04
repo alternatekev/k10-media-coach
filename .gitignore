@@ -15,7 +15,7 @@ dist/
 
 # ── Logs ────────────────────────────────────────────────────────────
 *.log
-logs/
+/logs/
 
 # ── SimHub reference DLLs (plugin SDK — committed for CI builds)
 # lib/simhub-refs/*.dll

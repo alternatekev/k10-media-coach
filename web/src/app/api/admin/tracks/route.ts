@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
       pointCount: schema.trackMaps.pointCount,
       gameName: schema.trackMaps.gameName,
       trackLengthKm: schema.trackMaps.trackLengthKm,
+      sectorCount: schema.trackMaps.sectorCount,
       createdAt: schema.trackMaps.createdAt,
       updatedAt: schema.trackMaps.updatedAt,
     })
@@ -161,29 +162,34 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** PATCH /api/admin/tracks — Update track display name */
+/** PATCH /api/admin/tracks — Update track display name and/or sector count */
 export async function PATCH(request: NextRequest) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await request.json()
-    const { trackId, displayName } = body
+    const { trackId, displayName, sectorCount } = body
 
     if (!trackId) {
       return NextResponse.json({ error: 'trackId required' }, { status: 400 })
     }
 
+    if (sectorCount !== undefined && sectorCount !== 3 && sectorCount !== 7) {
+      return NextResponse.json({ error: 'sectorCount must be 3 or 7' }, { status: 400 })
+    }
+
     const normalizedId = trackId.toLowerCase().trim()
+
+    const updateData: Record<string, unknown> = { updatedAt: new Date() }
+    if (displayName !== undefined) updateData.displayName = displayName?.trim() || null
+    if (sectorCount !== undefined) updateData.sectorCount = sectorCount
 
     const updated = await db
       .update(schema.trackMaps)
-      .set({
-        displayName: displayName?.trim() || null,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(schema.trackMaps.trackId, normalizedId))
-      .returning({ id: schema.trackMaps.id, trackId: schema.trackMaps.trackId, displayName: schema.trackMaps.displayName })
+      .returning({ id: schema.trackMaps.id, trackId: schema.trackMaps.trackId, displayName: schema.trackMaps.displayName, sectorCount: schema.trackMaps.sectorCount })
 
     if (updated.length === 0) {
       return NextResponse.json({ error: 'Track map not found' }, { status: 404 })
