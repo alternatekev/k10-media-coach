@@ -216,7 +216,8 @@ end;
 // Note: We're cleaning up K10Motorsports → RaceCorProDrive migration.
 procedure CleanLegacyPluginConfig();
 var
-  ConfigPath, Content, UpperContent: String;
+  ConfigPath, UpperContent: String;
+  Content: AnsiString;
   StartPos, EndPos, BraceDepth, I: Integer;
 begin
   ConfigPath := SimHubDir + '\PluginsConfiguration.json';
