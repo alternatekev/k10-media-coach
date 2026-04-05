@@ -181,7 +181,7 @@ function TrackCard({ track, onDelete, deleting, onUpdate }: {
 
       {/* Display name editor */}
       <div className="mb-3">
-        <label className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Display Name</label>
+        <label className="text-[14px] uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Display Name</label>
         <div className="flex gap-1.5">
           <input
             type="text"
@@ -194,18 +194,18 @@ function TrackCard({ track, onDelete, deleting, onUpdate }: {
             <button
               onClick={saveDisplayName}
               disabled={saving}
-              className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-wide bg-[var(--k10-red)] text-white rounded hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shrink-0"
+              className="px-2 py-1.5 text-[14px] font-medium uppercase tracking-wide bg-[var(--k10-red)] text-white rounded hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shrink-0"
             >
               {saving ? '...' : 'Save'}
             </button>
           )}
-          {saved && <span className="text-[10px] text-[var(--green)] self-center shrink-0">Saved</span>}
+          {saved && <span className="text-[14px] text-[var(--green)] self-center shrink-0">Saved</span>}
         </div>
       </div>
 
       {/* Expanded sectors toggle */}
       <div className="mb-3">
-        <label className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Expanded Sectors</label>
+        <label className="text-[14px] uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Expanded Sectors</label>
         <button
           onClick={toggleSectors}
           disabled={savingSectors}

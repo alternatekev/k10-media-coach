@@ -74,17 +74,17 @@ function VideoCard({ video }: { video: YouTubeVideo }) {
           loading="lazy"
         />
         {video.duration && !isShort && (
-          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono font-semibold">
+          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[14px] font-mono font-semibold">
             {formatDuration(video.duration)}
           </span>
         )}
         {video.type === 'live' && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[10px] font-bold uppercase">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[14px] font-bold uppercase">
             LIVE
           </span>
         )}
         {isShort && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[10px] font-bold uppercase">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[var(--k10-red)] text-[14px] font-bold uppercase">
             Short
           </span>
         )}
@@ -93,7 +93,7 @@ function VideoCard({ video }: { video: YouTubeVideo }) {
         <h3 className="text-sm font-semibold leading-tight line-clamp-2 text-[var(--text)] group-hover:text-[var(--k10-red)] transition-colors">
           {video.title}
         </h3>
-        <div className="mt-1.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+        <div className="mt-1.5 flex items-center gap-2 text-[14px] text-[var(--text-muted)]">
           {video.viewCount && <span>{formatViews(video.viewCount)} views</span>}
           <span>{formatRelativeTime(video.publishedAt)}</span>
         </div>

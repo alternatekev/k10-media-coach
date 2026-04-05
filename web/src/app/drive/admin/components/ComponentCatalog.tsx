@@ -103,7 +103,7 @@ const components: ComponentEntry[] = [
         ].map(c => (
           <div key={c.title} className="border border-[var(--border)] rounded bg-[var(--bg-surface)] p-3">
             <div className="flex justify-between items-baseline">
-              <span className="text-[10px] font-bold text-[var(--k10-red)] uppercase">{c.title}</span>
+              <span className="text-[14px] font-bold text-[var(--k10-red)] uppercase">{c.title}</span>
               <span className="text-sm font-bold text-[var(--text-dim)] tabular-nums">{c.count}</span>
             </div>
             <div className="mt-2 flex gap-1">
@@ -132,8 +132,8 @@ const components: ComponentEntry[] = [
           <h3 className="text-lg font-bold text-[var(--text)] mb-1">Spa-Francorchamps</h3>
           <div className="flex gap-2 items-center">
             <GameBadge game="iracing" />
-            <span className="text-[10px] text-[var(--text-muted)]">7.004 km</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-dim)] border border-[var(--border-subtle)]">3 sectors</span>
+            <span className="text-[14px] text-[var(--text-muted)]">7.004 km</span>
+            <span className="text-[14px] px-1.5 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-dim)] border border-[var(--border-subtle)]">3 sectors</span>
           </div>
         </div>
       </div>
@@ -176,7 +176,7 @@ const components: ComponentEntry[] = [
         </div>
         <div>
           <h3 className="text-sm font-medium text-[var(--text-muted)]">Genesis</h3>
-          <span className="text-[10px] text-[var(--text-muted)]">Upload SVG or PNG</span>
+          <span className="text-[14px] text-[var(--text-muted)]">Upload SVG or PNG</span>
         </div>
       </div>
     ),
@@ -188,7 +188,7 @@ const components: ComponentEntry[] = [
     category: 'admin',
     description: 'Tab navigation with active route highlighting. Left-aligned data pages, right-aligned tool pages.',
     preview: () => (
-      <div className="flex items-center border-b border-[var(--border)] text-[10px]">
+      <div className="flex items-center border-b border-[var(--border)] text-[14px]">
         <div className="flex">
           {['Overview', 'Tracks', 'Brands', 'Users', 'Logs'].map((l, i) => (
             <span key={l} className={`px-3 py-1.5 font-medium uppercase border-b-2 -mb-[1px] ${i === 0 ? 'text-[var(--k10-red)] border-[var(--k10-red)]' : 'text-[var(--text-muted)] border-transparent'}`}>{l}</span>
@@ -246,11 +246,11 @@ const components: ComponentEntry[] = [
           <div className="flex justify-between items-start mb-2">
             <div>
               <h4 className="text-sm font-bold text-[var(--text)]">Spa-Francorchamps</h4>
-              <span className="text-[10px] text-[var(--text-muted)]">BMW M4 GT3 · Race</span>
+              <span className="text-[14px] text-[var(--text-muted)]">BMW M4 GT3 · Race</span>
             </div>
             <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">P2</span>
           </div>
-          <div className="flex gap-4 text-[10px] text-[var(--text-dim)]">
+          <div className="flex gap-4 text-[14px] text-[var(--text-dim)]">
             <span>2:18.435</span>
             <span>4x incidents</span>
             <IRatingSparkline values={[1900, 1920, 1950, 1970]} />
@@ -273,7 +273,7 @@ const components: ComponentEntry[] = [
             <span className="text-[8px] text-[var(--text-muted)]">LOGO</span>
           </div>
           <input className="flex-1 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded px-2 py-1 text-xs text-[var(--text)] placeholder:text-[var(--text-muted)]" placeholder="https://example.com/logo.png" readOnly />
-          <button className="text-[10px] text-[var(--k10-red)] px-2 py-1 rounded border border-[var(--border-subtle)]">Reset</button>
+          <button className="text-[14px] text-[var(--k10-red)] px-2 py-1 rounded border border-[var(--border-subtle)]">Reset</button>
         </div>
       </div>
     ),
@@ -312,7 +312,7 @@ const components: ComponentEntry[] = [
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-[var(--green)]" />
           <span className="text-xs text-[var(--text)]">Connected</span>
-          <span className="text-[10px] text-[var(--text-muted)] ml-auto font-mono">12ms</span>
+          <span className="text-[14px] text-[var(--text-muted)] ml-auto font-mono">12ms</span>
         </div>
         <div className="grid grid-cols-4 gap-1">
           {[{ l: 'GEAR', v: '4' }, { l: 'SPD', v: '142' }, { l: 'RPM', v: '7842' }, { l: 'POS', v: 'P3' }].map(c => (
@@ -336,9 +336,9 @@ const components: ComponentEntry[] = [
         <div className="w-12 h-12 rounded-full bg-[var(--k10-red)] flex items-center justify-center text-white font-bold text-lg">K</div>
         <div className="flex-1">
           <h4 className="text-sm font-bold text-[var(--text)]">K10 Motorsports</h4>
-          <span className="text-[10px] text-[var(--text-muted)]">2.4K subscribers · 89 videos</span>
+          <span className="text-[14px] text-[var(--text-muted)]">2.4K subscribers · 89 videos</span>
         </div>
-        <button className="text-[10px] font-bold bg-[var(--k10-red)] text-white px-3 py-1 rounded">Subscribe</button>
+        <button className="text-[14px] font-bold bg-[var(--k10-red)] text-white px-3 py-1 rounded">Subscribe</button>
       </div>
     ),
   },
@@ -694,7 +694,7 @@ const components: ComponentEntry[] = [
           ].map(t => (
             <div key={t.pos} className="bg-white/5 rounded p-1.5 text-center">
               <div className="text-[7px] text-white/45">{t.pos}</div>
-              <div className="text-[10px] font-mono font-bold" style={{ color: t.color }}>{t.wear}%</div>
+              <div className="text-[14px] font-mono font-bold" style={{ color: t.color }}>{t.wear}%</div>
               <div className="text-[7px] font-mono text-white/55">{t.temp}°C</div>
             </div>
           ))}
@@ -737,7 +737,7 @@ const components: ComponentEntry[] = [
         </div>
         <div className="p-3">
           <div className="text-[8px] uppercase tracking-wider mb-1" style={{ color: 'hsla(200, 60%, 60%, 0.8)' }}>Speed Analysis</div>
-          <div className="text-[10px] text-white/80 leading-relaxed">Top speed through speed trap: 287 km/h — 4 km/h faster than the field average.</div>
+          <div className="text-[14px] text-white/80 leading-relaxed">Top speed through speed trap: 287 km/h — 4 km/h faster than the field average.</div>
         </div>
       </div>
     ),
@@ -825,7 +825,7 @@ const components: ComponentEntry[] = [
         }} />
         <div className="relative text-center">
           <div className="text-[8px] text-white/45 uppercase tracking-wider">WebGL Post-Processing</div>
-          <div className="text-[10px] text-white/60 mt-1">Bloom · Glow · Ambient Light</div>
+          <div className="text-[14px] text-white/60 mt-1">Bloom · Glow · Ambient Light</div>
           <div className="flex justify-center gap-3 mt-2">
             {['R: 80', 'G: 100', 'B: 140'].map(c => (
               <span key={c} className="text-[7px] font-mono text-white/35">{c}</span>
@@ -855,7 +855,7 @@ const categoryMeta: Record<Category, { label: string; color: string }> = {
 
 function PlatformBadge({ platform }: { platform: Platform }) {
   return (
-    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+    <span className={`text-[14px] font-mono px-1.5 py-0.5 rounded ${
       platform === 'web' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
     }`}>
       {platform === 'web' ? 'React' : 'Web Component'}
@@ -865,7 +865,7 @@ function PlatformBadge({ platform }: { platform: Platform }) {
 
 function CategoryBadge({ category }: { category: Category }) {
   const meta = categoryMeta[category]
-  return <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${meta.color}`}>{meta.label}</span>
+  return <span className={`text-[14px] font-mono px-1.5 py-0.5 rounded ${meta.color}`}>{meta.label}</span>
 }
 
 function ComponentCard({ entry }: { entry: ComponentEntry }) {
@@ -895,7 +895,7 @@ function ComponentCard({ entry }: { entry: ComponentEntry }) {
         <div className="flex items-center justify-between">
           <code className="text-[9px] text-[var(--text-muted)] font-mono truncate">{entry.file}</code>
           {storyUrl && (
-            <a href={storyUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-medium text-[var(--purple)] hover:underline ml-3 shrink-0">
+            <a href={storyUrl} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[var(--purple)] hover:underline ml-3 shrink-0">
               Storybook ↗
             </a>
           )}
@@ -939,7 +939,7 @@ export default function ComponentCatalog() {
             <button key={tab.id} onClick={() => setFilter(tab.id)} className={`px-4 py-2 text-sm font-medium tracking-wide uppercase transition-colors border-b-2 -mb-[1px] ${
               filter === tab.id ? 'text-[var(--text)] border-[var(--text)]' : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-dim)]'
             }`}>
-              {tab.label} <span className="text-[10px] text-[var(--text-muted)] ml-1">{tab.count}</span>
+              {tab.label} <span className="text-[14px] text-[var(--text-muted)] ml-1">{tab.count}</span>
             </button>
           ))}
         </div>

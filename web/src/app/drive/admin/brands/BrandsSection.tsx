@@ -51,7 +51,7 @@ function LogoCard({ logo, onDelete, onUpdate }: { logo: LogoEntry; onDelete: (k:
       <div className="flex justify-between items-start mb-2">
         <div className="min-w-0">
           <h3 className="text-2xl font-bold text-[var(--text)] truncate">{logo.brandName}</h3>
-          <p className="text-[10px] text-[var(--text-muted)] font-mono">{logo.brandKey}</p>
+          <p className="text-[14px] text-[var(--text-muted)] font-mono">{logo.brandKey}</p>
         </div>
         <div className="flex gap-1 shrink-0 ml-2">
           {logo.games?.map(g => <GameBadge key={g} game={g} />)}
@@ -111,12 +111,12 @@ function LogoCard({ logo, onDelete, onUpdate }: { logo: LogoEntry; onDelete: (k:
       <button
         onClick={clearLogo}
         disabled={saving}
-        className="w-full text-[10px] text-red-400 hover:text-red-300 transition-colors cursor-pointer disabled:opacity-50 mb-2"
+        className="w-full text-[14px] text-red-400 hover:text-red-300 transition-colors cursor-pointer disabled:opacity-50 mb-2"
       >
         {saving ? '...' : 'Clear Logo'}
       </button>
 
-      <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+      <div className="flex justify-between text-[14px] text-[var(--text-muted)]">
         <span>{new Date(logo.createdAt).toLocaleDateString()}</span>
       </div>
     </div>
@@ -183,7 +183,7 @@ function MissingLogoCard({ brand, onUploaded }: { brand: MissingBrand; onUploade
       <div className="flex justify-between items-start mb-2">
         <div className="min-w-0">
           <h3 className="text-2xl font-bold text-[var(--text)] truncate">{brand.brandName}</h3>
-          <p className="text-[10px] text-[var(--text-muted)] font-mono">{brand.brandKey}</p>
+          <p className="text-[14px] text-[var(--text-muted)] font-mono">{brand.brandKey}</p>
         </div>
         <div className="flex gap-1 shrink-0 ml-2">
           {brand.games.map(g => <GameBadge key={g} game={g} />)}
@@ -214,7 +214,7 @@ function MissingLogoCard({ brand, onUploaded }: { brand: MissingBrand; onUploade
         {uploading ? 'Uploading...' : 'Upload Logo'}
       </button>
       {result && (
-        <p className={`text-[10px] mt-1 ${result.ok ? 'text-[var(--green)]' : 'text-red-400'}`}>{result.message}</p>
+        <p className={`text-[14px] mt-1 ${result.ok ? 'text-[var(--green)]' : 'text-red-400'}`}>{result.message}</p>
       )}
     </div>
   )

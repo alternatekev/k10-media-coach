@@ -95,7 +95,7 @@ function TrackMultiples({ tracks }: { tracks: TrackPreview[] }) {
       ))}
       {tracks.length > 10 && (
         <div className="w-10 h-10 shrink-0 rounded bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center">
-          <span className="text-[10px] text-[var(--text-muted)] font-mono">+{tracks.length - 10}</span>
+          <span className="text-[14px] text-[var(--text-muted)] font-mono">+{tracks.length - 10}</span>
         </div>
       )}
     </div>
@@ -126,7 +126,7 @@ function LogoMultiples({ logos }: { logos: LogoPreview[] }) {
       ))}
       {logos.length > 10 && (
         <div className="w-10 h-10 shrink-0 rounded-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center">
-          <span className="text-[10px] text-[var(--text-muted)] font-mono">+{logos.length - 10}</span>
+          <span className="text-[14px] text-[var(--text-muted)] font-mono">+{logos.length - 10}</span>
         </div>
       )}
     </div>
@@ -151,7 +151,7 @@ function UserMultiples({ users }: { users: UserPreview[] }) {
             />
           ) : (
             <div className="w-full h-full bg-[var(--bg-panel)] flex items-center justify-center">
-              <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase">
+              <span className="text-[14px] text-[var(--text-muted)] font-bold uppercase">
                 {(u.discordDisplayName || u.discordUsername || '?').slice(0, 1)}
               </span>
             </div>
@@ -160,7 +160,7 @@ function UserMultiples({ users }: { users: UserPreview[] }) {
       ))}
       {users.length > 12 && (
         <div className="w-9 h-9 shrink-0 rounded-full border-2 border-[var(--bg-surface)] bg-[var(--bg-panel)] flex items-center justify-center">
-          <span className="text-[10px] text-[var(--text-muted)] font-mono">+{users.length - 12}</span>
+          <span className="text-[14px] text-[var(--text-muted)] font-mono">+{users.length - 12}</span>
         </div>
       )}
     </div>
@@ -187,7 +187,7 @@ function LogsMultiples({ stats }: { stats: LogStats | null }) {
         <span className="text-xs text-[var(--text-dim)] font-mono tabular-nums w-10 text-right">{pct}%</span>
       </div>
       {/* Stats row */}
-      <div className="flex gap-3 text-[10px] text-[var(--text-muted)]">
+      <div className="flex gap-3 text-[14px] text-[var(--text-muted)]">
         <span><strong className="text-[var(--green)]">{stats.successful}</strong> ok</span>
         {stats.failed > 0 && <span><strong className="text-red-400">{stats.failed}</strong> failed</span>}
         <span>{stats.avgDuration}ms avg</span>
@@ -197,7 +197,7 @@ function LogsMultiples({ stats }: { stats: LogStats | null }) {
 }
 
 function EmptyRow({ label }: { label: string }) {
-  return <p className="text-[10px] text-[var(--text-muted)] italic">{label}</p>
+  return <p className="text-[14px] text-[var(--text-muted)] italic">{label}</p>
 }
 
 interface HeroData {

@@ -148,7 +148,7 @@ function FontPreview({ value, name }: { value: string; name: string }) {
       >
         {sampleText}
       </span>
-      <code className="text-[10px] text-[var(--text-muted)] font-mono break-all">{value}</code>
+      <code className="text-[14px] text-[var(--text-muted)] font-mono break-all">{value}</code>
     </div>
   )
 }
@@ -214,7 +214,7 @@ function ContextBadge({ context }: { context: string }) {
     shared: 'bg-green-500/20 text-green-400',
   }
   return (
-    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${colors[context] || ''}`}>
+    <span className={`text-[14px] font-mono px-1.5 py-0.5 rounded ${colors[context] || ''}`}>
       {context}
     </span>
   )
@@ -244,7 +244,7 @@ function TokenTable({ tokens, title }: { tokens: Token[]; title: string }) {
       <div className="border border-[var(--border)] rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-[var(--bg-panel)] text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+            <tr className="bg-[var(--bg-panel)] text-[14px] text-[var(--text-muted)] uppercase tracking-wider">
               <th className="text-left px-4 py-2 font-medium">Token</th>
               <th className="text-left px-4 py-2 font-medium">Preview</th>
               <th className="text-left px-4 py-2 font-medium">Context</th>
@@ -260,7 +260,7 @@ function TokenTable({ tokens, title }: { tokens: Token[]; title: string }) {
                 <td className="px-4 py-3">
                   <code className="text-sm text-[var(--text)] font-mono">{token.name}</code>
                   {token.wcag && (
-                    <span className="ml-2 text-[10px] text-[var(--text-muted)] font-mono">{token.wcag}</span>
+                    <span className="ml-2 text-[14px] text-[var(--text-muted)] font-mono">{token.wcag}</span>
                   )}
                 </td>
                 <td className="px-4 py-3">

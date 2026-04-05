@@ -50,11 +50,11 @@ export function TelemetryStatus() {
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
         <div className="flex items-center gap-2">
           <span className={`inline-block w-2 h-2 rounded-full ${dotColor} ${status === 'live' ? 'animate-pulse' : ''}`} />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-dim)]">
+          <span className="text-[14px] font-bold uppercase tracking-widest text-[var(--text-dim)]">
             Telemetry {statusLabel}
           </span>
         </div>
-        <span className="text-[10px] font-mono text-[var(--text-muted)]">
+        <span className="text-[14px] font-mono text-[var(--text-muted)]">
           {latencyMs}ms
         </span>
       </div>
@@ -67,7 +67,7 @@ export function TelemetryStatus() {
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
               {track}
             </span>
-            <span className="text-[10px] text-[var(--text-muted)]">
+            <span className="text-[14px] text-[var(--text-muted)]">
               {car}
             </span>
           </div>

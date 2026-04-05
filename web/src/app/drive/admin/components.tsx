@@ -123,7 +123,7 @@ export function GameBadge({ game }: { game: string }) {
     acc: 'bg-green-500/20 text-green-400',
   }
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${colors[game] || 'bg-gray-500/20 text-gray-400'}`}>
+    <span className={`text-[14px] px-1.5 py-0.5 rounded font-medium uppercase ${colors[game] || 'bg-gray-500/20 text-gray-400'}`}>
       {game}
     </span>
   )
