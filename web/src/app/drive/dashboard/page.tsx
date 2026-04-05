@@ -7,6 +7,7 @@ import { and, eq, gt, desc } from 'drizzle-orm'
 import { Download, LogOut, BarChart3, Trophy, Shield, Car, Settings } from 'lucide-react'
 import RaceCard from './RaceCard'
 import { getCarImage, getTrackImage } from '@/lib/commentary-images'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -115,6 +116,7 @@ export default async function DashboardPage() {
             {avatar && <img src={avatar} alt="" className="w-7 h-7 rounded-full" />}
             <span className="text-sm text-[var(--text-secondary)]">{displayName}</span>
           </div>
+          <ThemeToggle />
           {isAdmin(discordId) && (
             <a
               href="/drive/admin"

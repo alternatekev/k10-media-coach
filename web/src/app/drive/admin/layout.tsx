@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { requireAdmin } from '@/lib/admin'
 import AdminNav from './AdminNav'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export const metadata = {
   title: 'Admin — RaceCor.io Pro Drive',
@@ -26,7 +27,8 @@ export default async function AdminLayout({
           <span className="text-[var(--border)]">/</span>
           <span className="text-sm font-bold tracking-wider uppercase text-[var(--k10-red)]">Admin</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           {session.user?.image && <img src={session.user.image} alt="" className="w-6 h-6 rounded-full" />}
           <span className="text-xs text-[var(--text-muted)]">{user.discordDisplayName as string}</span>
         </div>
