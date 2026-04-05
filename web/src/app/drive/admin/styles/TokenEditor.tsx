@@ -449,6 +449,20 @@ export default function TokenEditor() {
     }
   }, [])
 
+  // Listen for theme-set-change from the header selector
+  useEffect(() => {
+    const onSetChange = (e: Event) => {
+      const slug = (e as CustomEvent).detail?.slug
+      if (slug && slug !== activeSetSlug) setActiveSetSlug(slug)
+    }
+    window.addEventListener('theme-set-change', onSetChange)
+    // Also read cookie on mount
+    const match = document.cookie.match(/racecor-theme-set=([^;]+)/)
+    if (match && match[1] !== activeSetSlug) setActiveSetSlug(match[1])
+
+    return () => window.removeEventListener('theme-set-change', onSetChange)
+  }, [activeSetSlug])
+
   // Fetch tokens on mount and when set changes
   useEffect(() => {
     fetchTokens()
@@ -742,33 +756,21 @@ export default function TokenEditor() {
         </div>
       </div>
 
-      {/* Theme Set + Theme Indicator — full width */}
-      <div className="mb-6 p-3 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Set:
-          </label>
-          <select
-            value={activeSetSlug}
-            onChange={(e) => setActiveSetSlug(e.target.value)}
-            className="px-3 py-1.5 text-sm bg-[var(--bg)] text-[var(--text)] border border-[var(--border)] rounded-md"
-          >
-            {themeSets.map((s) => (
-              <option key={s.slug} value={s.slug}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="h-6 w-px bg-[var(--border)]" />
-        <div>
-          <p className="text-sm font-semibold text-[var(--text)]">
-            Editing {editingTheme === 'dark' ? 'Dark' : 'Light'} Theme
-            {activeSetSlug !== 'default' && editingTheme === 'dark' && (
-              <span className="text-xs text-[var(--text-muted)] ml-2 font-normal">
-                (dark overrides on top of base tokens)
-              </span>
-            )}
+      {/* Theme Indicator — full width */}
+      <div className="mb-6 p-3 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] flex items-center gap-3">
+        <p className="text-sm font-semibold text-[var(--text)]">
+          {themeSets.find((s) => s.slug === activeSetSlug)?.name || activeSetSlug}
+          {' / '}
+          {editingTheme === 'dark' ? 'Dark' : 'Light'}
+          {activeSetSlug !== 'default' && editingTheme === 'dark' && (
+            <span className="text-xs text-[var(--text-muted)] ml-2 font-normal">
+              (dark overrides on top of base tokens)
+            </span>
+          )}
+        </p>
+        {editingTheme === 'light' && (
+          <p className="text-xs text-[var(--text-muted)]">
+            Light values override the resolved dark. Small text shows the dark value for reference.
           </p>
           {editingTheme === 'light' && (
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
@@ -926,7 +928,7 @@ export default function TokenEditor() {
 
         {/* Right: Live Preview (2/3 width) */}
         <div
-          className="w-8/12 min-w-0 sticky top-6 overflow-y-auto rounded-lg border-2 border-dashed border-[var(--border-accent)] bg-[var(--bg-surface)] p-6"
+          className="w-8/12 min-w-0 sticky top-6 overflow-y-auto rounded-lg border-2 border-solid border-[var(--border-accent)] bg-[var(--bg-surface)] p-6"
           style={{ maxHeight: 'calc(100vh - 260px)' }}
         >
           <PreviewPanel />
