@@ -22,7 +22,7 @@ namespace RaceCorProDrive.Plugin
         public PluginManager PluginManager { get; set; }
 
         public ImageSource PictureIcon => new BitmapImage(new Uri(
-            "pack://application:,,,/RaceCorProDrive.Plugin;component/icon.png"));
+            "pack://application:,,,/RaceCorProDrive;component/icon.png"));
         public string LeftMenuTitle => "RaceCor.io Pro Drive";
 
 #if CROSS_PLATFORM

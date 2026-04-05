@@ -64,24 +64,24 @@ set "PLUGIN_DIR=%REPO_DIR%\racecor-plugin"
 
 echo  [1/3] Exporting plugin binaries...
 
-if exist "%SIMHUB_DIR%\RaceCor-ioProDrive.dll" (
-    copy /Y "%SIMHUB_DIR%\RaceCor-ioProDrive.dll" "%PLUGIN_DIR%\RaceCor-ioProDrive.dll" >NUL
+if exist "%SIMHUB_DIR%\RaceCorProDrive.dll" (
+    copy /Y "%SIMHUB_DIR%\RaceCorProDrive.dll" "%PLUGIN_DIR%\RaceCorProDrive.dll" >NUL
     if !ERRORLEVEL! NEQ 0 (
         echo        FAILED - could not copy DLL. Is SimHub running?
         goto :error
     )
-    echo        OK - RaceCor-ioProDrive.dll
+    echo        OK - RaceCorProDrive.dll
 ) else (
-    echo        SKIPPED - RaceCor-ioProDrive.dll not found in SimHub directory.
+    echo        SKIPPED - RaceCorProDrive.dll not found in SimHub directory.
     echo        Build the plugin first (dotnet build).
     goto :error
 )
 
-if exist "%SIMHUB_DIR%\RaceCor-ioProDrive.pdb" (
-    copy /Y "%SIMHUB_DIR%\RaceCor-ioProDrive.pdb" "%PLUGIN_DIR%\RaceCor-ioProDrive.pdb" >NUL
-    echo        OK - RaceCor-ioProDrive.pdb
+if exist "%SIMHUB_DIR%\RaceCorProDrive.pdb" (
+    copy /Y "%SIMHUB_DIR%\RaceCorProDrive.pdb" "%PLUGIN_DIR%\RaceCorProDrive.pdb" >NUL
+    echo        OK - RaceCorProDrive.pdb
 ) else (
-    echo        SKIPPED - RaceCor-ioProDrive.pdb not found (Release build?)
+    echo        SKIPPED - RaceCorProDrive.pdb not found (Release build?)
 )
 
 :: -------------------------------------------------------------------
@@ -175,9 +175,9 @@ echo   Export complete.
 echo  ============================================
 echo.
 echo  Exported files:
-echo    %PLUGIN_DIR%\RaceCor-ioProDrive.dll
-if exist "%PLUGIN_DIR%\RaceCor-ioProDrive.pdb" (
-    echo    %PLUGIN_DIR%\RaceCor-ioProDrive.pdb
+echo    %PLUGIN_DIR%\RaceCorProDrive.dll
+if exist "%PLUGIN_DIR%\RaceCorProDrive.pdb" (
+    echo    %PLUGIN_DIR%\RaceCorProDrive.pdb
 )
 echo    %PLUGIN_DIR%\DashTemplates\k10 motorsports\
 echo    %PLUGIN_DIR%\DashTemplates\k10 motorsports\

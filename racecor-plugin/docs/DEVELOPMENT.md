@@ -30,7 +30,7 @@ dotnet build plugin/RaceCorProDrive.Plugin/RaceCorProDrive.Plugin.sln
 ```
 
 The build automatically:
-1. Compiles `RaceCor-ioProDrive.dll` to the SimHub directory
+1. Compiles `RaceCorProDrive.dll` to the SimHub directory
 2. Copies `racecorprodrive-data/` to `SimHub\dataset\` (post-build target `CopyDataset`)
 3. Copies `DashTemplates/` to `SimHub\DashTemplates\` (post-build target `CopyDashboard`)
 
@@ -161,14 +161,14 @@ After building in Visual Studio or via `dotnet build`, the compiled DLL lands in
 **Double-click `export.bat`** in the repository root, or run it from a terminal.
 
 The export tool copies:
-- `RaceCor-ioProDrive.dll` and `.pdb` from SimHub to the repo root
+- `RaceCorProDrive.dll` and `.pdb` from SimHub to the repo root
 - The `DashTemplates/k10 motorsports/` folder from SimHub to the repo (excluding `_Backups/`)
 
 It does **not** copy the `racecorprodrive-data/` folder back — the repo is the source of truth for dataset files. Changes to datasets should be made in the repo and pushed to SimHub via `install.bat` or a rebuild.
 
 ```bash
 # After export, the typical commit flow is:
-git add RaceCor-ioProDrive.dll RaceCor-ioProDrive.pdb DashTemplates/
+git add RaceCorProDrive.dll RaceCorProDrive.pdb DashTemplates/
 git commit -m "Update built plugin and dashboard"
 ```
 

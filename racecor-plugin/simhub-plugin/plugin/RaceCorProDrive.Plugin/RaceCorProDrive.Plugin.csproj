@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <AssemblyName>RaceCor-ioProDrive</AssemblyName>
+    <AssemblyName>RaceCorProDrive</AssemblyName>
     <RootNamespace>RaceCorProDrive.Plugin</RootNamespace>
     <Nullable>disable</Nullable>
     <LangVersion>8.0</LangVersion>
@@ -97,13 +97,13 @@
   </PropertyGroup>
   <Target Name="ExportToRepo" AfterTargets="Build">
     <!-- DLL -->
-    <Copy SourceFiles="$(OutputPath)RaceCor-ioProDrive.dll"
+    <Copy SourceFiles="$(OutputPath)RaceCorProDrive.dll"
           DestinationFolder="$(RepoPluginDir)"
           SkipUnchangedFiles="true" />
     <!-- PDB (Debug builds only) -->
-    <Copy SourceFiles="$(OutputPath)RaceCor-ioProDrive.pdb"
+    <Copy SourceFiles="$(OutputPath)RaceCorProDrive.pdb"
           DestinationFolder="$(RepoPluginDir)"
-          Condition="Exists('$(OutputPath)RaceCor-ioProDrive.pdb')"
+          Condition="Exists('$(OutputPath)RaceCorProDrive.pdb')"
           SkipUnchangedFiles="true" />
   
   </Target>
