@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["lightningcss"],
 
+  // Allow custom dev domains (via /etc/hosts) to access the dev server
+  allowedDevOrigins: [
+    "dev.racecor.io",
+    "prodrive.dev.racecor.io",
+    "dev.k10motorsports.racing",
+  ],
+
   // Allow images from Strapi CMS and YouTube thumbnails
   images: {
     remotePatterns: [

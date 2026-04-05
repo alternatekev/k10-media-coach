@@ -216,7 +216,7 @@ function TrackPhotoHero({ hero, svgPath }: { hero: HeroData; svgPath?: string })
       />
       {/* Track SVG overlay */}
       {svgPath && (
-        <svg viewBox="0 0 100 100" className="absolute inset-0 m-auto w-28 h-28 z-10 drop-shadow-lg opacity-90">
+        <svg viewBox="0 0 100 100" className="absolute inset-0 m-auto w-56 h-56 z-10 drop-shadow-lg opacity-90">
           <path
             d={svgPath}
             fill="none"
@@ -249,11 +249,11 @@ function BrandPhotoHero({ hero, logoSvg, brandColor }: { hero: HeroData; logoSvg
       {/* Logo SVG overlay */}
       {logoSvg ? (
         <div
-          className="absolute inset-0 m-auto w-24 h-24 z-10 flex items-center justify-center drop-shadow-lg opacity-90 [&_svg]:max-h-full [&_svg]:max-w-full [&_svg]:h-20 [&_svg]:w-auto"
+          className="absolute inset-0 m-auto w-56 h-56 z-10 flex items-center justify-center drop-shadow-lg opacity-90 [&_svg]:max-h-full [&_svg]:max-w-full [&_svg]:h-48 [&_svg]:w-auto"
           dangerouslySetInnerHTML={{ __html: logoSvg }}
         />
       ) : (
-        <span className="absolute inset-0 m-auto w-fit h-fit z-10 text-3xl font-bold text-white/60 uppercase drop-shadow-lg">
+        <span className="absolute inset-0 m-auto w-fit h-fit z-10 text-6xl font-bold text-white/60 uppercase drop-shadow-lg">
           {hero.name}
         </span>
       )}
@@ -278,31 +278,9 @@ export default function OverviewCards() {
   const [brandHero, setBrandHero] = useState<HeroData | null>(null)
 
   useEffect(() => {
-    // Fire all fetches concurrently
-    fetch('/api/admin/heroes')
-      .then(r => r.json())
-      .then(d => {
-        if (d.trackHero) setTrackHero(d.trackHero)
-        if (d.brandHero) setBrandHero(d.brandHero)
-      })
-      .catch(() => {})
-
-    fetch('/api/admin/tracks')
-      .then(r => r.json())
-      .then(d => {
-        setTracks(d.tracks || [])
-        setTrackCount(d.total ?? (d.tracks || []).length)
-      })
-      .catch(() => {})
-
-    fetch('/api/admin/logos')
-      .then(r => r.json())
-      .then(d => {
-        setLogos(d.logos || [])
-        setLogoCount(d.total ?? (d.logos || []).length)
-        setMissingCount((d.missing || []).length)
-      })
-      .catch(() => {})
+    // Fetch tracks, logos, users, logs concurrently
+    const tracksP = fetch('/api/admin/tracks').then(r => r.json()).catch(() => ({}))
+    const logosP = fetch('/api/admin/logos').then(r => r.json()).catch(() => ({}))
 
     fetch('/api/admin/users')
       .then(r => r.json())
@@ -313,6 +291,32 @@ export default function OverviewCards() {
       .then(r => r.json())
       .then(d => setLogStats(d.stats || null))
       .catch(() => {})
+
+    // After tracks + logos load, fetch heroes filtered to ones with DB art
+    Promise.all([tracksP, logosP]).then(async ([tracksData, logosData]) => {
+      const t = tracksData.tracks || []
+      const l = logosData.logos || []
+      setTracks(t)
+      setTrackCount(tracksData.total ?? t.length)
+      setLogos(l)
+      setLogoCount(logosData.total ?? l.length)
+      setMissingCount((logosData.missing || []).length)
+
+      // Pass DB IDs so heroes API only picks tracks/brands with art
+      const trackIds = t.filter((tr: TrackPreview) => tr.svgPath).map((tr: TrackPreview) => tr.trackId).join(',')
+      const brandKeys = l.filter((lo: LogoPreview) => lo.logoSvg).map((lo: LogoPreview) => lo.brandKey).join(',')
+      const params = new URLSearchParams()
+      if (trackIds) params.set('trackIds', trackIds)
+      if (brandKeys) params.set('brandKeys', brandKeys)
+
+      fetch(`/api/admin/heroes?${params}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.trackHero) setTrackHero(d.trackHero)
+          if (d.brandHero) setBrandHero(d.brandHero)
+        })
+        .catch(() => {})
+    })
   }, [])
 
   return (
@@ -322,10 +326,12 @@ export default function OverviewCards() {
         title="Track Maps"
         count={trackCount}
         description="Manage track map SVGs, upload new track data from CSV files"
-        hero={trackHero ? <TrackPhotoHero hero={trackHero} svgPath={tracks.find(t => {
+        hero={trackHero ? <TrackPhotoHero hero={trackHero} svgPath={(() => {
           const norm = (s: string) => s.toLowerCase().replace(/[-_ ]+/g, '')
-          return norm(t.trackId).includes(norm(trackHero.key)) || norm(trackHero.key).includes(norm(t.trackId))
-        })?.svgPath} /> : undefined}
+          return tracks.find(t =>
+            norm(t.trackId).includes(norm(trackHero.key)) || norm(trackHero.key).includes(norm(t.trackId))
+          )?.svgPath
+        })()} /> : undefined}
       >
         <TrackMultiples tracks={tracks} />
       </OverviewCard>
