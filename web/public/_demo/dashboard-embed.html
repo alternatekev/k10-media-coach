@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RaceCorProDrive — Dashboard Demo</title>
+<title>K10 Motorsports — Dashboard Demo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Barlow+Semi+Condensed:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
 /* ── modules/styles/base.css ── */
@@ -2210,7 +2210,7 @@
      LEADERBOARD PANEL
      ═══════════════════════════════════════════════ */
   .leaderboard-panel {
-    width: 310px;
+    width: 240px;
     transition: opacity 0.4s ease;
     flex-shrink: 0;
   }
@@ -2236,15 +2236,16 @@
   }
   .lb-row {
     display: grid;
-    grid-template-columns: 22px 1fr 54px 44px 52px;
+    grid-template-columns: 24px 1fr 50px 44px 1fr;
     align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    font-size: 14px;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
     font-variant-numeric: tabular-nums; /* TODO: extract to shared numeric-display class (used 17 times total) */
     border-bottom: 1px solid hsla(0, 0%, 100%, 0.06);
     transition: background 0.3s ease;
     position: relative;
+    min-height: 20px;
   }
   .lb-row:last-child { border-bottom: none; }
   .lb-row.lb-player {
@@ -2281,31 +2282,43 @@
     font-weight: var(--fw-black);
     color: var(--text-dim);
     text-align: center;
-    font-size: 14px;
+    font-size: 12px;
   }
   .lb-row.lb-player .lb-pos { color: var(--cyan); }
   .lb-row.lb-player.lb-p1 .lb-pos { color: hsla(42, 80%, 60%, 1.0); }
   .lb-row.lb-player.lb-ahead .lb-pos { color: hsla(145, 75%, 55%, 1.0); }
   .lb-row.lb-player.lb-behind .lb-pos { color: hsla(0, 75%, 55%, 1.0); }
   .lb-row.lb-player.lb-same .lb-pos { color: hsla(210, 75%, 60%, 1.0); }
+  .lb-brand {
+    display: none;
+  }
+  .lb-brand-icon {
+    display: none;
+  }
+  .lb-brand-icon svg {
+    display: none;
+  }
   .lb-name {
     font-weight: var(--fw-semi);
     color: var(--text-secondary);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
+    min-width: 0;
+    flex: 1;
   }
   .lb-row.lb-player .lb-name { color: var(--text-primary); font-weight: var(--fw-bold); }
   .lb-ir {
-    font-size: 14px;
+    display: none;
+    font-size: 11px;
     color: var(--text-dim);
     text-align: right;
   }
   .lb-gap {
     font-family: var(--ff-mono);
-    font-size: 14px;
+    font-size: 11px;
     text-align: right;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.03em;
   }
   .lb-gap.gap-ahead { color: var(--green); }
@@ -2313,15 +2326,16 @@
   .lb-gap.gap-player { color: var(--cyan); }
   .lb-lap {
     font-family: var(--ff-mono);
-    font-size: 14px;
+    font-size: 12px;
     text-align: right;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-dim);
     letter-spacing: -0.03em;
   }
-  .lb-lap.lap-pb { color: hsla(270, 80%, 65%, 1.0); }
-  .lb-lap.lap-fast { color: var(--green); }
+  .lb-lap.lap-pb { color: hsla(270, 80%, 65%, 1.0); font-weight: 700; }
+  .lb-lap.lap-fast { color: hsla(145, 75%, 50%, 1.0); }
   .lb-lap.lap-slow { color: hsla(45, 90%, 55%, 1.0); }
+  .lb-lap.lap-invalid { color: hsla(0, 70%, 55%, 1.0); }
   /* WebGL player highlight canvas */
   .lb-gl {
     position: absolute;
@@ -2336,12 +2350,11 @@
   .lb-inner { position: relative; }
   /* Sparkline canvas */
   .lb-spark {
-    position: absolute;
-    right: 10px;
-    bottom: 0;
-    width: 48px;
-    height: 16px;
-    opacity: 0.5;
+    width: 100%;
+    height: 12px;
+    opacity: 0.6;
+    min-width: 44px;
+    grid-column: 5;
   }
 
   /* ═══════════════════════════════════════════════
@@ -2611,6 +2624,175 @@
     margin-left: 4px;
     opacity: 0.5;
     vertical-align: -1px;
+  }
+
+
+  /* ── Debug Consoles ─────────────────────────────────────────────── */
+  .debug-console-wrapper {
+    margin-top: 12px;
+    background: #0a0a0a;
+    border: 1px solid hsla(0,0%,100%,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .debug-console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: hsla(0,0%,100%,0.03);
+    border-bottom: 1px solid hsla(0,0%,100%,0.05);
+    gap: 10px;
+  }
+
+  .debug-console-title {
+    font-family: 'JetBrains Mono', 'Monaco', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: hsla(120,100%,70%,0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+  }
+
+  .debug-console-clear-btn {
+    padding: 4px 10px;
+    background: hsla(0,0%,100%,0.06);
+    border: 1px solid hsla(0,0%,100%,0.1);
+    border-radius: 4px;
+    color: hsla(0,0%,100%,0.5);
+    font-family: 'JetBrains Mono', 'Monaco', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .debug-console-clear-btn:hover {
+    background: hsla(0,0%,100%,0.1);
+    color: hsla(0,0%,100%,0.7);
+  }
+
+  .debug-console-clear-btn:active {
+    transform: scale(0.95);
+  }
+
+  .debug-console-body {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0;
+    background: #0a0a0a;
+    font-family: 'JetBrains Mono', 'Monaco', monospace;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .debug-log-entry {
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: hsla(0,0%,100%,0.6);
+    border-bottom: 1px solid hsla(0,0%,100%,0.02);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .debug-log-entry:last-child {
+    border-bottom: none;
+  }
+
+  .log-timestamp {
+    color: hsla(240,100%,70%,0.7);
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: fit-content;
+  }
+
+  .log-icon {
+    color: hsla(0,0%,100%,0.4);
+    flex-shrink: 0;
+    font-weight: bold;
+    width: 12px;
+  }
+
+  .log-message {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .log-status {
+    color: hsla(0,0%,100%,0.5);
+    padding: 2px 6px;
+    background: hsla(0,0%,100%,0.05);
+    border-radius: 3px;
+    font-weight: 600;
+    flex-shrink: 0;
+    font-size: 9px;
+  }
+
+  .log-status.status-ok {
+    color: hsla(120,100%,70%,0.8);
+    background: hsla(120,100%,70%,0.1);
+  }
+
+  .log-status.status-error {
+    color: hsla(0,100%,70%,0.8);
+    background: hsla(0,100%,70%,0.1);
+  }
+
+  .debug-log-entry.log-success {
+    color: hsla(120,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-success .log-icon {
+    color: hsla(120,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-error {
+    color: hsla(0,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-error .log-icon {
+    color: hsla(0,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-request {
+    color: hsla(240,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-request .log-icon {
+    color: hsla(240,100%,70%,0.8);
+  }
+
+  .debug-log-entry.log-response {
+    color: hsla(120,100%,70%,0.7);
+  }
+
+  .debug-log-entry.log-response .log-icon {
+    color: hsla(120,100%,70%,0.7);
+  }
+
+  /* Scrollbar styling for debug consoles */
+  .debug-console-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .debug-console-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .debug-console-body::-webkit-scrollbar-thumb {
+    background: hsla(0,0%,100%,0.15);
+    border-radius: 3px;
+  }
+
+  .debug-console-body::-webkit-scrollbar-thumb:hover {
+    background: hsla(0,0%,100%,0.25);
   }
 
   /* ── Rally Mode ─────────────────────────────────────────────── */
@@ -3470,104 +3652,6 @@
   .dp-hm-cell .dp-hm-count { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; display: block; }
   .dp-hm-cell .dp-hm-name { font-size: 14px; display: block; color: hsla(0,0%,100%,0.35); }
 
-  /* ═══════════════════════════════════════════════
-     RATING EDITOR (iRacing tab)
-     ═══════════════════════════════════════════════ */
-  .re-field {
-    margin-bottom: 16px;
-  }
-  .re-field-label {
-    font-size: 15px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: hsla(0,0%,100%,0.5);
-    margin-bottom: 6px;
-  }
-  .re-field-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .re-input {
-    width: 90px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid hsla(0,0%,100%,0.12);
-    background: hsla(0,0%,100%,0.05);
-    color: #fff;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    outline: none;
-  }
-  .re-input:focus { border-color: hsla(260,60%,60%,0.6); }
-  .re-slider {
-    flex: 1;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: hsla(0,0%,100%,0.1);
-    border-radius: 2px;
-    outline: none;
-  }
-  .re-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: hsl(260,60%,55%);
-    border: 2px solid hsla(0,0%,100%,0.2);
-    cursor: pointer;
-  }
-  .re-field-hint {
-    font-size: 14px;
-    color: hsla(0,0%,100%,0.25);
-    margin-top: 4px;
-  }
-  .re-history {
-    font-size: 14px;
-    color: hsla(0,0%,100%,0.4);
-    margin: 12px 0;
-    max-height: 200px;
-    overflow-y: auto;
-    line-height: 1.6;
-  }
-  .re-history-entry { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid hsla(0,0%,100%,0.04); }
-  .re-history-entry span { flex: 1; }
-  .re-history-del {
-    flex: 0 0 auto;
-    width: 22px; height: 22px;
-    border: none; border-radius: 4px;
-    background: hsla(0,0%,100%,0.06);
-    color: hsla(0,0%,100%,0.3);
-    font-size: 14px; line-height: 22px;
-    text-align: center; cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    padding: 0;
-  }
-  .re-history-del:hover { background: hsla(0,70%,50%,0.25); color: hsla(0,80%,65%,0.9); }
-  .re-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .re-btn {
-    flex: 1;
-    padding: 8px 0;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .re-btn-save { background: hsl(260,55%,48%); color: #fff; }
-  .re-btn-save:hover { background: hsl(260,55%,55%); }
-  .re-btn-reset { background: hsla(0,0%,100%,0.08); color: hsla(0,0%,100%,0.6); }
-  .re-btn-reset:hover { background: hsla(0,0%,100%,0.12); }
-  .re-btn-close { background: hsla(0,0%,100%,0.05); color: hsla(0,0%,100%,0.4); }
-  .re-btn-close:hover { background: hsla(0,0%,100%,0.08); }
 
   .settings-overlay {
     position: fixed;
@@ -5726,45 +5810,6 @@ html, body {
       </div>
     </div>
 
-    <!-- COL: Maps stacked — rendered dynamically from TrackMapProvider -->
-    <div class="maps-col">
-      <div class="panel map-panel">
-        <svg class="map-svg" id="fullMapSvg" viewBox="0 0 100 100">
-          <path class="map-track-outer" id="fullMapTrackOuter" d="" />
-          <path class="map-track" id="fullMapTrack" d="" />
-          <path class="map-track-inner on-track" id="fullMapTrackInner" d="" />
-          <path class="map-sector" id="mapSector1" d="" />
-          <path class="map-sector" id="mapSector2" d="" />
-          <path class="map-sector" id="mapSector3" d="" />
-          <g id="fullMapSF" class="map-sf" style="display:none;">
-            <line x1="0" y1="-3.5" x2="0" y2="3.5" stroke="hsla(0,0%,100%,0.6)" stroke-width="1.5" stroke-linecap="round"/>
-          </g>
-          <g id="fullMapOpponents"></g>
-          <circle class="map-player" id="fullMapPlayer" cx="50" cy="50" r="4" />
-        </svg>
-        <div class="map-zoom-label" id="fullMapLabel">Full</div>
-      </div>
-      <div class="panel map-zoom-panel">
-        <svg class="map-zoom-svg" id="zoomMapSvg" viewBox="0 0 100 100" overflow="visible">
-          <!-- Rotate group: track + opponents rotate around the player so
-               driving direction always points up. Player dot is OUTSIDE
-               this group so it stays upright and visually centered. -->
-          <g id="zoomMapRotateGroup">
-            <path class="map-track-outer" id="zoomMapTrackOuter" d="" />
-            <path class="map-track" id="zoomMapTrack" d="" />
-            <path class="map-track-inner on-track" id="zoomMapTrackInner" d="" />
-            <g id="zoomMapSF" class="map-sf" style="display:none;">
-              <line x1="0" y1="-2" x2="0" y2="2" stroke="hsla(0,0%,100%,0.6)" stroke-width="0.8" stroke-linecap="round"/>
-            </g>
-            <g id="zoomMapOpponents"></g>
-          </g>
-          <!-- Player dot outside rotate group — always upright at center -->
-          <circle class="map-player" id="zoomMapPlayer" cx="50" cy="50" r="2" />
-        </svg>
-        <div class="map-zoom-label" id="zoomMapLabel">Local</div>
-      </div>
-    </div>
-
     <!-- COL: Position/Rating + Gaps -->
     <div class="pos-gaps-col">
       <div class="panel cycle-container rating-pos-block" id="cycleRatingPos">
@@ -5883,7 +5928,7 @@ html, body {
     <div class="logo-col">
       <div class="logo-square" id="k10LogoSquare">
         <canvas class="gl-overlay" id="k10LogoGlCanvas" style="z-index:1;"></canvas>
-        <img src="images/branding/logomark.png" alt="RaceCor.io" style="width:75%;height:auto;opacity:1;position:relative;z-index:2;">
+        <img src="images/branding/logomark.png" alt="RaceCor" style="width:75%;height:auto;opacity:1;position:relative;z-index:2;">
       </div>
       <div class="logo-square" id="carLogoSquare">
         <canvas class="mfr-flag-canvas" id="mfrFlagCanvas"></canvas>
@@ -6240,7 +6285,7 @@ html, body {
 
 <script>
 // ── modules/js/config.js ──
-// RaceCorProDrive Dashboard — Shared Configuration & State
+// K10 Motorsports Dashboard — Shared Configuration & State
 // This module defines all global constants and state variables used across other modules.
 // All variables are implicitly global (shared scope) since modules load via <script src> tags.
 
@@ -6254,7 +6299,7 @@ const POLL_MS = 33; // ~30fps
 // All properties we need, batched into a single request
 const PROP_KEYS = [
   'DataCorePlugin.GameRunning',
-  'K10Motorsports.Plugin.GameId',
+  'RaceCorProDrive.Plugin.GameId',
   'DataCorePlugin.GameData.Gear',
   'DataCorePlugin.GameData.Rpms',
   'DataCorePlugin.GameData.CarSettings_MaxRPM',
@@ -6298,250 +6343,250 @@ const PROP_KEYS = [
   'DataCorePlugin.GameData.LastLapTime',
   'DataCorePlugin.GameData.RemainingTime',
   'DataCorePlugin.GameData.TotalLaps',
-  'K10Motorsports.Plugin.CommentaryVisible',
-  'K10Motorsports.Plugin.CommentaryText',
-  'K10Motorsports.Plugin.CommentaryTopicTitle',
-  'K10Motorsports.Plugin.CommentaryTopicId',
-  'K10Motorsports.Plugin.CommentaryCategory',
-  'K10Motorsports.Plugin.CommentarySentimentColor',
-  'K10Motorsports.Plugin.CommentarySeverity',
+  'RaceCorProDrive.Plugin.CommentaryVisible',
+  'RaceCorProDrive.Plugin.CommentaryText',
+  'RaceCorProDrive.Plugin.CommentaryTopicTitle',
+  'RaceCorProDrive.Plugin.CommentaryTopicId',
+  'RaceCorProDrive.Plugin.CommentaryCategory',
+  'RaceCorProDrive.Plugin.CommentarySentimentColor',
+  'RaceCorProDrive.Plugin.CommentarySeverity',
   // Strategy engine properties
-  'K10Motorsports.Plugin.Strategy.Visible',
-  'K10Motorsports.Plugin.Strategy.Text',
-  'K10Motorsports.Plugin.Strategy.Label',
-  'K10Motorsports.Plugin.Strategy.Severity',
-  'K10Motorsports.Plugin.Strategy.Color',
-  'K10Motorsports.Plugin.Strategy.TextColor',
-  'K10Motorsports.Plugin.Strategy.FuelLapsRemaining',
-  'K10Motorsports.Plugin.Strategy.FuelHealthState',
-  'K10Motorsports.Plugin.Strategy.CanMakeItToEnd',
-  'K10Motorsports.Plugin.Strategy.PitWindowOpen',
-  'K10Motorsports.Plugin.Strategy.PitWindowClose',
-  'K10Motorsports.Plugin.Strategy.TireHealthState',
-  'K10Motorsports.Plugin.Strategy.TireLapsRemaining',
-  'K10Motorsports.Plugin.Strategy.GripScore',
-  'K10Motorsports.Plugin.Strategy.StintNumber',
-  'K10Motorsports.Plugin.Strategy.StintLaps',
-  'K10Motorsports.Plugin.SessionTypeName',
+  'RaceCorProDrive.Plugin.Strategy.Visible',
+  'RaceCorProDrive.Plugin.Strategy.Text',
+  'RaceCorProDrive.Plugin.Strategy.Label',
+  'RaceCorProDrive.Plugin.Strategy.Severity',
+  'RaceCorProDrive.Plugin.Strategy.Color',
+  'RaceCorProDrive.Plugin.Strategy.TextColor',
+  'RaceCorProDrive.Plugin.Strategy.FuelLapsRemaining',
+  'RaceCorProDrive.Plugin.Strategy.FuelHealthState',
+  'RaceCorProDrive.Plugin.Strategy.CanMakeItToEnd',
+  'RaceCorProDrive.Plugin.Strategy.PitWindowOpen',
+  'RaceCorProDrive.Plugin.Strategy.PitWindowClose',
+  'RaceCorProDrive.Plugin.Strategy.TireHealthState',
+  'RaceCorProDrive.Plugin.Strategy.TireLapsRemaining',
+  'RaceCorProDrive.Plugin.Strategy.GripScore',
+  'RaceCorProDrive.Plugin.Strategy.StintNumber',
+  'RaceCorProDrive.Plugin.Strategy.StintLaps',
+  'RaceCorProDrive.Plugin.SessionTypeName',
   // Demo mode properties
-  'K10Motorsports.Plugin.DemoMode',
-  'K10Motorsports.Plugin.Demo.Gear',
-  'K10Motorsports.Plugin.Demo.Rpm',
-  'K10Motorsports.Plugin.Demo.MaxRpm',
-  'K10Motorsports.Plugin.Demo.SpeedMph',
-  'K10Motorsports.Plugin.Demo.Throttle',
-  'K10Motorsports.Plugin.Demo.Brake',
-  'K10Motorsports.Plugin.Demo.Clutch',
-  'K10Motorsports.Plugin.Demo.Fuel',
-  'K10Motorsports.Plugin.Demo.MaxFuel',
-  'K10Motorsports.Plugin.Demo.FuelPerLap',
-  'K10Motorsports.Plugin.Demo.RemainingLaps',
-  'K10Motorsports.Plugin.Demo.TyreTempFL',
-  'K10Motorsports.Plugin.Demo.TyreTempFR',
-  'K10Motorsports.Plugin.Demo.TyreTempRL',
-  'K10Motorsports.Plugin.Demo.TyreTempRR',
-  'K10Motorsports.Plugin.Demo.TyreWearFL',
-  'K10Motorsports.Plugin.Demo.TyreWearFR',
-  'K10Motorsports.Plugin.Demo.TyreWearRL',
-  'K10Motorsports.Plugin.Demo.TyreWearRR',
-  'K10Motorsports.Plugin.Demo.BrakeBias',
-  'K10Motorsports.Plugin.Demo.TC',
-  'K10Motorsports.Plugin.Demo.ABS',
-  'K10Motorsports.Plugin.Demo.SessionTypeName',
-  'K10Motorsports.Plugin.Demo.Position',
-  'K10Motorsports.Plugin.Demo.CurrentLap',
-  'K10Motorsports.Plugin.Demo.BestLapTime',
-  'K10Motorsports.Plugin.Demo.CarModel',
-  'K10Motorsports.Plugin.Demo.SessionTime',
-  'K10Motorsports.Plugin.Demo.CurrentLapTime',
-  'K10Motorsports.Plugin.Demo.LastLapTime',
-  'K10Motorsports.Plugin.Demo.RemainingTime',
-  'K10Motorsports.Plugin.Demo.TotalLaps',
-  'K10Motorsports.Plugin.Demo.IRating',
-  'K10Motorsports.Plugin.Demo.SafetyRating',
-  'K10Motorsports.Plugin.Demo.GapAhead',
-  'K10Motorsports.Plugin.Demo.GapBehind',
-  'K10Motorsports.Plugin.Demo.DriverAhead',
-  'K10Motorsports.Plugin.Demo.DriverBehind',
-  'K10Motorsports.Plugin.Demo.IRAhead',
-  'K10Motorsports.Plugin.Demo.IRBehind',
+  'RaceCorProDrive.Plugin.DemoMode',
+  'RaceCorProDrive.Plugin.Demo.Gear',
+  'RaceCorProDrive.Plugin.Demo.Rpm',
+  'RaceCorProDrive.Plugin.Demo.MaxRpm',
+  'RaceCorProDrive.Plugin.Demo.SpeedMph',
+  'RaceCorProDrive.Plugin.Demo.Throttle',
+  'RaceCorProDrive.Plugin.Demo.Brake',
+  'RaceCorProDrive.Plugin.Demo.Clutch',
+  'RaceCorProDrive.Plugin.Demo.Fuel',
+  'RaceCorProDrive.Plugin.Demo.MaxFuel',
+  'RaceCorProDrive.Plugin.Demo.FuelPerLap',
+  'RaceCorProDrive.Plugin.Demo.RemainingLaps',
+  'RaceCorProDrive.Plugin.Demo.TyreTempFL',
+  'RaceCorProDrive.Plugin.Demo.TyreTempFR',
+  'RaceCorProDrive.Plugin.Demo.TyreTempRL',
+  'RaceCorProDrive.Plugin.Demo.TyreTempRR',
+  'RaceCorProDrive.Plugin.Demo.TyreWearFL',
+  'RaceCorProDrive.Plugin.Demo.TyreWearFR',
+  'RaceCorProDrive.Plugin.Demo.TyreWearRL',
+  'RaceCorProDrive.Plugin.Demo.TyreWearRR',
+  'RaceCorProDrive.Plugin.Demo.BrakeBias',
+  'RaceCorProDrive.Plugin.Demo.TC',
+  'RaceCorProDrive.Plugin.Demo.ABS',
+  'RaceCorProDrive.Plugin.Demo.SessionTypeName',
+  'RaceCorProDrive.Plugin.Demo.Position',
+  'RaceCorProDrive.Plugin.Demo.CurrentLap',
+  'RaceCorProDrive.Plugin.Demo.BestLapTime',
+  'RaceCorProDrive.Plugin.Demo.CarModel',
+  'RaceCorProDrive.Plugin.Demo.SessionTime',
+  'RaceCorProDrive.Plugin.Demo.CurrentLapTime',
+  'RaceCorProDrive.Plugin.Demo.LastLapTime',
+  'RaceCorProDrive.Plugin.Demo.RemainingTime',
+  'RaceCorProDrive.Plugin.Demo.TotalLaps',
+  'RaceCorProDrive.Plugin.Demo.IRating',
+  'RaceCorProDrive.Plugin.Demo.SafetyRating',
+  'RaceCorProDrive.Plugin.Demo.GapAhead',
+  'RaceCorProDrive.Plugin.Demo.GapBehind',
+  'RaceCorProDrive.Plugin.Demo.DriverAhead',
+  'RaceCorProDrive.Plugin.Demo.DriverBehind',
+  'RaceCorProDrive.Plugin.Demo.IRAhead',
+  'RaceCorProDrive.Plugin.Demo.IRBehind',
   // Datastream (advanced telemetry)
-  'K10Motorsports.Plugin.DS.LatG',
-  'K10Motorsports.Plugin.DS.LongG',
-  'K10Motorsports.Plugin.DS.YawRate',
-  'K10Motorsports.Plugin.DS.SteerTorque',
-  'K10Motorsports.Plugin.DS.TrackTemp',
-  'K10Motorsports.Plugin.DS.IncidentCount',
-  'K10Motorsports.Plugin.DS.EstimatedIRatingDelta',
-  'K10Motorsports.Plugin.DS.IRatingFieldSize',
-  'K10Motorsports.Plugin.DS.AbsActive',
-  'K10Motorsports.Plugin.DS.TcActive',
-  'K10Motorsports.Plugin.DS.TrackPct',
-  'K10Motorsports.Plugin.DS.LapDelta',
-  'K10Motorsports.Plugin.DS.CurrentSector',
-  'K10Motorsports.Plugin.DS.SectorCount',
-  'K10Motorsports.Plugin.DS.SectorSplits',
-  'K10Motorsports.Plugin.DS.SectorDeltas',
-  'K10Motorsports.Plugin.DS.SectorStates',
-  'K10Motorsports.Plugin.DS.SectorBoundaryPcts',
-  'K10Motorsports.Plugin.DS.SectorSplitS1',
-  'K10Motorsports.Plugin.DS.SectorSplitS2',
-  'K10Motorsports.Plugin.DS.SectorSplitS3',
-  'K10Motorsports.Plugin.DS.SectorDeltaS1',
-  'K10Motorsports.Plugin.DS.SectorDeltaS2',
-  'K10Motorsports.Plugin.DS.SectorDeltaS3',
-  'K10Motorsports.Plugin.DS.SectorStateS1',
-  'K10Motorsports.Plugin.DS.SectorStateS2',
-  'K10Motorsports.Plugin.DS.SectorStateS3',
-  'K10Motorsports.Plugin.DS.SectorS2StartPct',
-  'K10Motorsports.Plugin.DS.SectorS3StartPct',
-  'K10Motorsports.Plugin.DS.CompletedLaps',
-  'K10Motorsports.Plugin.DS.IsInPitLane',
-  'K10Motorsports.Plugin.DS.SpeedKmh',
-  'K10Motorsports.Plugin.DS.PitLimiterOn',
-  'K10Motorsports.Plugin.DS.PitSpeedLimitKmh',
+  'RaceCorProDrive.Plugin.DS.LatG',
+  'RaceCorProDrive.Plugin.DS.LongG',
+  'RaceCorProDrive.Plugin.DS.YawRate',
+  'RaceCorProDrive.Plugin.DS.SteerTorque',
+  'RaceCorProDrive.Plugin.DS.TrackTemp',
+  'RaceCorProDrive.Plugin.DS.IncidentCount',
+  'RaceCorProDrive.Plugin.DS.EstimatedIRatingDelta',
+  'RaceCorProDrive.Plugin.DS.IRatingFieldSize',
+  'RaceCorProDrive.Plugin.DS.AbsActive',
+  'RaceCorProDrive.Plugin.DS.TcActive',
+  'RaceCorProDrive.Plugin.DS.TrackPct',
+  'RaceCorProDrive.Plugin.DS.LapDelta',
+  'RaceCorProDrive.Plugin.DS.CurrentSector',
+  'RaceCorProDrive.Plugin.DS.SectorCount',
+  'RaceCorProDrive.Plugin.DS.SectorSplits',
+  'RaceCorProDrive.Plugin.DS.SectorDeltas',
+  'RaceCorProDrive.Plugin.DS.SectorStates',
+  'RaceCorProDrive.Plugin.DS.SectorBoundaryPcts',
+  'RaceCorProDrive.Plugin.DS.SectorSplitS1',
+  'RaceCorProDrive.Plugin.DS.SectorSplitS2',
+  'RaceCorProDrive.Plugin.DS.SectorSplitS3',
+  'RaceCorProDrive.Plugin.DS.SectorDeltaS1',
+  'RaceCorProDrive.Plugin.DS.SectorDeltaS2',
+  'RaceCorProDrive.Plugin.DS.SectorDeltaS3',
+  'RaceCorProDrive.Plugin.DS.SectorStateS1',
+  'RaceCorProDrive.Plugin.DS.SectorStateS2',
+  'RaceCorProDrive.Plugin.DS.SectorStateS3',
+  'RaceCorProDrive.Plugin.DS.SectorS2StartPct',
+  'RaceCorProDrive.Plugin.DS.SectorS3StartPct',
+  'RaceCorProDrive.Plugin.DS.CompletedLaps',
+  'RaceCorProDrive.Plugin.DS.IsInPitLane',
+  'RaceCorProDrive.Plugin.DS.SpeedKmh',
+  'RaceCorProDrive.Plugin.DS.PitLimiterOn',
+  'RaceCorProDrive.Plugin.DS.PitSpeedLimitKmh',
   // Computed DS.* (server-side calculations)
-  'K10Motorsports.Plugin.DS.ThrottleNorm',
-  'K10Motorsports.Plugin.DS.BrakeNorm',
-  'K10Motorsports.Plugin.DS.ClutchNorm',
-  'K10Motorsports.Plugin.DS.RpmRatio',
-  'K10Motorsports.Plugin.DS.FuelPct',
-  'K10Motorsports.Plugin.DS.FuelLapsRemaining',
-  'K10Motorsports.Plugin.DS.SpeedMph',
-  'K10Motorsports.Plugin.DS.PitSpeedLimitMph',
-  'K10Motorsports.Plugin.DS.IsPitSpeeding',
-  'K10Motorsports.Plugin.DS.IsNonRaceSession',
-  'K10Motorsports.Plugin.DS.IsTimedRace',
-  'K10Motorsports.Plugin.DS.IsEndOfRace',
-  'K10Motorsports.Plugin.DS.PositionDelta',
-  'K10Motorsports.Plugin.DS.StartPosition',
-  'K10Motorsports.Plugin.DS.RemainingTimeFormatted',
-  'K10Motorsports.Plugin.DS.SpeedDisplay',
-  'K10Motorsports.Plugin.DS.RpmDisplay',
-  'K10Motorsports.Plugin.DS.FuelFormatted',
-  'K10Motorsports.Plugin.DS.FuelPerLapFormatted',
-  'K10Motorsports.Plugin.DS.PitSuggestion',
-  'K10Motorsports.Plugin.DS.BBNorm',
-  'K10Motorsports.Plugin.DS.TCNorm',
-  'K10Motorsports.Plugin.DS.ABSNorm',
-  'K10Motorsports.Plugin.DS.PositionDeltaDisplay',
-  'K10Motorsports.Plugin.DS.LapDeltaDisplay',
-  'K10Motorsports.Plugin.DS.SafetyRatingDisplay',
-  'K10Motorsports.Plugin.DS.GapAheadFormatted',
-  'K10Motorsports.Plugin.DS.GapBehindFormatted',
+  'RaceCorProDrive.Plugin.DS.ThrottleNorm',
+  'RaceCorProDrive.Plugin.DS.BrakeNorm',
+  'RaceCorProDrive.Plugin.DS.ClutchNorm',
+  'RaceCorProDrive.Plugin.DS.RpmRatio',
+  'RaceCorProDrive.Plugin.DS.FuelPct',
+  'RaceCorProDrive.Plugin.DS.FuelLapsRemaining',
+  'RaceCorProDrive.Plugin.DS.SpeedMph',
+  'RaceCorProDrive.Plugin.DS.PitSpeedLimitMph',
+  'RaceCorProDrive.Plugin.DS.IsPitSpeeding',
+  'RaceCorProDrive.Plugin.DS.IsNonRaceSession',
+  'RaceCorProDrive.Plugin.DS.IsTimedRace',
+  'RaceCorProDrive.Plugin.DS.IsEndOfRace',
+  'RaceCorProDrive.Plugin.DS.PositionDelta',
+  'RaceCorProDrive.Plugin.DS.StartPosition',
+  'RaceCorProDrive.Plugin.DS.RemainingTimeFormatted',
+  'RaceCorProDrive.Plugin.DS.SpeedDisplay',
+  'RaceCorProDrive.Plugin.DS.RpmDisplay',
+  'RaceCorProDrive.Plugin.DS.FuelFormatted',
+  'RaceCorProDrive.Plugin.DS.FuelPerLapFormatted',
+  'RaceCorProDrive.Plugin.DS.PitSuggestion',
+  'RaceCorProDrive.Plugin.DS.BBNorm',
+  'RaceCorProDrive.Plugin.DS.TCNorm',
+  'RaceCorProDrive.Plugin.DS.ABSNorm',
+  'RaceCorProDrive.Plugin.DS.PositionDeltaDisplay',
+  'RaceCorProDrive.Plugin.DS.LapDeltaDisplay',
+  'RaceCorProDrive.Plugin.DS.SafetyRatingDisplay',
+  'RaceCorProDrive.Plugin.DS.GapAheadFormatted',
+  'RaceCorProDrive.Plugin.DS.GapBehindFormatted',
   // Ambient light (screen color from C# plugin)
-  'K10Motorsports.Plugin.DS.AmbientR',
-  'K10Motorsports.Plugin.DS.AmbientG',
-  'K10Motorsports.Plugin.DS.AmbientB',
-  'K10Motorsports.Plugin.DS.AmbientHasData',
+  'RaceCorProDrive.Plugin.DS.AmbientR',
+  'RaceCorProDrive.Plugin.DS.AmbientG',
+  'RaceCorProDrive.Plugin.DS.AmbientB',
+  'RaceCorProDrive.Plugin.DS.AmbientHasData',
   // Demo Datastream
-  'K10Motorsports.Plugin.Demo.DS.LatG',
-  'K10Motorsports.Plugin.Demo.DS.LongG',
-  'K10Motorsports.Plugin.Demo.DS.YawRate',
-  'K10Motorsports.Plugin.Demo.DS.SteerTorque',
-  'K10Motorsports.Plugin.Demo.DS.TrackTemp',
-  'K10Motorsports.Plugin.Demo.DS.IncidentCount',
-  'K10Motorsports.Plugin.Demo.DS.AbsActive',
-  'K10Motorsports.Plugin.Demo.DS.TcActive',
-  'K10Motorsports.Plugin.Demo.DS.LapDelta',
-  'K10Motorsports.Plugin.Demo.DS.IsInPitLane',
-  'K10Motorsports.Plugin.Demo.DS.SpeedKmh',
-  'K10Motorsports.Plugin.Demo.DS.PitLimiterOn',
-  'K10Motorsports.Plugin.Demo.DS.PitSpeedLimitKmh',
+  'RaceCorProDrive.Plugin.Demo.DS.LatG',
+  'RaceCorProDrive.Plugin.Demo.DS.LongG',
+  'RaceCorProDrive.Plugin.Demo.DS.YawRate',
+  'RaceCorProDrive.Plugin.Demo.DS.SteerTorque',
+  'RaceCorProDrive.Plugin.Demo.DS.TrackTemp',
+  'RaceCorProDrive.Plugin.Demo.DS.IncidentCount',
+  'RaceCorProDrive.Plugin.Demo.DS.AbsActive',
+  'RaceCorProDrive.Plugin.Demo.DS.TcActive',
+  'RaceCorProDrive.Plugin.Demo.DS.LapDelta',
+  'RaceCorProDrive.Plugin.Demo.DS.IsInPitLane',
+  'RaceCorProDrive.Plugin.Demo.DS.SpeedKmh',
+  'RaceCorProDrive.Plugin.Demo.DS.PitLimiterOn',
+  'RaceCorProDrive.Plugin.Demo.DS.PitSpeedLimitKmh',
   // Demo Computed DS.*
-  'K10Motorsports.Plugin.Demo.DS.ThrottleNorm',
-  'K10Motorsports.Plugin.Demo.DS.BrakeNorm',
-  'K10Motorsports.Plugin.Demo.DS.ClutchNorm',
-  'K10Motorsports.Plugin.Demo.DS.RpmRatio',
-  'K10Motorsports.Plugin.Demo.DS.FuelPct',
-  'K10Motorsports.Plugin.Demo.DS.FuelLapsRemaining',
-  'K10Motorsports.Plugin.Demo.DS.SpeedMph',
-  'K10Motorsports.Plugin.Demo.DS.PitSpeedLimitMph',
-  'K10Motorsports.Plugin.Demo.DS.IsPitSpeeding',
-  'K10Motorsports.Plugin.Demo.DS.IsNonRaceSession',
-  'K10Motorsports.Plugin.Demo.DS.IsTimedRace',
-  'K10Motorsports.Plugin.Demo.DS.IsEndOfRace',
-  'K10Motorsports.Plugin.Demo.DS.PositionDelta',
-  'K10Motorsports.Plugin.Demo.DS.StartPosition',
-  'K10Motorsports.Plugin.Demo.DS.RemainingTimeFormatted',
-  'K10Motorsports.Plugin.Demo.DS.SpeedDisplay',
-  'K10Motorsports.Plugin.Demo.DS.RpmDisplay',
-  'K10Motorsports.Plugin.Demo.DS.FuelFormatted',
-  'K10Motorsports.Plugin.Demo.DS.FuelPerLapFormatted',
-  'K10Motorsports.Plugin.Demo.DS.PitSuggestion',
-  'K10Motorsports.Plugin.Demo.DS.BBNorm',
-  'K10Motorsports.Plugin.Demo.DS.TCNorm',
-  'K10Motorsports.Plugin.Demo.DS.ABSNorm',
-  'K10Motorsports.Plugin.Demo.DS.PositionDeltaDisplay',
-  'K10Motorsports.Plugin.Demo.DS.LapDeltaDisplay',
-  'K10Motorsports.Plugin.Demo.DS.SafetyRatingDisplay',
-  'K10Motorsports.Plugin.Demo.DS.GapAheadFormatted',
-  'K10Motorsports.Plugin.Demo.DS.GapBehindFormatted',
+  'RaceCorProDrive.Plugin.Demo.DS.ThrottleNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.BrakeNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.ClutchNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.RpmRatio',
+  'RaceCorProDrive.Plugin.Demo.DS.FuelPct',
+  'RaceCorProDrive.Plugin.Demo.DS.FuelLapsRemaining',
+  'RaceCorProDrive.Plugin.Demo.DS.SpeedMph',
+  'RaceCorProDrive.Plugin.Demo.DS.PitSpeedLimitMph',
+  'RaceCorProDrive.Plugin.Demo.DS.IsPitSpeeding',
+  'RaceCorProDrive.Plugin.Demo.DS.IsNonRaceSession',
+  'RaceCorProDrive.Plugin.Demo.DS.IsTimedRace',
+  'RaceCorProDrive.Plugin.Demo.DS.IsEndOfRace',
+  'RaceCorProDrive.Plugin.Demo.DS.PositionDelta',
+  'RaceCorProDrive.Plugin.Demo.DS.StartPosition',
+  'RaceCorProDrive.Plugin.Demo.DS.RemainingTimeFormatted',
+  'RaceCorProDrive.Plugin.Demo.DS.SpeedDisplay',
+  'RaceCorProDrive.Plugin.Demo.DS.RpmDisplay',
+  'RaceCorProDrive.Plugin.Demo.DS.FuelFormatted',
+  'RaceCorProDrive.Plugin.Demo.DS.FuelPerLapFormatted',
+  'RaceCorProDrive.Plugin.Demo.DS.PitSuggestion',
+  'RaceCorProDrive.Plugin.Demo.DS.BBNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.TCNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.ABSNorm',
+  'RaceCorProDrive.Plugin.Demo.DS.PositionDeltaDisplay',
+  'RaceCorProDrive.Plugin.Demo.DS.LapDeltaDisplay',
+  'RaceCorProDrive.Plugin.Demo.DS.SafetyRatingDisplay',
+  'RaceCorProDrive.Plugin.Demo.DS.GapAheadFormatted',
+  'RaceCorProDrive.Plugin.Demo.DS.GapBehindFormatted',
   // Track map
-  'K10Motorsports.Plugin.TrackMap.Ready',
-  'K10Motorsports.Plugin.TrackMap.TrackName',
-  'K10Motorsports.Plugin.TrackMap.SvgPath',
-  'K10Motorsports.Plugin.TrackMap.PlayerX',
-  'K10Motorsports.Plugin.TrackMap.PlayerY',
-  'K10Motorsports.Plugin.TrackMap.PlayerHeading',
-  'K10Motorsports.Plugin.TrackMap.Opponents',
+  'RaceCorProDrive.Plugin.TrackMap.Ready',
+  'RaceCorProDrive.Plugin.TrackMap.TrackName',
+  'RaceCorProDrive.Plugin.TrackMap.SvgPath',
+  'RaceCorProDrive.Plugin.TrackMap.PlayerX',
+  'RaceCorProDrive.Plugin.TrackMap.PlayerY',
+  'RaceCorProDrive.Plugin.TrackMap.PlayerHeading',
+  'RaceCorProDrive.Plugin.TrackMap.Opponents',
   'DataCorePlugin.GameData.TrackName',
   // Leaderboard
-  'K10Motorsports.Plugin.Leaderboard',
+  'RaceCorProDrive.Plugin.Leaderboard',
   // Driver name
-  'K10Motorsports.Plugin.DriverFirstName',
-  'K10Motorsports.Plugin.DriverLastName',
+  'RaceCorProDrive.Plugin.DriverFirstName',
+  'RaceCorProDrive.Plugin.DriverLastName',
   // Flag status
   'currentFlagState',
   // Grid / Formation state
-  'K10Motorsports.Plugin.Grid.SessionState',
-  'K10Motorsports.Plugin.Grid.GriddedCars',
-  'K10Motorsports.Plugin.Grid.TotalCars',
-  'K10Motorsports.Plugin.Grid.PaceMode',
-  'K10Motorsports.Plugin.Grid.StartType',
-  'K10Motorsports.Plugin.Grid.LightsPhase',
-  'K10Motorsports.Plugin.Demo.Grid.SessionState',
-  'K10Motorsports.Plugin.Demo.Grid.GriddedCars',
-  'K10Motorsports.Plugin.Demo.Grid.TotalCars',
-  'K10Motorsports.Plugin.Demo.Grid.PaceMode',
-  'K10Motorsports.Plugin.Demo.Grid.LightsPhase',
-  'K10Motorsports.Plugin.Demo.Grid.StartType',
-  'K10Motorsports.Plugin.Grid.TrackCountry',
-  'K10Motorsports.Plugin.Demo.Grid.TrackCountry',
+  'RaceCorProDrive.Plugin.Grid.SessionState',
+  'RaceCorProDrive.Plugin.Grid.GriddedCars',
+  'RaceCorProDrive.Plugin.Grid.TotalCars',
+  'RaceCorProDrive.Plugin.Grid.PaceMode',
+  'RaceCorProDrive.Plugin.Grid.StartType',
+  'RaceCorProDrive.Plugin.Grid.LightsPhase',
+  'RaceCorProDrive.Plugin.Demo.Grid.SessionState',
+  'RaceCorProDrive.Plugin.Demo.Grid.GriddedCars',
+  'RaceCorProDrive.Plugin.Demo.Grid.TotalCars',
+  'RaceCorProDrive.Plugin.Demo.Grid.PaceMode',
+  'RaceCorProDrive.Plugin.Demo.Grid.LightsPhase',
+  'RaceCorProDrive.Plugin.Demo.Grid.StartType',
+  'RaceCorProDrive.Plugin.Grid.TrackCountry',
+  'RaceCorProDrive.Plugin.Demo.Grid.TrackCountry',
   // Pit Box (iRacing pit stop selections + car adjustments)
-  'K10Motorsports.Plugin.PitBox.PitSvFlags',
-  'K10Motorsports.Plugin.PitBox.PitSvFuel',
-  'K10Motorsports.Plugin.PitBox.PitSvLFP',
-  'K10Motorsports.Plugin.PitBox.PitSvRFP',
-  'K10Motorsports.Plugin.PitBox.PitSvLRP',
-  'K10Motorsports.Plugin.PitBox.PitSvRRP',
-  'K10Motorsports.Plugin.PitBox.TireCompound',
-  'K10Motorsports.Plugin.PitBox.FastRepair',
-  'K10Motorsports.Plugin.PitBox.Windshield',
-  'K10Motorsports.Plugin.PitBox.TireLF',
-  'K10Motorsports.Plugin.PitBox.TireRF',
-  'K10Motorsports.Plugin.PitBox.TireLR',
-  'K10Motorsports.Plugin.PitBox.TireRR',
-  'K10Motorsports.Plugin.PitBox.TiresRequested',
-  'K10Motorsports.Plugin.PitBox.FuelRequested',
-  'K10Motorsports.Plugin.PitBox.FastRepairRequested',
-  'K10Motorsports.Plugin.PitBox.WindshieldRequested',
-  'K10Motorsports.Plugin.PitBox.FuelDisplay',
-  'K10Motorsports.Plugin.PitBox.PressureLF',
-  'K10Motorsports.Plugin.PitBox.PressureRF',
-  'K10Motorsports.Plugin.PitBox.PressureLR',
-  'K10Motorsports.Plugin.PitBox.PressureRR',
+  'RaceCorProDrive.Plugin.PitBox.PitSvFlags',
+  'RaceCorProDrive.Plugin.PitBox.PitSvFuel',
+  'RaceCorProDrive.Plugin.PitBox.PitSvLFP',
+  'RaceCorProDrive.Plugin.PitBox.PitSvRFP',
+  'RaceCorProDrive.Plugin.PitBox.PitSvLRP',
+  'RaceCorProDrive.Plugin.PitBox.PitSvRRP',
+  'RaceCorProDrive.Plugin.PitBox.TireCompound',
+  'RaceCorProDrive.Plugin.PitBox.FastRepair',
+  'RaceCorProDrive.Plugin.PitBox.Windshield',
+  'RaceCorProDrive.Plugin.PitBox.TireLF',
+  'RaceCorProDrive.Plugin.PitBox.TireRF',
+  'RaceCorProDrive.Plugin.PitBox.TireLR',
+  'RaceCorProDrive.Plugin.PitBox.TireRR',
+  'RaceCorProDrive.Plugin.PitBox.TiresRequested',
+  'RaceCorProDrive.Plugin.PitBox.FuelRequested',
+  'RaceCorProDrive.Plugin.PitBox.FastRepairRequested',
+  'RaceCorProDrive.Plugin.PitBox.WindshieldRequested',
+  'RaceCorProDrive.Plugin.PitBox.FuelDisplay',
+  'RaceCorProDrive.Plugin.PitBox.PressureLF',
+  'RaceCorProDrive.Plugin.PitBox.PressureRF',
+  'RaceCorProDrive.Plugin.PitBox.PressureLR',
+  'RaceCorProDrive.Plugin.PitBox.PressureRR',
   // Car-specific adjustment availability
-  'K10Motorsports.Plugin.PitBox.HasTC',
-  'K10Motorsports.Plugin.PitBox.HasABS',
-  'K10Motorsports.Plugin.PitBox.HasARBFront',
-  'K10Motorsports.Plugin.PitBox.HasARBRear',
-  'K10Motorsports.Plugin.PitBox.HasEnginePower',
-  'K10Motorsports.Plugin.PitBox.HasFuelMixture',
-  'K10Motorsports.Plugin.PitBox.HasWeightJackerL',
-  'K10Motorsports.Plugin.PitBox.HasWeightJackerR',
-  'K10Motorsports.Plugin.PitBox.HasWingFront',
-  'K10Motorsports.Plugin.PitBox.HasWingRear',
+  'RaceCorProDrive.Plugin.PitBox.HasTC',
+  'RaceCorProDrive.Plugin.PitBox.HasABS',
+  'RaceCorProDrive.Plugin.PitBox.HasARBFront',
+  'RaceCorProDrive.Plugin.PitBox.HasARBRear',
+  'RaceCorProDrive.Plugin.PitBox.HasEnginePower',
+  'RaceCorProDrive.Plugin.PitBox.HasFuelMixture',
+  'RaceCorProDrive.Plugin.PitBox.HasWeightJackerL',
+  'RaceCorProDrive.Plugin.PitBox.HasWeightJackerR',
+  'RaceCorProDrive.Plugin.PitBox.HasWingFront',
+  'RaceCorProDrive.Plugin.PitBox.HasWingRear',
   // Additional car adjustments
   'DataCorePlugin.GameRawData.Telemetry.dcEnginePower',
   'DataCorePlugin.GameRawData.Telemetry.dcFuelMixture',
@@ -6800,7 +6845,7 @@ function getCarAdjustability(model) {
 const _defaultSettings = {
   logoOnlyStart: true, // Start in logo-only mode; HUD reveals when session goes active
   showFuel: true, showTyres: true, showControls: true, showPedals: true,
-  showMaps: true, showPosition: true, showTacho: true, showCommentary: true,
+  showPosition: true, showTacho: true, showCommentary: true,
   showK10Logo: true, showCarLogo: true, showGameLogo: true, simhubUrl: 'http://localhost:8889/racecor-io-pro-drive/',
   layoutPosition: 'top-right',
   greenScreen: false, showWebGL: true, showBonkers: true, ambientMode: 'reflective',
@@ -6815,7 +6860,6 @@ const _defaultSettings = {
   showSentimentHalo: true,
   showCommentaryGlow: true,
   showRcAnimation: true,
-  showMapGlow: true,
   showRedlineFlash: true,
   // Leaderboard
   lbFocus: 'me',        // 'me' = center on player, 'lead' = show from P1
@@ -6831,7 +6875,11 @@ const _defaultSettings = {
   // Y-offset for bottom-positioned modules
   bottomYOffset: 0,
   // Logo subtitle text
-  logoSubtitle: ''
+  logoSubtitle: '',
+  // AI Race Coach
+  agentKey: '',
+  coachTone: 'coach',    // 'broadcast', 'coach', 'mentor'
+  coachDepth: 'standard' // 'quick', 'standard', 'deep'
 };
 
 let _settings = Object.assign({}, _defaultSettings);
@@ -6890,16 +6938,44 @@ function _fmtLapTime(secs) {
 // ── modules/js/car-logos.js ──
 // CAR MANUFACTURER LOGOS
 
-  // ═══ CAR MANUFACTURER LOGOS (loaded from images/logos/) ═══
+  // ═══ CAR MANUFACTURER LOGOS (fetched from cloud API, local fallback) ═══
   const CAR_LOGO_KEYS = ['bmw','mclaren','mazda','nissan','dallara','ferrari','porsche','audi',
     'mercedes','lamborghini','chevrolet','ford','toyota','hyundai','cadillac','astonmartin',
     'lotus','honda','honda_white','ligier','fia','radical','generic','none'];
-  const carLogos = {};
+  window.carLogos = {};
+  window.carBrandColors = {};
   async function loadCarLogos() {
-    const results = await Promise.allSettled(
+    // Try cloud API first (prodrive.racecor.io)
+    try {
+      const apiBase = (window._settings && window._settings.prodriveUrl) || 'https://prodrive.racecor.io';
+      const resp = await fetch(apiBase + '/api/logos');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.logos && data.logos.length > 0) {
+          for (const logo of data.logos) {
+            if (logo.logoSvg) window.carLogos[logo.brandKey] = logo.logoSvg;
+            if (logo.brandColorHex) window.carBrandColors[logo.brandKey] = logo.brandColorHex;
+          }
+          console.log('[RaceCor] Loaded', data.logos.length, 'logos from cloud');
+          // Still load special local-only logos (generic, none, honda_white, iracing, le-mans-ultimate)
+          const localOnly = ['generic', 'none', 'honda_white', 'iracing', 'le-mans-ultimate'];
+          await Promise.allSettled(localOnly.map(async key => {
+            if (!window.carLogos[key]) {
+              const r = await fetch('images/logos/' + key + '.svg');
+              if (r.ok) window.carLogos[key] = await r.text();
+            }
+          }));
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[RaceCor] Cloud logo fetch failed, using local fallback:', e.message);
+    }
+    // Fallback: load all from local files
+    await Promise.allSettled(
       CAR_LOGO_KEYS.map(async key => {
         const resp = await fetch('images/logos/' + key + '.svg');
-        if (resp.ok) carLogos[key] = await resp.text();
+        if (resp.ok) window.carLogos[key] = await resp.text();
       })
     );
   }
@@ -6916,7 +6992,7 @@ function _fmtLapTime(secs) {
     const key = carLogoOrder[currentCarLogoIdx];
     console.log('[K10] Logo cycle:', key);
     // Honda special case: use white-fill logo on red bg
-    const svg = (key === 'honda') ? carLogos.honda_white : carLogos[key];
+    const svg = (key === 'honda') ? window.carLogos.honda_white : window.carLogos[key];
     document.getElementById('carLogoIcon').innerHTML = svg;
     document.getElementById('carModelLabel').textContent = _demoModels[key] || '';
     // Apply brand-colored background (or default dark bg)
@@ -6948,12 +7024,14 @@ function _fmtLapTime(secs) {
     if (key === _currentCarLogo && modelName === undefined) return;
     _currentCarLogo = key;
     // Honda special case: white-fill logo on red background
-    const svg = (key === 'honda') ? (carLogos.honda_white || carLogos.honda) : (carLogos[key] || carLogos.generic);
+    const svg = (key === 'honda') ? (window.carLogos.honda_white || window.carLogos.honda) : (window.carLogos[key] || window.carLogos.generic);
     document.getElementById('carLogoIcon').innerHTML = svg;
     document.getElementById('carModelLabel').textContent = stripBrand(modelName);
     // Apply brand-colored background for white/mono logos, default dark bg otherwise
+    // Prefer cloud-sourced hex colors, fall back to local HSLA colors
     const sq = document.getElementById('carLogoSquare');
-    sq.style.background = _mfrBrandColors[key] || _defaultLogoBg;
+    const cloudColor = window.carBrandColors && window.carBrandColors[key];
+    sq.style.background = cloudColor || _mfrBrandColors[key] || _defaultLogoBg;
     // Expose full-opacity brand color for map player dot
     const brandHsl = _mfrBrandColors[key];
     if (brandHsl) {
@@ -7041,7 +7119,7 @@ function _fmtLapTime(secs) {
     const el = document.getElementById('connStatus');
     if (!el) return;
     el.className = 'conn-status ' + state;
-    const titles = { connected: 'Connected to plugin server', disconnected: 'Cannot reach plugin server — is the RaceCorProDrive plugin loaded in SimHub?', connecting: 'Connecting to plugin server...' };
+    const titles = { connected: 'Connected to plugin server', disconnected: 'Cannot reach plugin server — is the K10 Motorsports plugin loaded in SimHub?', connecting: 'Connecting to plugin server...' };
     el.title = titles[state] || '';
 
     // Settings-embedded warning banner
@@ -7073,6 +7151,16 @@ function _fmtLapTime(secs) {
         settingsWarn.classList.add('warn-visible');
         if (settingsWarnUrl) settingsWarnUrl.textContent = window._simhubUrlOverride || SIMHUB_URL;
       }
+      // Show connection banner when disconnected (useful for Mac/Parallels users)
+      // Banner allows quick IP entry without opening full settings
+      if (!_connBannerDismissed && !_connBannerShown && _connFails >= 2) {
+        const banner = document.getElementById('connBanner');
+        if (banner) {
+          banner.classList.add('visible');
+          _connBannerShown = true;
+          if (window.k10?.requestInteractive) window.k10.requestInteractive();
+        }
+      }
     }
 
     // Force settings mode open when disconnected (after a few retries)
@@ -7101,7 +7189,17 @@ function _fmtLapTime(secs) {
     const newUrl = `http://${host}:8889/racecor-io-pro-drive/`;
     window._simhubUrlOverride = newUrl;
     _settings.simhubUrl = newUrl;
-    saveSettings();
+    // saveSettings() is defined in connections.js which loads after game-detect.js
+    // Ensure it's available before calling
+    const _trySaveSettings = () => {
+      if (typeof saveSettings === 'function') {
+        saveSettings();
+      } else {
+        // Retry after a short delay when saveSettings becomes available
+        setTimeout(_trySaveSettings, 100);
+      }
+    };
+    _trySaveSettings();
     // Update the settings panel input too
     const urlInput = document.getElementById('settingsSimhubUrl');
     if (urlInput) urlInput.value = newUrl;
@@ -7115,7 +7213,7 @@ function _fmtLapTime(secs) {
     const banner = document.getElementById('connBanner');
     if (banner) banner.classList.remove('visible');
     if (window.k10?.releaseInteractive) window.k10.releaseInteractive();
-    console.log('[RaceCorProDrive] SimHub URL changed to ' + newUrl);
+    console.log('[K10 Motorsports] SimHub URL changed to ' + newUrl);
   }
 
   function dismissConnBanner() {
@@ -7160,7 +7258,7 @@ function _fmtLapTime(secs) {
     _connFails++;
     _backoffUntil = Date.now() + Math.min(1000 * Math.pow(2, _connFails - 1), 10000);
     _updateConnStatus('disconnected');
-    if (_connFails <= 3) console.warn(`[RaceCorProDrive] Plugin server unreachable at ${window._simhubUrlOverride || SIMHUB_URL} — fail #${_connFails}`);
+    if (_connFails <= 3) console.warn(`[K10 Motorsports] Plugin server unreachable at ${window._simhubUrlOverride || SIMHUB_URL} — fail #${_connFails}`);
     return null;
   }
 
@@ -8048,15 +8146,27 @@ function _fmtLapTime(secs) {
     var maxLen = _trailMaxLen();
     var n = _trackPathCoords.length;
 
+    // After S/F or pit-exit reset (_trailStartIdx === -1), anchor the trail
+    // start to the player's current position so it grows from here — never
+    // wrapping backward across the start/finish line.
+    if (_trailStartIdx < 0) {
+      _trailStartIdx = playerIdx;
+    }
+
     // Walk backward from player along track path, up to maxLen points
-    // or until we hit the trail start (turn entry)
-    var startIdx = _trailStartIdx >= 0 ? _trailStartIdx : playerIdx;
+    // or until we hit the trail start (turn entry / lap boundary)
+    var startIdx = _trailStartIdx;
     // How many points back from player to the trail start?
     var backDist = (playerIdx - startIdx + n) % n;
-    // Clamp to max trail length
-    if (backDist > maxLen || backDist === 0) {
+    // Clamp to max trail length (but never wrap past the trail start)
+    if (backDist > maxLen) {
       startIdx = (playerIdx - maxLen + n) % n;
       backDist = maxLen;
+    }
+    // Nothing to draw yet (player hasn't moved from start)
+    if (backDist === 0) {
+      trailEl.setAttribute('points', '');
+      return;
     }
 
     // Build points from tail (startIdx) → head (playerIdx) along the track path
@@ -8298,6 +8408,14 @@ function _fmtLapTime(secs) {
       const dx = playerX - _mapSmoothedX;
       const dy = playerY - _mapSmoothedY;
       const jump = Math.sqrt(dx * dx + dy * dy);
+
+      // Detect lap boundary crossing or pit exit: large position jump (>15 SVG units)
+      // indicates S/F line or pit exit. Reset trail to prevent lines crossing the map.
+      if (jump > 15) {
+        _trailStartIdx = -1;  // Reset trail to current position
+        _trailFading = false;
+      }
+
       // If jump is huge (>20 SVG units), blend slowly (glitch recovery)
       const alpha = jump > 20 ? 0.08 : 0.45;
       _mapSmoothedX += dx * alpha;
@@ -8547,7 +8665,7 @@ function _fmtLapTime(secs) {
 // pedal profile onto the full pedal histogram area.
 // Curve-following dots show current pedal position on each curve.
 // Data flows from C# PedalProfileManager via HTTP bridge
-// as K10Motorsports.Plugin.DS.PedalProfile (JSON object).
+// as RaceCorProDrive.Plugin.DS.PedalProfile (JSON object).
 // ═══════════════════════════════════════════════════════════════
 
 (function () {
@@ -8593,8 +8711,8 @@ function _fmtLapTime(secs) {
   window.updatePedalCurves = function (p) {
     if (!_curveCtx) return;
 
-    var pre = p._demo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
-    var profileData = p[pre + 'PedalProfile'] || p['K10Motorsports.Plugin.DS.PedalProfile'];
+    var pre = p._demo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
+    var profileData = p[pre + 'PedalProfile'] || p['RaceCorProDrive.Plugin.DS.PedalProfile'];
     if (!profileData || typeof profileData !== 'object') {
       // No profile data — hide canvases
       _setProfileVisibility(false);
@@ -9462,7 +9580,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (window.k10 && window.k10.getVersion) {
       window.k10.getVersion().then(function(ver) {
         var el = document.getElementById('settingsVersionLabel');
-        if (el && ver) el.textContent = 'RaceCorProDrive v' + ver + ' \u2014 Media Overlay';
+        if (el && ver) el.textContent = 'K10 Motorsports v' + ver + ' \u2014 Media Overlay';
       });
     }
   });
@@ -9852,6 +9970,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (info) info.style.display = '';
     }
 
+    // Populate AI Race Coach settings (key, tone, depth)
+    _populateCoachSettings();
+
     // Update pro feature gating across all settings
     updateProFeatureGating();
 
@@ -9865,12 +9986,30 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof applyLogoSubtitle === 'function') applyLogoSubtitle();
   }
 
+  // ── AI Race Coach settings ──
+  window.updateAgentKey = function(key) {
+    _settings.agentKey = key || '';
+    saveSettings();
+  };
+
+  function _populateCoachSettings() {
+    var akInput = document.getElementById('agentKeyInput');
+    if (akInput) akInput.value = _settings.agentKey || '';
+
+    var toneSelect = document.getElementById('coachToneSelect');
+    if (toneSelect) toneSelect.value = _settings.coachTone || 'coach';
+
+    var depthSelect = document.getElementById('coachDepthSelect');
+    if (depthSelect) depthSelect.value = _settings.coachDepth || 'standard';
+  }
+
   async function connectK10Pro() {
     if (_k10Connecting) return;
     if (!window.k10 || !window.k10.k10Connect) {
       // Fallback: open website in browser
+      if (window.debugConsole) window.debugConsole.logNetwork('info', 'K10 connection not available, opening browser');
       if (window.k10 && window.k10.openExternal) {
-        window.k10.openExternal('https://prodrive.racecor.io');
+        window.k10.openExternal('https://drive.racecor.io');
       }
       return;
     }
@@ -9878,6 +10017,8 @@ document.addEventListener('DOMContentLoaded', function () {
     _k10Connecting = true;
     const btn = document.getElementById('k10ConnectBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
+
+    if (window.debugConsole) window.debugConsole.logNetwork('request', 'K10 Pro Drive connection attempt');
 
     try {
       const result = await window.k10.k10Connect();
@@ -9887,10 +10028,19 @@ document.addEventListener('DOMContentLoaded', function () {
         _settings.k10User = result.user;
         _settings.k10Features = result.user.features || [];
         saveSettings();
+
+        // Apply custom logo if available
+        if (result.user.customLogoUrl && window.setCustomLogoUrl) {
+          window.setCustomLogoUrl(result.user.customLogoUrl);
+        }
+
+        if (window.debugConsole) window.debugConsole.logNetwork('success', 'K10 Pro Drive connected - ' + (result.user.discordUsername || result.user.discordDisplayName || 'User'));
+
         updateK10ConnectionCard();
       } else {
         const errMsg = result?.error || 'Connection failed';
         console.warn('[K10] Pro connect failed:', errMsg);
+        if (window.debugConsole) window.debugConsole.logNetwork('error', 'K10 connection failed - ' + errMsg);
         const text = document.getElementById('connK10Text');
         if (text) text.innerHTML = '<strong style="color:hsl(0,75%,60%)">Failed</strong> — ' + errMsg;
         setTimeout(() => {
@@ -9899,6 +10049,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     } catch (err) {
       console.error('[K10] Pro connect error:', err);
+      if (window.debugConsole) window.debugConsole.logNetwork('error', 'K10 connection error - ' + (err.message || String(err)));
     } finally {
       _k10Connecting = false;
       if (btn) {
@@ -10203,6 +10354,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (user && user.id) {
           _k10User = user;
           _k10Features = user.features || [];
+
+          // Apply custom logo if available
+          if (user.customLogoUrl && window.setCustomLogoUrl) {
+            window.setCustomLogoUrl(user.customLogoUrl);
+          }
+
           updateK10ConnectionCard();
 
           // Verify token in background
@@ -10218,6 +10375,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateK10ConnectionCard();
               } else if (result && result.features) {
                 _k10Features = result.features;
+                // Apply custom logo from verify result
+                if (result.user && result.user.customLogoUrl && window.setCustomLogoUrl) {
+                  window.setCustomLogoUrl(result.user.customLogoUrl);
+                }
                 updateK10ConnectionCard();
               }
             }).catch(() => {});
@@ -10230,6 +10391,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (_settings.k10User && _settings.k10User.id) {
       _k10User = _settings.k10User;
       _k10Features = _settings.k10Features || [];
+
+      // Apply custom logo if available
+      if (_settings.k10User.customLogoUrl && window.setCustomLogoUrl) {
+        window.setCustomLogoUrl(_settings.k10User.customLogoUrl);
+      }
+
       updateK10ConnectionCard();
     }
   }
@@ -10316,6 +10483,9 @@ document.addEventListener('DOMContentLoaded', function () {
       // Can't reassign const, but we can update the fetch function
       window._simhubUrlOverride = url;
     }
+    // Reset connection failure counter to retry immediately with new URL
+    window._connFails = 0;
+    window._backoffUntil = 0;
     saveSettings();
   }
 
@@ -10328,6 +10498,23 @@ document.addEventListener('DOMContentLoaded', function () {
     // Immediately update the logo visibility
     if (window.updateGameLogo) window.updateGameLogo(window._currentGameId || 'iracing', !isOn);
   }
+
+  // ─── iRacing Data Sync toggle ───
+  function toggleIRacingSync(el) {
+    var isOn = el.classList.contains('on');
+    var newVal = !isOn;
+    el.classList.toggle('on', newVal);
+    _settings.iracingDataSync = newVal;
+    if (window.setSessionSyncEnabled) window.setSessionSyncEnabled(newVal);
+
+    var detail = document.getElementById('iracingSyncDetail');
+    var active = document.getElementById('iracingSyncActive');
+    if (detail) detail.style.display = newVal ? 'none' : '';
+    if (active) active.style.display = newVal ? '' : 'none';
+
+    saveSettings();
+  }
+  window.toggleIRacingSync = toggleIRacingSync;
 
   // ─── Logo subtitle ───
   function updateLogoSubtitle(value) {
@@ -10347,7 +10534,7 @@ document.addEventListener('DOMContentLoaded', function () {
       label = document.createElement('span');
       label.id = 'k10SubtitleLabel';
       label.className = 'logo-subtitle';
-      logo.parentNode.insertBefore(label, logo.nextSibling);
+      logo.appendChild(label);
     }
 
     var text = _settings.logoSubtitle || '';
@@ -10358,7 +10545,7 @@ document.addEventListener('DOMContentLoaded', function () {
       label.style.opacity = '1';
     } else if (!_k10User && !text) {
       // Teaser: show placeholder for logged-out users
-      label.textContent = 'RaceCorProDrive';
+      label.textContent = 'K10 Motorsports';
       label.style.display = 'block';
       label.style.opacity = '0.3';
     } else if (text && !_k10User) {
@@ -10651,6 +10838,17 @@ document.addEventListener('DOMContentLoaded', function () {
   initK10State();
   initRemoteDashState();
 
+  // Restore iRacing sync toggle state
+  var syncToggle = document.getElementById('iracingSyncToggle');
+  if (syncToggle && _settings.iracingDataSync) {
+    syncToggle.classList.add('on');
+    if (window.setSessionSyncEnabled) window.setSessionSyncEnabled(true);
+    var detail = document.getElementById('iracingSyncDetail');
+    var active = document.getElementById('iracingSyncActive');
+    if (detail) detail.style.display = 'none';
+    if (active) active.style.display = '';
+  }
+
   // ═══════════════════════════════════════════════════════════════
 
 
@@ -10674,7 +10872,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const lbPanel = document.getElementById('leaderboardPanel');
     if (!lbPanel || lbPanel.classList.contains('section-hidden')) return;
     // Leaderboard comes as raw JSON array from the plugin
-    let raw = p['K10Motorsports.Plugin.Leaderboard'];
+    let raw = p['RaceCorProDrive.Plugin.Leaderboard'];
     // If plugin sends leaderboard as a JSON string, parse it
     if (typeof raw === 'string') {
       try { raw = JSON.parse(raw); } catch(e) { console.warn('[K10 LB] Failed to parse leaderboard string:', e); return; }
@@ -10691,6 +10889,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const container = document.getElementById('lbRows');
     if (!container) return;
+
+    // Update header title based on focus mode
+    const headerEl = document.querySelector('.lb-header');
+    if (headerEl) {
+      headerEl.textContent = focusMode === 'lead' ? 'LEADERBOARD' : 'RELATIVE';
+    }
 
     // ── Focus + row limit logic ──
     const focusMode = _settings.lbFocus || 'me';
@@ -10740,7 +10944,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let playerIdx = -1;
     let sessionBest = Infinity;
     for (let i = 0; i < raw.length; i++) {
-      if (raw[i][7]) playerIdx = i;
+      if (raw[i][7] === 1) {
+        playerIdx = i;
+        playerLastLap = +raw[i][4]; // capture player's last lap
+      }
       const b = +raw[i][3];
       if (b > 0 && b < sessionBest) sessionBest = b;
     }
@@ -10769,8 +10976,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let html = '';
     for (const entry of visible) {
       const [pos, name, ir, best, last, gap, pit, isPlayer] = entry;
+      const isSelf = isPlayer === 1;
       const classes = ['lb-row'];
-      if (isPlayer) {
+      if (isSelf) {
         classes.push('lb-player');
         if (pos === 1) classes.push('lb-p1');
         else if (_startPosition > 0 && pos < _startPosition) classes.push('lb-ahead');
@@ -10778,14 +10986,14 @@ document.addEventListener('DOMContentLoaded', function () {
         else classes.push('lb-same');
       }
       // Mark the starting position row when player has moved away from it
-      if (!isPlayer && _startPosition > 0 && pos === _startPosition && _lastPosition !== _startPosition) {
+      if (!isSelf && _startPosition > 0 && pos === _startPosition && _lastPosition !== _startPosition) {
         classes.push('lb-start-pos');
       }
       if (pit) classes.push('lb-pit');
 
       // Gap display based on focus mode
       let gapStr = '', gapClass = 'gap-player';
-      if (isPlayer) {
+      if (isSelf) {
         gapStr = '';
       } else if (focusMode === 'lead') {
         // In 'lead' mode, show either lap time (P1) or gap to leader
@@ -10806,19 +11014,25 @@ document.addEventListener('DOMContentLoaded', function () {
               gapStr = '+' + gapToLeader.toFixed(1) + 's';
               gapClass = 'gap-behind';
             } else if (gapToLeader < 0) {
-              gapStr = Math.abs(gapToLeader).toFixed(1) + 's';
+              gapStr = '-' + Math.abs(gapToLeader).toFixed(1) + 's';
               gapClass = 'gap-ahead';
             }
           }
         }
       } else {
-        // 'me' mode: show gap to player (original behavior)
-        if (gap < 0) {
-          gapStr = '-' + Math.abs(gap).toFixed(1) + 's';
-          gapClass = 'gap-ahead';
-        } else if (gap > 0) {
-          gapStr = '+' + gap.toFixed(1) + 's';
-          gapClass = 'gap-behind';
+        // 'me' mode: show gap to player (relative to player's last lap)
+        // Calculate gap as: driver.lastLap - player.lastLap
+        if (last > 0 && playerLastLap > 0) {
+          const relativeGap = last - playerLastLap;
+          if (relativeGap > 0) {
+            gapStr = '+' + relativeGap.toFixed(1) + 's';
+            gapClass = 'gap-behind';
+          } else if (relativeGap < 0) {
+            gapStr = '-' + Math.abs(relativeGap).toFixed(1) + 's';
+            gapClass = 'gap-ahead';
+          } else {
+            gapStr = '';
+          }
         } else {
           gapStr = '';
         }
@@ -10829,7 +11043,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // ── Sparkline data collection ──
       // Non-player: track lap times. Player: track position (seeded from grid).
-      if (isPlayer) {
+      if (isSelf) {
         // Seed position history with grid position on first sight
         if (!_posHistorySeeded && _startPosition > 0) {
           _posHistory.push(_startPosition);
@@ -10857,7 +11071,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // ── Build sparkline SVG ──
       let sparkSvg = '';
 
-      if (isPlayer && _posHistory.length >= 2) {
+      if (isSelf && _posHistory.length >= 2) {
         // Player: position sparkline (lower = better → invert Y axis)
         const mn = Math.min(..._posHistory), mx = Math.max(..._posHistory);
         const range = mx - mn || 1;
@@ -10882,7 +11096,7 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (_startPosition > 0 && pos > _startPosition) col = 'hsla(0,75%,50%,1)';
         else col = 'hsla(210,75%,55%,1)';
         sparkSvg = '<svg class="lb-spark" viewBox="0 0 ' + w + ' ' + h2 + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="' + (w).toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="1.5" fill="' + col + '"/></svg>';
-      } else if (isPlayer) {
+      } else if (isSelf) {
         // Player: flat baseline during rolling start / waiting for green flag
         const w = 44, h2 = 14;
         const midY = (h2 / 2).toFixed(1);
@@ -10935,12 +11149,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
 
+      // Format driver name as "F. LastName"
+      const displayName = isSelf ? _driverDisplayName : formatName(name);
+
       html += '<div class="' + classes.join(' ') + '">'
         + '<div class="lb-pos">' + pos + '</div>'
-        + '<div class="lb-name">' + escHtml(isPlayer ? _driverDisplayName : name) + '</div>'
-        + '<div class="lb-lap ' + lapClass + '">' + lapStr + '</div>'
-        + '<div class="lb-ir">' + irStr + '</div>'
+        + '<div class="lb-name">' + escHtml(displayName) + (pit ? ' <span style="font-size:10px;color:hsla(0,70%,55%,1);">IN PIT</span>' : '') + '</div>'
         + '<div class="lb-gap ' + gapClass + '">' + gapStr + '</div>'
+        + '<div class="lb-lap ' + lapClass + '">' + lapStr + '</div>'
         + sparkSvg
         + '</div>';
     }
@@ -10952,6 +11168,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function formatName(fullName) {
+    // Format: "F. LastName" where F is first initial
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return fullName;
+    if (parts.length === 1) return fullName;
+    const firstName = parts[0];
+    const lastName = parts[parts.length - 1];
+    return firstName.charAt(0).toUpperCase() + '. ' + lastName;
+  }
 
 
 // ── modules/js/datastream.js ──
@@ -11214,7 +11440,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Skip entirely if panel is not visible
     if (_dsPanel && _dsPanel.offsetParent === null) return;
 
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const vd = (key) => +p[pre + key] || 0;
 
     const latG = vd('LatG');
@@ -11476,9 +11702,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (!isIRacing) return;
 
-    var pb = function(key) { return d['K10Motorsports.Plugin.PitBox.' + key]; };
+    var pb = function(key) { return d['RaceCorProDrive.Plugin.PitBox.' + key]; };
     var dc = function(key) { return d['DataCorePlugin.GameRawData.Telemetry.' + key]; };
-    var ds = function(key) { return d['K10Motorsports.Plugin.DS.' + key]; };
+    var ds = function(key) { return d['RaceCorProDrive.Plugin.DS.' + key]; };
     var gd = function(key) { return d['DataCorePlugin.GameData.' + key]; };
 
     // 0=imperial, 1=metric. Cannot use `|| 1` fallback here because 0 is a
@@ -11962,7 +12188,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateIncidents(p, isDemo) {
     const panel = document.getElementById('incidentsPanel');
     if (!panel || panel.classList.contains('section-hidden')) return;
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const incidentCount = +(p[pre + 'IncidentCount']) || 0;
 
     const countEl = document.getElementById('incCount');
@@ -12107,7 +12333,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let _bonkersHoldUntil = 0;
 
   function updatePitLimiter(p, isDemo) {
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     // Fallback to SimHub's built-in DataCore if plugin property is not set
     const inPitLane = +(p[pre + 'IsInPitLane']) > 0 || +(p['DataCorePlugin.GameData.IsInPitLane']) > 0;
     const speedKmh = +(p[pre + 'SpeedKmh']) || +(p['DataCorePlugin.GameData.SpeedKph']) || 0;
@@ -12120,9 +12346,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const labelEl = banner ? banner.querySelector('.pit-label') : null;
     if (!banner) return;
 
-    // Pit limiter blue glow on tacho module
+    // Pit limiter blue glow on tacho module — show whenever limiter is on
     const tacho = document.querySelector('.tacho-block');
-    if (tacho) tacho.classList.toggle('pit-limiter-engaged', inPitLane && pitLimiterOn);
+    if (tacho) tacho.classList.toggle('pit-limiter-engaged', pitLimiterOn);
 
     // Detect pit entry while speeding — lock bonkers for 3s so it's visible
     // even after the car's auto-limiter kicks in and drops speed
@@ -12133,9 +12359,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const bonkersHeld = now < _bonkersHoldUntil;
 
-    if (inPitLane) {
+    // Show banner when pit limiter is engaged OR in pit lane
+    if (inPitLane || pitLimiterOn) {
       banner.classList.add('pit-visible');
-      document.body.classList.add('pit-mode');
+      if (inPitLane) document.body.classList.add('pit-mode');
 
       // Show speed — prefer server-computed DS.SpeedMph
       if (speedEl) {
@@ -12153,8 +12380,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       // ── State priority: BONKERS > WARNING > NORMAL ──
-      if (isSpeeding || bonkersHeld) {
-        // BONKERS — over the speed limit, or held from entry
+      if (inPitLane && (isSpeeding || bonkersHeld)) {
+        // BONKERS — over the speed limit in pit lane, or held from entry
         banner.classList.add('pit-bonkers');
         banner.classList.remove('pit-warning');
         if (labelEl) labelEl.textContent = 'SPEEDING';
@@ -12162,38 +12389,35 @@ document.addEventListener('DOMContentLoaded', function () {
           if (!_bonkersActive) _startBonkersSparks(banner);
           if (window.setBonkersGL) window.setBonkersGL(true);
         }
-      } else if (!pitLimiterOn) {
-        // WARNING — limiter off but not yet over limit
+      } else if (inPitLane && !pitLimiterOn) {
+        // WARNING — in pit lane with limiter off, not yet over limit
         banner.classList.add('pit-warning');
         banner.classList.remove('pit-bonkers');
         if (labelEl) labelEl.textContent = 'PIT LIMITER OFF';
         if (_bonkersActive) _stopBonkersSparks(banner);
         if (window.setBonkersGL) window.setBonkersGL(false);
       } else {
-        // NORMAL — limiter on, all good
+        // NORMAL — limiter on (in or out of pit lane)
         banner.classList.remove('pit-warning', 'pit-bonkers');
         if (labelEl) labelEl.textContent = 'Pit Limiter';
         if (_bonkersActive) _stopBonkersSparks(banner);
         if (window.setBonkersGL) window.setBonkersGL(false);
       }
-    } else {
-      // Not in pit lane — but if approaching pit at speed, show early warning
-      if (pitLimitKmh > 0 && speedKmh > pitLimitKmh && bonkersHeld) {
-        // Holdover from entering pit — keep bonkers visible during transition
-        banner.classList.add('pit-visible', 'pit-bonkers');
-        banner.classList.remove('pit-warning');
-        if (labelEl) labelEl.textContent = 'SPEEDING';
-        if (speedEl) {
-          const mph = Math.round(+(p[pre + 'SpeedMph']) || +(p['DataCorePlugin.GameData.SpeedMph']) || speedKmh * 0.621371);
-          speedEl.textContent = mph > 0 ? mph + ' mph' : '';
-        }
-      } else {
-        banner.classList.remove('pit-visible', 'pit-warning', 'pit-bonkers');
-        document.body.classList.remove('pit-mode');
-        if (labelEl) labelEl.textContent = 'Pit Limiter';
-        if (_bonkersActive) _stopBonkersSparks(banner);
-        if (window.setBonkersGL) window.setBonkersGL(false);
+    } else if (pitLimitKmh > 0 && speedKmh > pitLimitKmh && bonkersHeld) {
+      // Not in pit lane, limiter off — but holdover from entering pit at speed
+      banner.classList.add('pit-visible', 'pit-bonkers');
+      banner.classList.remove('pit-warning');
+      if (labelEl) labelEl.textContent = 'SPEEDING';
+      if (speedEl) {
+        const mph = Math.round(+(p[pre + 'SpeedMph']) || +(p['DataCorePlugin.GameData.SpeedMph']) || speedKmh * 0.621371);
+        speedEl.textContent = mph > 0 ? mph + ' mph' : '';
       }
+    } else {
+      banner.classList.remove('pit-visible', 'pit-warning', 'pit-bonkers');
+      document.body.classList.remove('pit-mode');
+      if (labelEl) labelEl.textContent = 'Pit Limiter';
+      if (_bonkersActive) _stopBonkersSparks(banner);
+      if (window.setBonkersGL) window.setBonkersGL(false);
     }
     _wasInPit = inPitLane;
   }
@@ -12279,14 +12503,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!screen || _raceEndVisible) return;
 
     // Gather data
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.' : '';
-    const pos = isDemo ? +(p['K10Motorsports.Plugin.Demo.Position']) || 0 : +(p['DataCorePlugin.GameData.Position']) || 0;
-    const dsPre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.' : '';
+    const pos = isDemo ? +(p['RaceCorProDrive.Plugin.Demo.Position']) || 0 : +(p['DataCorePlugin.GameData.Position']) || 0;
+    const dsPre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const incidents = +(p[dsPre + 'IncidentCount']) || 0;
     const completedLaps = +(p[dsPre + 'CompletedLaps']) || 0;
-    const totalLaps = isDemo ? +(p['K10Motorsports.Plugin.Demo.TotalLaps']) || 0 : +(p['DataCorePlugin.GameData.TotalLaps']) || 0;
-    const bestLap = isDemo ? +(p['K10Motorsports.Plugin.Demo.BestLapTime']) || 0 : +(p['DataCorePlugin.GameData.BestLapTime']) || 0;
-    const iRating = isDemo ? +(p['K10Motorsports.Plugin.Demo.IRating']) || 0 : +(p['IRacingExtraProperties.iRacing_DriverInfo_IRating']) || 0;
+    const totalLaps = isDemo ? +(p['RaceCorProDrive.Plugin.Demo.TotalLaps']) || 0 : +(p['DataCorePlugin.GameData.TotalLaps']) || 0;
+    const bestLap = isDemo ? +(p['RaceCorProDrive.Plugin.Demo.BestLapTime']) || 0 : +(p['DataCorePlugin.GameData.BestLapTime']) || 0;
+    const iRating = isDemo ? +(p['RaceCorProDrive.Plugin.Demo.IRating']) || 0 : +(p['IRacingExtraProperties.iRacing_DriverInfo_IRating']) || 0;
 
     // DNF detection
     const isDNF = pos === 0 || (completedLaps > 0 && totalLaps > 0 && completedLaps < Math.max(1, Math.floor(totalLaps * 0.5)));
@@ -12401,7 +12625,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let _simLightsTimer = null;
 
   function updateGrid(p, isDemo) {
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.Grid.' : 'K10Motorsports.Plugin.Grid.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.Grid.' : 'RaceCorProDrive.Plugin.Grid.';
     const sessionState = +(p[pre + 'SessionState']) || 0;
     const griddedCars  = +(p[pre + 'GriddedCars']) || 0;
     const totalCars    = +(p[pre + 'TotalCars']) || 0;
@@ -12497,7 +12721,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Mini grid strip — one dot per car, player highlighted in blue
       const playerPos = isDemo
-        ? (+(p['K10Motorsports.Plugin.Demo.Position']) || 0)
+        ? (+(p['RaceCorProDrive.Plugin.Demo.Position']) || 0)
         : (+(p['DataCorePlugin.GameData.Position']) || 0);
       _renderGridStrip(totalCars, griddedCars, playerPos);
 
@@ -12524,8 +12748,8 @@ document.addEventListener('DOMContentLoaded', function () {
       // Countdown: display time to green or pace mode
       const countdownEl = document.getElementById('gridCountdown');
       const timeToGreen = isDemo
-        ? +(p['K10Motorsports.Plugin.Demo.Grid.TimeToGreen']) || 0
-        : +(p['K10Motorsports.Plugin.Grid.TimeToGreen']) || 0;
+        ? +(p['RaceCorProDrive.Plugin.Demo.Grid.TimeToGreen']) || 0
+        : +(p['RaceCorProDrive.Plugin.Grid.TimeToGreen']) || 0;
 
       // During lights sequence (paceMode 1-3), show pace mode status
       // Otherwise, show countdown timer if available
@@ -12688,12 +12912,46 @@ document.addEventListener('DOMContentLoaded', function () {
     return card;
   }
 
-  function _pushSpotterMsg(msg, severity, headerOverride, iconOverride, adjType) {
+  function _pushSpotterMsg(msg, severity, headerOverride, iconOverride, adjType, category) {
     const stack = document.getElementById('spotterStack');
     if (!stack || !msg) return;
 
+    // Reuse existing card of same category (avoid stacking duplicates)
+    if (category) {
+      const existing = stack.querySelector(`[data-spot-cat="${category}"]`);
+      if (existing) {
+        // Update content
+        const msgEl = existing.querySelector('.sp-message');
+        if (msgEl) msgEl.textContent = msg;
+        const headerEl = existing.querySelector('.sp-header');
+        if (headerEl) headerEl.textContent = headerOverride || 'Spotter';
+
+        // Update severity class
+        existing.className = 'sp-inner ' + severity + ' sp-active';
+
+        // Update icon
+        const iconPath = _spotterIcons[iconOverride || severity] || _spotterIcons.default;
+        const iconEl = existing.querySelector('.sp-icon');
+        if (iconEl) iconEl.innerHTML = iconPath;
+
+        // Reset auto-dismiss timer
+        if (existing._spotterTimer) clearTimeout(existing._spotterTimer);
+        existing._spotterTimer = setTimeout(() => {
+          _fadeOutCard(existing);
+        }, _spotterMsgDuration);
+
+        // Re-trigger WebGL glow
+        if (window.setSpotterGlow) {
+          const glowMap = { 'sp-warn': 'warn', 'sp-danger': 'danger', 'sp-clear': 'clear' };
+          window.setSpotterGlow(glowMap[severity] || 'warn');
+        }
+        return;
+      }
+    }
+
     // Create and insert the new card
     const card = _createSpotterCard(msg, severity, headerOverride, iconOverride, adjType);
+    if (category) card.setAttribute('data-spot-cat', category);
     stack.prepend(card);
 
     // Trigger WebGL glow for the newest message
@@ -12750,9 +13008,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // Recent-message memo: pattern → expiry timestamp
   // Prevents any message of the same pattern from repeating within the cooldown
   const _spotterMemo = new Map();
-  const _spotterMemoCooldown = 4000;  // ms — suppress same pattern for 4s (was 8s, too aggressive)
+  const _spotterPatternCooldown = 4000;  // ms — suppress same pattern for 4s
+  const _spotterExactCooldown = 5000;    // ms — suppress exact match for 5s (matches message duration)
 
-  function _showSpotterMsg(msg, severity, headerOverride) {
+  function _showSpotterMsg(msg, severity, headerOverride, category) {
     if (!msg) return;
     const pattern = _spotterMsgPattern(msg);
     const now = Date.now();
@@ -12771,9 +13030,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Record both pattern and exact text
-    _spotterMemo.set(pattern, now + _spotterMemoCooldown);
-    _spotterMemo.set(msg, now + _spotterMemoCooldown);
+    // Record both pattern and exact text with their respective cooldowns
+    _spotterMemo.set(pattern, now + _spotterPatternCooldown);
+    _spotterMemo.set(msg, now + _spotterExactCooldown);
 
     // Prune old entries periodically (keep map from growing)
     if (_spotterMemo.size > 30) {
@@ -12783,7 +13042,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     console.debug('[K10 Spotter] Showing message:', msg, 'severity:', severity);
-    _pushSpotterMsg(msg, severity, headerOverride);
+    _pushSpotterMsg(msg, severity, headerOverride, null, null, category);
   }
 
   function updateSpotter(p, isDemo) {
@@ -12793,8 +13052,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ═══════════════════════════════════════════════════════════
     //  RACE SESSIONS: gap-based proximity spotter
     // ═══════════════════════════════════════════════════════════
-    const gAhead  = isDemo ? (+p['K10Motorsports.Plugin.Demo.GapAhead'] || 0)  : (+p['IRacingExtraProperties.iRacing_Opponent_Ahead_Gap'] || 0);
-    const gBehind = isDemo ? (+p['K10Motorsports.Plugin.Demo.GapBehind'] || 0) : (+p['IRacingExtraProperties.iRacing_Opponent_Behind_Gap'] || 0);
+    const gAhead  = isDemo ? (+p['RaceCorProDrive.Plugin.Demo.GapAhead'] || 0)  : (+p['IRacingExtraProperties.iRacing_Opponent_Ahead_Gap'] || 0);
+    const gBehind = isDemo ? (+p['RaceCorProDrive.Plugin.Demo.GapBehind'] || 0) : (+p['IRacingExtraProperties.iRacing_Opponent_Behind_Gap'] || 0);
 
     // Compute gap deltas (negative = gap shrinking = closing)
     const deltaA = _spotterLastGapA > 0 && gAhead > 0 ? gAhead - _spotterLastGapA : 0;
@@ -12802,6 +13061,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let msg = '';
     let severity = '';
+    let category = null;
 
     // ═ FIRST READING: when we first detect a car nearby (previous was 0, now > 0) ═
     // Show basic proximity alert without requiring delta change
@@ -12819,6 +13079,7 @@ document.addEventListener('DOMContentLoaded', function () {
         msg = 'Car ahead — ' + gAhead.toFixed(1) + 's';
         severity = 'sp-warn';
       }
+      category = 'ahead';
     }
 
     if (isFirstReadingBehind && !msg) {
@@ -12832,12 +13093,14 @@ document.addEventListener('DOMContentLoaded', function () {
         msg = 'Car behind — ' + gBehind.toFixed(1) + 's';
         severity = 'sp-warn';
       }
+      category = 'behind';
     }
 
     // ═ Threat behind — car closing on us ═
     if (!msg && gBehind > 0 && gBehind <= 0.8) {
       msg = 'Car alongside — ' + gBehind.toFixed(1) + 's';
       severity = 'sp-danger';
+      category = 'behind';
     } else if (!msg && gBehind > 0 && gBehind <= 2.0) {
       if (deltaB < -0.03) {
         msg = 'Car closing — ' + gBehind.toFixed(1) + 's';
@@ -12846,15 +13109,18 @@ document.addEventListener('DOMContentLoaded', function () {
         msg = 'Car behind — ' + gBehind.toFixed(1) + 's';
         severity = 'sp-warn';
       }
+      category = 'behind';
     } else if (!msg && gBehind > 0 && gBehind <= 4.0 && deltaB < -0.03) {
       msg = 'Car reeling in — ' + gBehind.toFixed(1) + 's';
       severity = 'sp-warn';
+      category = 'behind';
     }
 
     // ═ Opportunity ahead — we're closing on the car ahead ═
     if (!msg && gAhead > 0 && gAhead <= 0.8) {
       msg = 'Car right there — ' + gAhead.toFixed(1) + 's';
       severity = 'sp-danger';
+      category = 'ahead';
     } else if (!msg && gAhead > 0 && gAhead <= 2.0) {
       if (deltaA < -0.03) {
         msg = 'Closing on car ahead — ' + gAhead.toFixed(1) + 's';
@@ -12866,12 +13132,14 @@ document.addEventListener('DOMContentLoaded', function () {
         msg = 'Car ahead — ' + gAhead.toFixed(1) + 's';
         severity = 'sp-clear';
       }
+      category = 'ahead';
     } else if (!msg && gAhead > 0 && gAhead <= 4.0 && deltaA < -0.03) {
       msg = 'Gaining on car ahead — ' + gAhead.toFixed(1) + 's';
       severity = 'sp-clear';
+      category = 'ahead';
     }
 
-    // ═ Pass events — position swaps ═
+    // ═ Pass events — position swaps (no category, normal stacking) ═
     if (!msg && _spotterLastGapA > 0 && _spotterLastGapA < 3.0 && gAhead > _spotterLastGapA + 2.0 && gBehind > 0 && gBehind < 3.0) {
       msg = 'Clear — position gained';
       severity = 'sp-clear';
@@ -12884,7 +13152,7 @@ document.addEventListener('DOMContentLoaded', function () {
     _spotterLastGapA = gAhead;
     _spotterLastGapB = gBehind;
 
-    if (msg) _showSpotterMsg(msg, severity);
+    if (msg) _showSpotterMsg(msg, severity, null, category);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -12954,7 +13222,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const _tyreMismatchCooldown = 60000; // Only alert once per minute
 
   window.checkTyreMismatch = function(p, isDemo) {
-    const pre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const pre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const isWet = +(p[pre + 'WeatherWet']) === 1;
     const trackWetness = +(p[pre + 'TrackWetness']) || 0;
 
@@ -17135,7 +17403,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── modules/js/game-logo.js ──
 // ═══════════════════════════════════════════════════════════════
-// RaceCorProDrive — Game Logo Overlay
+// K10 Motorsports — Game Logo Overlay
 // Shows the current game's logo (iRacing, LMU, etc.) in the
 // corner opposite the main dashboard layout position.
 // ═══════════════════════════════════════════════════════════════
@@ -17147,6 +17415,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var _currentSvg = '';
   var _currentGameId = '';
   var _visible = false;
+  var _customLogoUrl = null;
+  var _loadAttempted = {};  // { gameId: true } — prevents retry spam on 404
 
   // Map game IDs to SVG filenames
   var GAME_LOGO_FILES = {
@@ -17166,11 +17436,14 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // CSS class map for positioning
+  // When dashboard is at bottom (bottom-left/bottom-right), logo must clear
+  // the 200px dashboard height + 10px gap, so position at bottom:210px.
+  // Otherwise use 10px from top edges.
   var POS_STYLES = {
     'top-left':     'top:10px;left:10px;',
     'top-right':    'top:10px;right:10px;',
-    'bottom-left':  'bottom:10px;left:10px;',
-    'bottom-right': 'bottom:10px;right:10px;'
+    'bottom-left':  'bottom:210px;left:10px;',
+    'bottom-right': 'bottom:210px;right:10px;'
   };
 
   function createLogoElement() {
@@ -17205,6 +17478,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function loadSvg(gameId) {
+    // Check if custom logo is set first
+    if (_customLogoUrl) {
+      loadCustomLogo();
+      return;
+    }
+
     var file = GAME_LOGO_FILES[gameId];
     if (!file) {
       // No logo for this game
@@ -17213,9 +17492,9 @@ document.addEventListener('DOMContentLoaded', function () {
       _currentSvg = '';
       return;
     }
-    if (gameId === _currentGameId && _currentSvg) {
-      // Already loaded
-      if (_visible && _logoEl) _logoEl.style.opacity = '0.5';
+    if (gameId === _currentGameId && (_currentSvg || _loadAttempted[gameId])) {
+      // Already loaded or already failed — don't retry
+      if (_visible && _logoEl && _currentSvg) _logoEl.style.opacity = '0.5';
       return;
     }
     _currentGameId = gameId;
@@ -17245,8 +17524,67 @@ document.addEventListener('DOMContentLoaded', function () {
           if (_visible) _logoEl.style.opacity = '0.5';
         }
       })
-      .catch(function() { /* non-critical */ });
+      .catch(function() { _loadAttempted[gameId] = true; });
   }
+
+  function loadCustomLogo() {
+    if (!_customLogoUrl || !_logoEl) return;
+
+    _currentSvg = '';
+    _logoEl.innerHTML = '';
+
+    // Check if it's an SVG or raster image
+    var isSvg = _customLogoUrl.toLowerCase().endsWith('.svg');
+
+    if (isSvg) {
+      // Fetch and inject SVG
+      fetch(_customLogoUrl)
+        .then(function(r) { return r.ok ? r.text() : ''; })
+        .then(function(svg) {
+          if (!svg || !_customLogoUrl) return;
+          _currentSvg = svg;
+          if (_logoEl) {
+            _logoEl.innerHTML = svg;
+            var svgEl = _logoEl.querySelector('svg');
+            if (svgEl) {
+              svgEl.style.width = '100%';
+              svgEl.style.height = 'auto';
+              svgEl.style.maxHeight = '80px';
+            }
+            if (_visible) _logoEl.style.opacity = '0.5';
+          }
+        })
+        .catch(function() { /* non-critical */ });
+    } else {
+      // Use img tag for raster images
+      var img = document.createElement('img');
+      img.src = _customLogoUrl;
+      img.style.width = '100%';
+      img.style.height = 'auto';
+      img.style.maxHeight = '80px';
+      img.style.borderRadius = '4px';
+      img.onload = function() {
+        if (_logoEl && _customLogoUrl) {
+          _logoEl.innerHTML = '';
+          _logoEl.appendChild(img);
+          if (_visible) _logoEl.style.opacity = '0.5';
+        }
+      };
+      img.onerror = function() { /* non-critical */ };
+      _logoEl.appendChild(img);
+    }
+  }
+
+  /**
+   * Set custom logo URL from Pro user data
+   * @param {string} url — HTTPS URL to custom logo (SVG or PNG/JPG)
+   */
+  window.setCustomLogoUrl = function(url) {
+    _customLogoUrl = url || null;
+    if (_visible && _logoEl) {
+      loadSvg(_currentGameId);
+    }
+  };
 
   /**
    * Called from poll-engine on each telemetry tick.
@@ -17257,7 +17595,12 @@ document.addEventListener('DOMContentLoaded', function () {
     createLogoElement();
     _visible = show;
 
-    if (!show || !gameId || !GAME_LOGO_FILES[gameId]) {
+    if (!show || (!gameId && !_customLogoUrl)) {
+      if (_logoEl) _logoEl.style.opacity = '0';
+      return;
+    }
+
+    if (!show) {
       if (_logoEl) _logoEl.style.opacity = '0';
       return;
     }
@@ -17850,12 +18193,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateDriveHud(p, isDemo) {
     if (!_active) return;
 
-    const dsPre = isDemo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const dsPre = isDemo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const v = function(k) { return p[k] != null ? p[k] : 0; };
 
     // Position
     const pos = isDemo
-      ? (+v('K10Motorsports.Plugin.Demo.Position') || 0)
+      ? (+v('RaceCorProDrive.Plugin.Demo.Position') || 0)
       : (+v('DataCorePlugin.GameData.Position') || 0);
     const posEl = document.getElementById('dhPosition');
     if (posEl) posEl.textContent = pos > 0 ? 'P' + pos : 'P—';
@@ -17872,9 +18215,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Last / Current lap number
-    var bestLap = isDemo ? (+v('K10Motorsports.Plugin.Demo.BestLapTime') || 0) : (+v('DataCorePlugin.GameData.BestLapTime') || 0);
-    var lastLap = isDemo ? (+v('K10Motorsports.Plugin.Demo.LastLapTime') || 0) : (+v('DataCorePlugin.GameData.LastLapTime') || 0);
-    var curLap = isDemo ? (+v('K10Motorsports.Plugin.Demo.CurrentLap') || 0) : (+v('DataCorePlugin.GameData.CurrentLap') || 0);
+    var bestLap = isDemo ? (+v('RaceCorProDrive.Plugin.Demo.BestLapTime') || 0) : (+v('DataCorePlugin.GameData.BestLapTime') || 0);
+    var lastLap = isDemo ? (+v('RaceCorProDrive.Plugin.Demo.LastLapTime') || 0) : (+v('DataCorePlugin.GameData.LastLapTime') || 0);
+    var curLap = isDemo ? (+v('RaceCorProDrive.Plugin.Demo.CurrentLap') || 0) : (+v('DataCorePlugin.GameData.CurrentLap') || 0);
     var lastEl = document.getElementById('dhLastLap');
     var lapEl = document.getElementById('dhCurrentLap');
     if (lastEl) lastEl.textContent = lastLap > 0 ? _fmtLapTime(lastLap) : '—';
@@ -17882,7 +18225,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Live lap time + delta to best (absolutely positioned, centered)
     var liveCurrentTime = isDemo
-      ? (+(p['K10Motorsports.Plugin.Demo.CurrentLapTime']) || 0)
+      ? (+(p['RaceCorProDrive.Plugin.Demo.CurrentLapTime']) || 0)
       : (+(p['DataCorePlugin.GameData.CurrentLapTime']) || 0);
     var liveTimeEl = document.getElementById('dhLiveTime');
     var liveDeltaEl = document.getElementById('dhLiveDelta');
@@ -17906,9 +18249,10 @@ document.addEventListener('DOMContentLoaded', function () {
       liveDeltaEl.textContent = '';
     }
 
-    // Sectors (from plugin — N-sector support)
+    // Sectors — prefer cloud-configured count (from poll-engine _sectorData), fall back to plugin prop
     var curSector = +(p[dsPre + 'CurrentSector']) || 1;
-    var sectorCount = +(p[dsPre + 'SectorCount']) || 3;
+    var cloudSectors = window._sectorData && window._sectorData.sectorCount;
+    var sectorCount = cloudSectors || +(p[dsPre + 'SectorCount']) || 3;
     var splitsStr = p[dsPre + 'SectorSplits'] || '';
     var splits, deltas, states;
     if (splitsStr) {
@@ -17916,13 +18260,16 @@ document.addEventListener('DOMContentLoaded', function () {
       deltas = (p[dsPre + 'SectorDeltas'] || '').split(',').map(Number);
       states = (p[dsPre + 'SectorStates'] || '').split(',').map(Number);
     } else {
-      splits = [+(p[dsPre + 'SectorSplitS1']) || 0, +(p[dsPre + 'SectorSplitS2']) || 0, +(p[dsPre + 'SectorSplitS3']) || 0];
-      deltas = [+(p[dsPre + 'SectorDeltaS1']) || 0, +(p[dsPre + 'SectorDeltaS2']) || 0, +(p[dsPre + 'SectorDeltaS3']) || 0];
-      states = [+(p[dsPre + 'SectorStateS1']) || 0, +(p[dsPre + 'SectorStateS2']) || 0, +(p[dsPre + 'SectorStateS3']) || 0];
+      splits = []; deltas = []; states = [];
+      for (var si = 1; si <= sectorCount; si++) {
+        splits.push(+(p[dsPre + 'SectorSplitS' + si]) || 0);
+        deltas.push(+(p[dsPre + 'SectorDeltaS' + si]) || 0);
+        states.push(+(p[dsPre + 'SectorStateS' + si]) || 0);
+      }
     }
     var stateClass = ['', 'dh-s-pb', 'dh-s-faster', 'dh-s-slower'];
     var currentLapTime = isDemo
-      ? (+(p['K10Motorsports.Plugin.Demo.CurrentLapTime']) || 0)
+      ? (+(p['RaceCorProDrive.Plugin.Demo.CurrentLapTime']) || 0)
       : (+(p['DataCorePlugin.GameData.CurrentLapTime']) || 0);
 
     // Dynamically create/update drive HUD sector cells
@@ -18062,9 +18409,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Track map — local zoom view centered on player + opponents
-    var mapReady = +v('K10Motorsports.Plugin.TrackMap.Ready') || 0;
+    var mapReady = +v('RaceCorProDrive.Plugin.TrackMap.Ready') || 0;
     if (mapReady) {
-      var svgPath = (p['K10Motorsports.Plugin.TrackMap.SvgPath'] || '');
+      var svgPath = (p['RaceCorProDrive.Plugin.TrackMap.SvgPath'] || '');
       var dhTrack = document.getElementById('dhMapTrack');
       if (dhTrack && svgPath && dhTrack.getAttribute('d') !== svgPath) {
         dhTrack.setAttribute('d', svgPath);
@@ -18088,8 +18435,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
 
-      var px = Math.max(0, Math.min(100, +v('K10Motorsports.Plugin.TrackMap.PlayerX') || 50));
-      var py = Math.max(0, Math.min(100, +v('K10Motorsports.Plugin.TrackMap.PlayerY') || 50));
+      var px = Math.max(0, Math.min(100, +v('RaceCorProDrive.Plugin.TrackMap.PlayerX') || 50));
+      var py = Math.max(0, Math.min(100, +v('RaceCorProDrive.Plugin.TrackMap.PlayerY') || 50));
 
       // Update player dot
       var dhPlayer = document.getElementById('dhMapPlayer');
@@ -18112,7 +18459,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Rotate map so driving direction always points up.
         // Time-based LERP smoothing eliminates heading judder regardless
         // of poll rate. Dead-zone ignores sub-degree noise.
-        var rawHeading = +(p['K10Motorsports.Plugin.TrackMap.PlayerHeading']) || 0;
+        var rawHeading = +(p['RaceCorProDrive.Plugin.TrackMap.PlayerHeading']) || 0;
         var diff = rawHeading - _dhHeadingSmooth;
         // Normalise diff to [-180, 180] to pick the shortest rotation arc
         while (diff > 180) diff -= 360;
@@ -18141,7 +18488,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       // Opponents
-      var opponentStr = p['K10Motorsports.Plugin.TrackMap.Opponents'] || '';
+      var opponentStr = p['RaceCorProDrive.Plugin.TrackMap.Opponents'] || '';
       var dhOppG = document.getElementById('dhMapOpponents');
       if (dhOppG) {
         var parts = opponentStr ? opponentStr.split(';').filter(function(s) { return s.length > 0; }) : [];
@@ -18188,7 +18535,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Track name — prefer K10 display name, fall back to game name
     var nameEl = document.getElementById('dhMapName');
-    var trackName = p['K10Motorsports.Plugin.TrackMap.TrackName']
+    var trackName = p['RaceCorProDrive.Plugin.TrackMap.TrackName']
                  || p['DataCorePlugin.GameData.TrackName'] || '';
     if (nameEl && trackName) {
       var resolved = typeof _trackDisplayNameCache !== 'undefined' && _trackDisplayNameCache[trackName];
@@ -18237,7 +18584,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Works as standalone browser overlay or OBS Browser Source.
   // The JavascriptExtensions file is unused in this mode.
   //
-  // Config: RaceCorProDrive plugin HTTP server (port 8889)
+  // Config: K10 Motorsports plugin HTTP server (port 8889)
   // The plugin serves all telemetry, demo, commentary and track map data
   // as a flat JSON map from its own HTTP server — no SimHub web API needed.
   // ═══════════════════════════════════════════════════════════════
@@ -18275,8 +18622,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Fetches user-customized display names from the K10 API.
   // Falls back to the game-provided name if no custom name is set or API is unreachable.
   const _trackDisplayNameCache = {};    // { gameTrackName → displayName }
+  const _trackSectorCountCache = {};   // { gameTrackName → sectorCount (3 or 7) }
   const _trackDisplayNamePending = {};  // { gameTrackName → true } (in-flight requests)
-  const K10_DISPLAY_NAME_API = 'https://prodrive.racecor.io/api/tracks';
+  const K10_DISPLAY_NAME_API = 'https://drive.racecor.io/api/tracks';
 
   function resolveTrackDisplayName(gameTrackName) {
     if (_trackDisplayNameCache[gameTrackName] || _trackDisplayNamePending[gameTrackName]) return;
@@ -18286,10 +18634,13 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(function(data) {
         // displayName from API already falls back to trackName server-side
         _trackDisplayNameCache[gameTrackName] = (data && data.displayName) || gameTrackName;
+        // Cache sector count from API (default 3 if not present)
+        _trackSectorCountCache[gameTrackName] = (data && data.sectorCount) || 3;
       })
       .catch(function() {
-        // API unreachable — use the game name
+        // API unreachable — use the game name and default sectors
         _trackDisplayNameCache[gameTrackName] = gameTrackName;
+        _trackSectorCountCache[gameTrackName] = 3;
       })
       .finally(function() {
         delete _trackDisplayNamePending[gameTrackName];
@@ -18327,11 +18678,15 @@ document.addEventListener('DOMContentLoaded', function () {
     _pollFrame++;
     _cycleFrameCount++;
     try {
+      // Accumulate race data for post-race results screen
+      if (typeof accumulateRaceData === 'function') {
+        try { accumulateRaceData(p, _demo); } catch(e) { /* silent */ }
+      }
 
     // Diagnostic logging (first 3 frames + every 300 frames ~10s)
     if (_pollFrame <= 3 || _pollFrame % 300 === 0) {
       const keys = Object.keys(p).filter(k => p[k] != null && p[k] !== 0 && p[k] !== '');
-      console.log(`[K10 poll #${_pollFrame}] Got ${Object.keys(p).length} keys, ${keys.length} non-empty. DemoMode=${p['K10Motorsports.Plugin.DemoMode']}, GameRunning=${p['DataCorePlugin.GameRunning']}`);
+      console.log(`[K10 poll #${_pollFrame}] Got ${Object.keys(p).length} keys, ${keys.length} non-empty. DemoMode=${p['RaceCorProDrive.Plugin.DemoMode']}, GameRunning=${p['DataCorePlugin.GameRunning']}`);
       if (_pollFrame === 1) console.log('[K10 poll] Sample values:', JSON.stringify(Object.fromEntries(keys.slice(0, 10).map(k => [k, p[k]]))));
     }
 
@@ -18351,29 +18706,41 @@ document.addEventListener('DOMContentLoaded', function () {
     const vs = (k) => p[k] != null ? '' + p[k] : '';
 
     // Demo mode: swap data sources when plugin demo mode is active
-    const _demo = +v('K10Motorsports.Plugin.DemoMode') || 0;
-    const d = (gameKey, demoKey) => _demo ? v('K10Motorsports.Plugin.' + demoKey) : v(gameKey);
-    const ds = (gameKey, demoKey) => _demo ? vs('K10Motorsports.Plugin.' + demoKey) : vs(gameKey);
+    const _demo = +v('RaceCorProDrive.Plugin.DemoMode') || 0;
+    const d = (gameKey, demoKey) => _demo ? v('RaceCorProDrive.Plugin.' + demoKey) : v(gameKey);
+    const ds = (gameKey, demoKey) => _demo ? vs('RaceCorProDrive.Plugin.' + demoKey) : vs(gameKey);
 
     // ─── Idle State Detection ───
     const gameRunning = +v('DataCorePlugin.GameRunning') || 0;
-    const sessionPre = _demo ? 'K10Motorsports.Plugin.Demo.Grid.' : 'K10Motorsports.Plugin.Grid.';
-    const dsPre = _demo ? 'K10Motorsports.Plugin.Demo.DS.' : 'K10Motorsports.Plugin.DS.';
+    const sessionPre = _demo ? 'RaceCorProDrive.Plugin.Demo.Grid.' : 'RaceCorProDrive.Plugin.Grid.';
+    const dsPre = _demo ? 'RaceCorProDrive.Plugin.Demo.DS.' : 'RaceCorProDrive.Plugin.DS.';
     const sessNum = parseInt(vs(sessionPre + 'SessionState')) || 0;
     const _inPitLane = +(p[dsPre + 'IsInPitLane']) > 0;
 
     // ─── Session change detection — reset per-session state ───
     const _currSessionTypeName = _demo
-      ? vs('K10Motorsports.Plugin.Demo.SessionTypeName')
-      : vs('K10Motorsports.Plugin.SessionTypeName');
+      ? vs('RaceCorProDrive.Plugin.Demo.SessionTypeName')
+      : vs('RaceCorProDrive.Plugin.SessionTypeName');
     if (_currSessionTypeName && _currSessionTypeName !== _prevSessionTypeName && _prevSessionTypeName) {
       console.log('[K10] Session changed:', _prevSessionTypeName, '→', _currSessionTypeName);
       if (typeof resetTimeline === 'function') resetTimeline();
+      if (typeof resetRaceResults === 'function') resetRaceResults();
+      // Capture session start snapshot for sync
+      if (typeof window.captureSessionStart === 'function') {
+        window.captureSessionStart(p, _demo);
+      }
+      window._sessionStartCaptured = true;
     }
     if (_currSessionTypeName) _prevSessionTypeName = _currSessionTypeName;
 
+    // First-frame capture: if we haven't captured a start snapshot yet and have session data
+    if (typeof window.captureSessionStart === 'function' && !window._sessionStartCaptured && _currSessionTypeName) {
+      window.captureSessionStart(p, _demo);
+      window._sessionStartCaptured = true;
+    }
+
     // Detect game and apply feature gating
-    const rawGameId = v('K10Motorsports.Plugin.GameId') || '';
+    const rawGameId = v('RaceCorProDrive.Plugin.GameId') || '';
     const newGameId = detectGameId(rawGameId);
     if (newGameId !== _currentGameId) {
       _currentGameId = newGameId;
@@ -18506,7 +18873,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (fuelRem) fuelRem.innerHTML = fuelDisplay > 0 ? fuelDisplay.toFixed(1) + ' <span class="unit">' + fuelUnitLabel + '</span>' : '— <span class="unit">' + fuelUnitLabel + '</span>';
     updateFuelBar(fuelPct, 0);
 
-    const fuelPerLapRaw = _demo ? (+v('K10Motorsports.Plugin.Demo.FuelPerLap') || 0) : (+v('DataCorePlugin.Computed.Fuel_LitersPerLap') || 0);
+    const fuelPerLapRaw = _demo ? (+v('RaceCorProDrive.Plugin.Demo.FuelPerLap') || 0) : (+v('DataCorePlugin.Computed.Fuel_LitersPerLap') || 0);
     const fuelPerLap = _fuelImperial ? fuelPerLapRaw / 3.78541 : fuelPerLapRaw;
     const fuelLapsEst = +(p[dsPre + 'FuelLapsRemaining']) || (fuelPerLapRaw > 0 ? fuel / fuelPerLapRaw : 0);
     const completedLaps = +(p[dsPre + 'CompletedLaps']) || 0;
@@ -18534,10 +18901,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Backend sends wear as 0=new, 1=gone. Convert to remaining % for display
     // (100 = full life, 0 = destroyed) so bar width + color thresholds are correct.
     if (_demo) {
-      updateTyreCell(0, +v('K10Motorsports.Plugin.Demo.TyreTempFL'), (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearFL') || 0)) * 100);
-      updateTyreCell(1, +v('K10Motorsports.Plugin.Demo.TyreTempFR'), (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearFR') || 0)) * 100);
-      updateTyreCell(2, +v('K10Motorsports.Plugin.Demo.TyreTempRL'), (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearRL') || 0)) * 100);
-      updateTyreCell(3, +v('K10Motorsports.Plugin.Demo.TyreTempRR'), (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearRR') || 0)) * 100);
+      updateTyreCell(0, +v('RaceCorProDrive.Plugin.Demo.TyreTempFL'), (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearFL') || 0)) * 100);
+      updateTyreCell(1, +v('RaceCorProDrive.Plugin.Demo.TyreTempFR'), (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearFR') || 0)) * 100);
+      updateTyreCell(2, +v('RaceCorProDrive.Plugin.Demo.TyreTempRL'), (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearRL') || 0)) * 100);
+      updateTyreCell(3, +v('RaceCorProDrive.Plugin.Demo.TyreTempRR'), (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearRR') || 0)) * 100);
     } else {
       updateTyreCell(0, +v('DataCorePlugin.GameData.TyreTempFrontLeft'), (p['DataCorePlugin.GameData.TyreWearFrontLeft'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearFrontLeft']) * 100 : -1));
       updateTyreCell(1, +v('DataCorePlugin.GameData.TyreTempFrontRight'), (p['DataCorePlugin.GameData.TyreWearFrontRight'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearFrontRight']) * 100 : -1));
@@ -18546,9 +18913,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ─── Controls (BB / TC / ABS) ───
-    const bb = _demo ? +v('K10Motorsports.Plugin.Demo.BrakeBias') : (+v('DataCorePlugin.GameRawData.Telemetry.dcBrakeBias') || 0);
-    const tc = _demo ? +v('K10Motorsports.Plugin.Demo.TC') : p['DataCorePlugin.GameRawData.Telemetry.dcTractionControl'];
-    const abs = _demo ? +v('K10Motorsports.Plugin.Demo.ABS') : p['DataCorePlugin.GameRawData.Telemetry.dcABS'];
+    const bb = _demo ? +v('RaceCorProDrive.Plugin.Demo.BrakeBias') : (+v('DataCorePlugin.GameRawData.Telemetry.dcBrakeBias') || 0);
+    const tc = _demo ? +v('RaceCorProDrive.Plugin.Demo.TC') : p['DataCorePlugin.GameRawData.Telemetry.dcTractionControl'];
+    const abs = _demo ? +v('RaceCorProDrive.Plugin.Demo.ABS') : p['DataCorePlugin.GameRawData.Telemetry.dcABS'];
     const absActive = +v(dsPre + 'AbsActive') || 0;
     const tcActive  = +v(dsPre + 'TcActive')  || 0;
     const carModel = ds('DataCorePlugin.GameData.CarModel', 'Demo.CarModel');
@@ -18647,8 +19014,8 @@ document.addEventListener('DOMContentLoaded', function () {
     //   Qualifying: first timed lap (completedLaps 0 → 1)
     //   Race: green lights (Grid.SessionState transitions to 4)
     if (window.showMfrFlag && _currentCarLogo && _currentCarLogo !== 'generic' && _currentCarLogo !== 'none') {
-      const sessType = (_demo ? (p['K10Motorsports.Plugin.Demo.SessionTypeName'] || '')
-                              : (p['K10Motorsports.Plugin.SessionTypeName'] || '')).toLowerCase();
+      const sessType = (_demo ? (p['RaceCorProDrive.Plugin.Demo.SessionTypeName'] || '')
+                              : (p['RaceCorProDrive.Plugin.SessionTypeName'] || '')).toLowerCase();
       const isPractice = sessType.includes('practice') || sessType.includes('test') || sessType.includes('warmup');
       const isQuali = sessType.includes('qualify') || sessType.includes('qual');
       const isRace = !isPractice && !isQuali && sessType.length > 0;
@@ -18697,7 +19064,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // (seconds), a TimeSpan string ("00:01:23.456"), or null. Fall back
     // to iRacing raw telemetry LapCurrentLapTime if GameData fails.
     const curLapTime = _demo
-      ? (+(p['K10Motorsports.Plugin.Demo.CurrentLapTime']) || 0)
+      ? (+(p['RaceCorProDrive.Plugin.Demo.CurrentLapTime']) || 0)
       : (_parseTimeValue(p['DataCorePlugin.GameData.CurrentLapTime'])
          || +(p['DataCorePlugin.GameRawData.Telemetry.LapCurrentLapTime']) || 0);
     document.querySelectorAll('.pos-number').forEach(el => {
@@ -18858,10 +19225,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // ─── iRating / Safety ───
     // Priority: manual entry (always wins when set) → telemetry
     let ir = window._manualIRating > 0 ? window._manualIRating
-      : (_demo ? (+v('K10Motorsports.Plugin.Demo.IRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_IRating') || 0));
+      : (_demo ? (+v('RaceCorProDrive.Plugin.Demo.IRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_IRating') || 0));
     let sr = window._manualSafetyRating > 0 ? window._manualSafetyRating
-      : (_demo ? (+v('K10Motorsports.Plugin.Demo.SafetyRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_SafetyRating') || 0));
+      : (_demo ? (+v('RaceCorProDrive.Plugin.Demo.SafetyRating') || 0) : (+v('IRacingExtraProperties.iRacing_DriverInfo_SafetyRating') || 0));
     _hasRatingData = (ir > 0 || sr > 0);
+
+    // Initial rating backfill (one-time on first connection)
+    if (typeof window.initialRatingSync === 'function') {
+      window.initialRatingSync(p, _demo);
+    }
+
     const ratVals = document.querySelectorAll('.rating-value');
     if (ratVals.length >= 2) { ratVals[0].textContent = ir > 0 ? ir : '—'; ratVals[1].textContent = sr > 0 ? sr.toFixed(2) : '—'; }
     updateIRBar(ir);
@@ -18905,8 +19278,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ─── Gaps / Lap Timing ───
     // Prefer server-computed DS.IsNonRaceSession, fallback to client-side string check
     const nonRace = +(p[dsPre + 'IsNonRaceSession']) > 0 || _isNonRaceSession(
-      _demo ? (p['K10Motorsports.Plugin.Demo.SessionTypeName'] || '')
-            : (p['K10Motorsports.Plugin.SessionTypeName'] || ''));
+      _demo ? (p['RaceCorProDrive.Plugin.Demo.SessionTypeName'] || '')
+            : (p['RaceCorProDrive.Plugin.SessionTypeName'] || ''));
 
     const gapLabels = document.querySelectorAll('.gaps-block .panel-label');
     const gapTimes = document.querySelectorAll('.gap-time');
@@ -18925,23 +19298,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const curSector = +(p[dsPre + 'CurrentSector']) || 1;
       const lapDelta = +(p[dsPre + 'LapDelta']) || 0;
-      const sectorCount = 3; // Always 3 sectors, equal thirds — matches CrewChief
 
-      // Build sector arrays from plugin data
-      const splits = [+(p[dsPre + 'SectorSplitS1']) || 0, +(p[dsPre + 'SectorSplitS2']) || 0, +(p[dsPre + 'SectorSplitS3']) || 0];
-      const deltas = [+(p[dsPre + 'SectorDeltaS1']) || 0, +(p[dsPre + 'SectorDeltaS2']) || 0, +(p[dsPre + 'SectorDeltaS3']) || 0];
-      const states = [+(p[dsPre + 'SectorStateS1']) || 0, +(p[dsPre + 'SectorStateS2']) || 0, +(p[dsPre + 'SectorStateS3']) || 0];
+      // Sector count: use cloud-configured value from K10 API, fall back to 3
+      const _gameTrack = p['RaceCorProDrive.Plugin.TrackMap.TrackName']
+                      || p['DataCorePlugin.GameData.TrackName'] || '';
+      if (_gameTrack) resolveTrackDisplayName(_gameTrack); // ensure API call fires
+      const sectorCount = (_gameTrack && _trackSectorCountCache[_gameTrack]) || 3;
+
+      // Build sector arrays from plugin data (pad to sectorCount)
+      const splits = [], deltas = [], states = [];
+      for (let si = 1; si <= sectorCount; si++) {
+        splits.push(+(p[dsPre + 'SectorSplitS' + si]) || 0);
+        deltas.push(+(p[dsPre + 'SectorDeltaS' + si]) || 0);
+        states.push(+(p[dsPre + 'SectorStateS' + si]) || 0);
+      }
       // state: 0=none, 1=pb (session best / purple), 2=faster (green), 3=slower (yellow)
       const stateClass = ['', 'sector-pb', 'sector-faster', 'sector-slower'];
 
       // Store for track map sector coloring + boundaries for path splitting
       window._sectorData = { curSector, splits, deltas, states, sectorCount };
-      // Equal thirds boundaries for track map
-      window._sectorBoundaries = [1/3, 2/3];
+      // Equal-fraction boundaries for track map (N-1 boundaries for N sectors)
+      const boundaries = [];
+      for (let bi = 1; bi < sectorCount; bi++) boundaries.push(bi / sectorCount);
+      window._sectorBoundaries = boundaries;
 
       // Read current lap time for live sector elapsed
       const currentLapTime = _demo
-        ? (+(p['K10Motorsports.Plugin.Demo.CurrentLapTime']) || 0)
+        ? (+(p['RaceCorProDrive.Plugin.Demo.CurrentLapTime']) || 0)
         : (+(p['DataCorePlugin.GameData.CurrentLapTime']) || 0);
 
       // ── Dynamic sector cell management ──
@@ -19087,12 +19470,12 @@ document.addEventListener('DOMContentLoaded', function () {
         _gapsWorstLap = 0;
         _gapsLastLap = 0;
       }
-      const gAhead  = _demo ? (+v('K10Motorsports.Plugin.Demo.GapAhead') || 0)  : (+v('IRacingExtraProperties.iRacing_Opponent_Ahead_Gap') || 0);
-      const gBehind = _demo ? (+v('K10Motorsports.Plugin.Demo.GapBehind') || 0) : (+v('IRacingExtraProperties.iRacing_Opponent_Behind_Gap') || 0);
-      const dAhead  = _demo ? vs('K10Motorsports.Plugin.Demo.DriverAhead')  : vs('IRacingExtraProperties.iRacing_Opponent_Ahead_Name');
-      const dBehind = _demo ? vs('K10Motorsports.Plugin.Demo.DriverBehind') : vs('IRacingExtraProperties.iRacing_Opponent_Behind_Name');
-      const irA     = _demo ? (+v('K10Motorsports.Plugin.Demo.IRAhead') || 0)   : (+v('IRacingExtraProperties.iRacing_Opponent_Ahead_IRating') || 0);
-      const irB     = _demo ? (+v('K10Motorsports.Plugin.Demo.IRBehind') || 0)  : (+v('IRacingExtraProperties.iRacing_Opponent_Behind_IRating') || 0);
+      const gAhead  = _demo ? (+v('RaceCorProDrive.Plugin.Demo.GapAhead') || 0)  : (+v('IRacingExtraProperties.iRacing_Opponent_Ahead_Gap') || 0);
+      const gBehind = _demo ? (+v('RaceCorProDrive.Plugin.Demo.GapBehind') || 0) : (+v('IRacingExtraProperties.iRacing_Opponent_Behind_Gap') || 0);
+      const dAhead  = _demo ? vs('RaceCorProDrive.Plugin.Demo.DriverAhead')  : vs('IRacingExtraProperties.iRacing_Opponent_Ahead_Name');
+      const dBehind = _demo ? vs('RaceCorProDrive.Plugin.Demo.DriverBehind') : vs('IRacingExtraProperties.iRacing_Opponent_Behind_Name');
+      const irA     = _demo ? (+v('RaceCorProDrive.Plugin.Demo.IRAhead') || 0)   : (+v('IRacingExtraProperties.iRacing_Opponent_Ahead_IRating') || 0);
+      const irB     = _demo ? (+v('RaceCorProDrive.Plugin.Demo.IRBehind') || 0)  : (+v('IRacingExtraProperties.iRacing_Opponent_Behind_IRating') || 0);
       if (gapTimes.length >= 2) { gapTimes[0].textContent = (gAhead && Math.abs(gAhead) >= 0.05) ? fmtGap(-Math.abs(gAhead)) : '—'; gapTimes[1].textContent = (gBehind && Math.abs(gBehind) >= 0.05) ? fmtGap(Math.abs(gBehind)) : '—'; }
       if (gapDrivers.length >= 2) { gapDrivers[0].textContent = dAhead || '—'; gapDrivers[1].textContent = dBehind || '—'; }
       if (gapIRs.length >= 2) { gapIRs[0].textContent = irA > 0 ? irA + ' iR' : ''; gapIRs[1].textContent = irB > 0 ? irB + ' iR' : ''; }
@@ -19193,29 +19576,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── Ambient light — feed screen color from C# plugin ───
     {
-      const ambHas = +v('K10Motorsports.Plugin.DS.AmbientHasData') || 0;
+      const ambHas = +v('RaceCorProDrive.Plugin.DS.AmbientHasData') || 0;
       if (ambHas && typeof window.updateAmbientFromPoll === 'function') {
-        const ambR = +v('K10Motorsports.Plugin.DS.AmbientR') || 0;
-        const ambG = +v('K10Motorsports.Plugin.DS.AmbientG') || 0;
-        const ambB = +v('K10Motorsports.Plugin.DS.AmbientB') || 0;
+        const ambR = +v('RaceCorProDrive.Plugin.DS.AmbientR') || 0;
+        const ambG = +v('RaceCorProDrive.Plugin.DS.AmbientG') || 0;
+        const ambB = +v('RaceCorProDrive.Plugin.DS.AmbientB') || 0;
         window.updateAmbientFromPoll(ambR, ambG, ambB);
       }
     }
 
     // ─── Commentary ───
-    const cmVis = +v('K10Motorsports.Plugin.CommentaryVisible') || 0;
+    const cmVis = +v('RaceCorProDrive.Plugin.CommentaryVisible') || 0;
     if (cmVis && !_commentaryWasVisible) {
-      const cmTopicId = vs('K10Motorsports.Plugin.CommentaryTopicId');
+      const cmTopicId = vs('RaceCorProDrive.Plugin.CommentaryTopicId');
       // In pit lane: only allow pit-related commentary through
       const pitAllowedTopics = ['pit_entry', 'low_fuel', 'tyre_wear_high'];
       const suppressInPit = _inPitLane && !pitAllowedTopics.includes(cmTopicId);
       if (!suppressInPit) {
-        const hue = colorToHue(vs('K10Motorsports.Plugin.CommentarySentimentColor'));
-        const severity = +v('K10Motorsports.Plugin.CommentarySeverity') || 0;
-        const trackImg = vs('K10Motorsports.Plugin.CommentaryTrackImage') || '';
-        const carImg = vs('K10Motorsports.Plugin.CommentaryCarImage') || '';
+        const hue = colorToHue(vs('RaceCorProDrive.Plugin.CommentarySentimentColor'));
+        const severity = +v('RaceCorProDrive.Plugin.CommentarySeverity') || 0;
+        const trackImg = vs('RaceCorProDrive.Plugin.CommentaryTrackImage') || '';
+        const carImg = vs('RaceCorProDrive.Plugin.CommentaryCarImage') || '';
         const commentaryImg = trackImg || carImg;  // track image takes priority, car image as fallback
-        showCommentary(hue, vs('K10Motorsports.Plugin.CommentaryTopicTitle'), vs('K10Motorsports.Plugin.CommentaryText'), vs('K10Motorsports.Plugin.CommentaryCategory'), cmTopicId, severity, commentaryImg);
+        showCommentary(hue, vs('RaceCorProDrive.Plugin.CommentaryTopicTitle'), vs('RaceCorProDrive.Plugin.CommentaryText'), vs('RaceCorProDrive.Plugin.CommentaryCategory'), cmTopicId, severity, commentaryImg);
       }
     } else if (!cmVis && _commentaryWasVisible) {
       hideCommentary();
@@ -19223,12 +19606,12 @@ document.addEventListener('DOMContentLoaded', function () {
     _commentaryWasVisible = !!cmVis;
 
     // ─── Strategy calls (displayed via commentary panel with amber hue) ───
-    var stVis = +v('K10Motorsports.Plugin.Strategy.Visible') || 0;
+    var stVis = +v('RaceCorProDrive.Plugin.Strategy.Visible') || 0;
     if (stVis && !_strategyWasVisible && !cmVis) {
       // Show strategy call through the commentary panel with amber hue (45)
-      var stLabel = vs('K10Motorsports.Plugin.Strategy.Label') || 'STRATEGY';
-      var stText  = vs('K10Motorsports.Plugin.Strategy.Text') || '';
-      var stSev   = +v('K10Motorsports.Plugin.Strategy.Severity') || 1;
+      var stLabel = vs('RaceCorProDrive.Plugin.Strategy.Label') || 'STRATEGY';
+      var stText  = vs('RaceCorProDrive.Plugin.Strategy.Text') || '';
+      var stSev   = +v('RaceCorProDrive.Plugin.Strategy.Severity') || 1;
       if (stText) {
         showCommentary(45, stLabel, stText, 'strategy', 'strategy_call', stSev);
       }
@@ -19249,7 +19632,7 @@ document.addEventListener('DOMContentLoaded', function () {
         abs: +(abs || 0),
         fuelPct: fuelPct,
         lapDelta: +(v(dsPre + 'LapDelta') || 0),
-        gapAhead: _demo ? +(v('K10Motorsports.Plugin.Demo.GapAhead') || 0) : +(v('IRacingExtraProperties.iRacing_Opponent_Ahead_Gap') || 0),
+        gapAhead: _demo ? +(v('RaceCorProDrive.Plugin.Demo.GapAhead') || 0) : +(v('IRacingExtraProperties.iRacing_Opponent_Ahead_Gap') || 0),
         latG: +(v(dsPre + 'LatG') || 0),
         longG: +(v(dsPre + 'LongG') || 0),
         steerTorque: +(v(dsPre + 'SteerTorque') || 0),
@@ -19264,39 +19647,39 @@ document.addEventListener('DOMContentLoaded', function () {
         sessionTime: vs('DataCorePlugin.GameData.RemainingTime') || '',
         trackTemp: +(v(dsPre + 'TrackTemp') || 0),
         tyreTemps: _demo
-          ? [+v('K10Motorsports.Plugin.Demo.TyreTempFL'), +v('K10Motorsports.Plugin.Demo.TyreTempFR'), +v('K10Motorsports.Plugin.Demo.TyreTempRL'), +v('K10Motorsports.Plugin.Demo.TyreTempRR')]
+          ? [+v('RaceCorProDrive.Plugin.Demo.TyreTempFL'), +v('RaceCorProDrive.Plugin.Demo.TyreTempFR'), +v('RaceCorProDrive.Plugin.Demo.TyreTempRL'), +v('RaceCorProDrive.Plugin.Demo.TyreTempRR')]
           : [+v('DataCorePlugin.GameData.TyreTempFrontLeft'), +v('DataCorePlugin.GameData.TyreTempFrontRight'), +v('DataCorePlugin.GameData.TyreTempRearLeft'), +v('DataCorePlugin.GameData.TyreTempRearRight')],
         tyreWears: _demo
-          ? [(1 - (+v('K10Motorsports.Plugin.Demo.TyreWearFL') || 0)) * 100, (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearFR') || 0)) * 100, (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearRL') || 0)) * 100, (1 - (+v('K10Motorsports.Plugin.Demo.TyreWearRR') || 0)) * 100]
+          ? [(1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearFL') || 0)) * 100, (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearFR') || 0)) * 100, (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearRL') || 0)) * 100, (1 - (+v('RaceCorProDrive.Plugin.Demo.TyreWearRR') || 0)) * 100]
           : [(p['DataCorePlugin.GameData.TyreWearFrontLeft'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearFrontLeft']) * 100 : 100), (p['DataCorePlugin.GameData.TyreWearFrontRight'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearFrontRight']) * 100 : 100), (p['DataCorePlugin.GameData.TyreWearRearLeft'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearRearLeft']) * 100 : 100), (p['DataCorePlugin.GameData.TyreWearRearRight'] != null ? (1 - +p['DataCorePlugin.GameData.TyreWearRearRight']) * 100 : 100)]
       });
     }
 
     // ─── Driver display name (for leaderboard) ───
-    const dfn = vs('K10Motorsports.Plugin.DriverFirstName') || '';
-    const dln = vs('K10Motorsports.Plugin.DriverLastName') || '';
+    const dfn = vs('RaceCorProDrive.Plugin.DriverFirstName') || '';
+    const dln = vs('RaceCorProDrive.Plugin.DriverLastName') || '';
     if (dfn || dln) {
-      _driverDisplayName = (dfn && dln) ? dfn.charAt(0) + '. ' + dln : (dfn || dln);
+      _driverDisplayName = (dfn && dln) ? dfn + ' ' + dln : (dfn || dln);
     }
     // Zoom map label: first initial + last name, fallback "Local"
     const _zoomLbl = document.getElementById('zoomMapLabel');
     if (_zoomLbl) {
-      _zoomLbl.textContent = (dfn && dln) ? dfn.charAt(0) + '. ' + dln : (dln || 'Local');
+      _zoomLbl.textContent = (dfn && dln) ? dfn + ' ' + dln : (dln || 'Local');
     }
 
     // ─── Track map ───
-    const mapReady = +v('K10Motorsports.Plugin.TrackMap.Ready') || 0;
-    const mapPath = mapReady ? (vs('K10Motorsports.Plugin.TrackMap.SvgPath') || '') : '';
-    const mapPX   = +v('K10Motorsports.Plugin.TrackMap.PlayerX') || 50;
-    const mapPY   = +v('K10Motorsports.Plugin.TrackMap.PlayerY') || 50;
-    const mapOpp  = vs('K10Motorsports.Plugin.TrackMap.Opponents') || '';
-    const mapHeading = +v('K10Motorsports.Plugin.TrackMap.PlayerHeading') || 0;
+    const mapReady = +v('RaceCorProDrive.Plugin.TrackMap.Ready') || 0;
+    const mapPath = mapReady ? (vs('RaceCorProDrive.Plugin.TrackMap.SvgPath') || '') : '';
+    const mapPX   = +v('RaceCorProDrive.Plugin.TrackMap.PlayerX') || 50;
+    const mapPY   = +v('RaceCorProDrive.Plugin.TrackMap.PlayerY') || 50;
+    const mapOpp  = vs('RaceCorProDrive.Plugin.TrackMap.Opponents') || '';
+    const mapHeading = +v('RaceCorProDrive.Plugin.TrackMap.PlayerHeading') || 0;
     // Use plugin path if available; show no track when map isn't ready
     updateTrackMap(mapPath, mapPX, mapPY, mapOpp, speed, mapHeading);
     // Full map label: show display name (from K10 API) or fall back to game name
     const fullMapLbl = document.getElementById('fullMapLabel');
     if (fullMapLbl) {
-      const trackName = vs('K10Motorsports.Plugin.TrackMap.TrackName')
+      const trackName = vs('RaceCorProDrive.Plugin.TrackMap.TrackName')
                      || vs('DataCorePlugin.GameData.TrackName')
                      || '';
       if (trackName) {
@@ -19331,6 +19714,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const isCheckered = flagState === 'checkered';
       if (isCheckered && !_prevCheckered) {
         showRaceEnd(p, _demo);
+        // Show post-race results after race-end screen auto-dismisses (31s)
+        if (typeof showRaceResults === 'function') {
+          setTimeout(function() {
+            try { showRaceResults(p, _demo); } catch(e) { console.warn('[K10] Race results error:', e); }
+          }, 31000);
+        }
+        // Capture session end for sync
+        if (typeof window.captureSessionEnd === 'function') {
+          window.captureSessionEnd(p, _demo);
+        }
       } else if (!isCheckered && _prevCheckered && _raceEndVisible) {
         hideRaceEnd();
       }
@@ -19348,8 +19741,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── Race Timeline ───
     try {
-      const rtIncidents = +(v('K10Motorsports.Plugin.DS.IncidentCount')) || 0;
-      const rtInPit = +(v('K10Motorsports.Plugin.DS.IsInPitLane')) > 0;
+      const rtIncidents = +(v('RaceCorProDrive.Plugin.DS.IncidentCount')) || 0;
+      const rtInPit = +(v('RaceCorProDrive.Plugin.DS.IsInPitLane')) > 0;
       updateRaceTimeline(pos, lap, flagState, rtIncidents, rtInPit);
     } catch(e) { console.error('[K10] Timeline error:', e); }
 
@@ -19382,7 +19775,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // telemetry, demo, commentary, and track map data as a single JSON blob.
   // Load external assets before starting the poll loop
   Promise.all([loadCarLogos(), loadCountryFlags()]).then(() => {
-    console.log('[RaceCorProDrive] Assets loaded, polling SimHub HTTP API at ' + SIMHUB_URL);
+    console.log('[K10 Motorsports] Assets loaded, polling SimHub HTTP API at ' + SIMHUB_URL);
 
     // Initialize logo cycling (before we connect, the logos will cycle to be visible)
     _logoCycleTimer = setInterval(() => {
