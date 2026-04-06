@@ -223,17 +223,15 @@ function TrackCard({ track, onDelete, deleting, onUpdate }: {
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-start gap-3 min-w-0">
           {/* Inline logo preview */}
-          {(track.logoSvg || track.hasLogoPng) && (
+          {(track.logoSvg || track.logoPngDataUri) && (
             <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-center p-1.5">
-              {track.logoSvg ? (
-                <img
-                  src={`data:image/svg+xml,${encodeURIComponent(track.logoSvg)}`}
-                  alt=""
-                  className="max-h-full max-w-full"
-                />
-              ) : (
-                <span className="text-[8px] text-[var(--text-muted)] uppercase">PNG</span>
-              )}
+              <img
+                src={track.logoSvg
+                  ? `data:image/svg+xml,${encodeURIComponent(track.logoSvg)}`
+                  : track.logoPngDataUri!}
+                alt=""
+                className="max-h-full max-w-full"
+              />
             </div>
           )}
           <div className="min-w-0">
@@ -328,9 +326,15 @@ function TrackCard({ track, onDelete, deleting, onUpdate }: {
               {uploadingLogo ? '...' : 'Clear'}
             </button>
           </div>
-        ) : track.hasLogoPng ? (
+        ) : track.logoPngDataUri ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--text-dim)]">PNG uploaded</span>
+            <div className="h-10 w-16 flex items-center justify-center bg-[var(--bg-panel)] rounded border border-[var(--border-subtle)] p-1">
+              <img
+                src={track.logoPngDataUri}
+                alt="Logo"
+                className="max-h-full max-w-full"
+              />
+            </div>
             <button
               onClick={clearLogo}
               disabled={uploadingLogo}

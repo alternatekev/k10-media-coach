@@ -80,10 +80,10 @@ export async function GET(request: NextRequest) {
     missing = missing.filter(t => t.name.toLowerCase().includes(q) || t.trackId.toLowerCase().includes(q))
   }
 
-  // Strip full PNG data from list response, send boolean instead
+  // Include PNG as data URI for rendering (logos are small files)
   const tracksForList = tracks.map(({ logoPng, ...t }) => ({
     ...t,
-    hasLogoPng: !!logoPng,
+    logoPngDataUri: logoPng ? `data:image/png;base64,${logoPng}` : null,
   }))
 
   return NextResponse.json({ tracks: tracksForList, missing, total: tracks.length })

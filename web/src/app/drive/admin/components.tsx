@@ -15,7 +15,7 @@ export interface Track {
   trackLengthKm: number | null
   sectorCount: number
   logoSvg: string | null
-  hasLogoPng: boolean
+  logoPngDataUri: string | null
   createdAt: string
   updatedAt: string
 }
