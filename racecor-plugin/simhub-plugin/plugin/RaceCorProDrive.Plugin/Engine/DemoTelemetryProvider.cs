@@ -58,6 +58,7 @@ namespace RaceCorProDrive.Plugin.Engine
         public double PitSpeedLimitMph  => 72.0 * 0.621371;       // demo pit limit = 72 km/h
         public bool   IsPitSpeeding     => IsInPitLane && SpeedKmh > 72.0;
         public bool   IsNonRaceSession  => false;                  // demo is always Race
+        public TelemetrySnapshot.SessionModeEnum SessionMode => TelemetrySnapshot.SessionModeEnum.Race;
         public bool   IsTimedRace       => RemainingTime > 0;
         public bool   IsEndOfRace       => false;                  // demo never ends
         public int    StartPosition     { get; private set; } = 4;
