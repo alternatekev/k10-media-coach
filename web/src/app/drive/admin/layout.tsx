@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/admin'
 import AdminNav from './AdminNav'
 import ThemeToggle from '@/components/ThemeToggle'
 import ThemeSetSelector from '@/components/ThemeSetSelector'
-import ThemeSetEffects from './styles/ThemeSetEffects'
+import ThemeSetEffects from '@/components/ThemeSetEffects'
 import LogoMark from '@/components/LogoMark'
 
 export const metadata = {

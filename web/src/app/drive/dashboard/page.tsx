@@ -8,6 +8,8 @@ import { Download, LogOut, BarChart3, Trophy, Shield, Car, Settings } from 'luci
 import RaceCard from './RaceCard'
 import { getCarImage, getTrackImage } from '@/lib/commentary-images'
 import ThemeToggle from '@/components/ThemeToggle'
+import ThemeSetSelector from '@/components/ThemeSetSelector'
+import ThemeSetEffects from '@/components/ThemeSetEffects'
 import LogoMark from '@/components/LogoMark'
 
 export default async function DashboardPage() {
@@ -103,6 +105,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-[var(--bg)]">
+      <ThemeSetEffects />
       {/* Top bar */}
       <header className="border-b border-[var(--border)] px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -120,6 +123,7 @@ export default async function DashboardPage() {
             {avatar && <img src={avatar} alt="" className="w-7 h-7 rounded-full" />}
             <span className="text-sm text-[var(--text-secondary)]">{displayName}</span>
           </div>
+          <ThemeSetSelector />
           <ThemeToggle />
           {isAdmin(discordId) && (
             <a
