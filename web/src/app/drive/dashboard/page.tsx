@@ -1,16 +1,11 @@
-import { auth, signOut } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { SITE_URL, SITE_NAME, CATEGORY_LABELS, LICENSE_LABELS, LICENSE_COLORS } from '@/lib/constants'
-import { isAdmin } from '@/lib/admin'
 import { db, schema } from '@/db'
 import { and, eq, gt, desc } from 'drizzle-orm'
-import { Download, LogOut, BarChart3, Trophy, Shield, Car, Settings } from 'lucide-react'
+import { Download, BarChart3, Trophy, Shield, Car } from 'lucide-react'
 import RaceCard from './RaceCard'
 import { getCarImage, getTrackImage } from '@/lib/commentary-images'
-import ThemeToggle from '@/components/ThemeToggle'
-import ThemeSetSelector from '@/components/ThemeSetSelector'
-import ThemeSetEffects from '@/components/ThemeSetEffects'
-import LogoMark from '@/components/LogoMark'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -19,7 +14,6 @@ export default async function DashboardPage() {
   const user_ext = session.user as Record<string, unknown>
   const discordId = user_ext.discordId as string
   const displayName = (user_ext.discordDisplayName as string) || session.user.name || 'Racer'
-  const avatar = session.user.image
 
   // Fetch user and check for active plugin tokens
   let raceCount = 0
@@ -105,45 +99,6 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen relative">
-      <ThemeSetEffects />
-      {/* Top bar */}
-      <header className="border-b border-[var(--border)] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <LogoMark className="h-8 w-auto opacity-80" />
-          <span className="text-sm font-bold tracking-wider uppercase text-[var(--text-secondary)]">Pro Drive</span>
-          {isPluginConnected && (
-            <div className="flex items-center gap-1.5 ml-4 pl-4 border-l border-[var(--border)]">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-              <span className="text-xs text-green-500/80">SimHub connected</span>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            {avatar && <img src={avatar} alt="" className="w-7 h-7 rounded-full" />}
-            <span className="text-sm text-[var(--text-secondary)]">{displayName}</span>
-          </div>
-          <ThemeSetSelector />
-          <ThemeToggle />
-          {isAdmin(discordId) && (
-            <a
-              href="/drive/admin"
-              className="text-xs text-[var(--k10-red)] hover:brightness-110 transition-colors flex items-center gap-1"
-            >
-              <Settings size={12} /> Admin
-            </a>
-          )}
-          <form action={async () => {
-            'use server'
-            await signOut({ redirectTo: '/drive' })
-          }}>
-            <button type="submit" className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors flex items-center gap-1 cursor-pointer">
-              <LogOut size={12} /> Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
       <div className="max-w-4xl mx-auto px-6 py-12">
         {isPluginConnected ? (
           <>

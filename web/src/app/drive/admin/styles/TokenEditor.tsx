@@ -40,7 +40,7 @@ interface ThemeSet {
 type Tab = 'colors' | 'typography' | 'spacing' | 'timing'
 type Theme = 'dark' | 'light'
 
-// Helper to detect if a value is a valid hex color
+// Helper to detect if a value is a valid hex color (6 or 8 digit)
 function isHexColor(value: string): boolean {
   return /^#([a-fA-F0-9]{6}|[a-fA-F0-9]{8})$/.test(value)
 }
@@ -65,6 +65,58 @@ function cssColorToHex(value: string): string | null {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
+// Extract alpha from a CSS color value. Returns 0–1.
+function extractAlpha(value: string): number {
+  // 8-digit hex: #RRGGBBAA
+  const hex8 = value.match(/^#[a-fA-F0-9]{8}$/)
+  if (hex8) {
+    return parseInt(value.slice(7, 9), 16) / 255
+  }
+  // rgba(r, g, b, a) or rgba(r g b / a)
+  const rgbaMatch = value.match(/rgba?\(\s*[\d.]+[%]?\s*[,\s]\s*[\d.]+[%]?\s*[,\s]\s*[\d.]+[%]?\s*[,/]\s*([\d.]+)\s*\)/)
+  if (rgbaMatch) return parseFloat(rgbaMatch[1])
+  // hsla(h, s%, l%, a) or hsla(h s% l% / a)
+  const hslaMatch = value.match(/hsla?\(\s*[\d.]+(?:deg|rad|grad|turn)?\s*[,\s]\s*[\d.]+%?\s*[,\s]\s*[\d.]+%?\s*[,/]\s*([\d.]+)\s*\)/)
+  if (hslaMatch) return parseFloat(hslaMatch[1])
+  return 1
+}
+
+// Apply a new alpha to a CSS color, preserving its original format.
+function applyAlpha(value: string, alpha: number): string {
+  const a = Math.round(alpha * 100) / 100
+
+  // 8-digit hex → update last two chars
+  if (/^#[a-fA-F0-9]{8}$/.test(value)) {
+    const hex = Math.round(a * 255).toString(16).padStart(2, '0')
+    return value.slice(0, 7) + hex
+  }
+  // 6-digit hex → extend to 8-digit if alpha < 1
+  if (/^#[a-fA-F0-9]{6}$/.test(value)) {
+    if (a >= 1) return value
+    const hex = Math.round(a * 255).toString(16).padStart(2, '0')
+    return value + hex
+  }
+  // rgba(...)
+  if (/^rgba?\(/.test(value)) {
+    const parts = value.match(/rgba?\(\s*([\d.]+[%]?)\s*[,\s]\s*([\d.]+[%]?)\s*[,\s]\s*([\d.]+[%]?)/)
+    if (parts) return `rgba(${parts[1]}, ${parts[2]}, ${parts[3]}, ${a})`
+  }
+  // hsla(...)
+  if (/^hsla?\(/.test(value)) {
+    const parts = value.match(/hsla?\(\s*([\d.]+(?:deg|rad|grad|turn)?)\s*[,\s]\s*([\d.]+%?)\s*[,\s]\s*([\d.]+%?)/)
+    if (parts) return `hsla(${parts[1]}, ${parts[2]}, ${parts[3]}, ${a})`
+  }
+  // Fallback: convert to rgba via canvas
+  const hex = cssColorToHex(value)
+  if (hex) {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${a})`
+  }
+  return value
+}
+
 // Helper to extract numeric value from size strings like "16px"
 function parseSizeValue(value: string): number {
   const match = value.match(/^(\d+(?:\.\d+)?)/)
@@ -81,10 +133,18 @@ function formatSizeValue(num: number, originalValue: string): string {
 function ColorSwatch({ value }: { value: string }) {
   return (
     <div
-      className="w-8 h-8 rounded-sm border border-[var(--border)]"
-      style={{ backgroundColor: value }}
+      className="w-8 h-8 rounded-sm border border-[var(--border)] relative overflow-hidden"
       title={value}
-    />
+    >
+      {/* Checkerboard for transparent colors */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='4' height='4' fill='%23ccc'/%3E%3Crect x='4' y='4' width='4' height='4' fill='%23ccc'/%3E%3Crect x='4' width='4' height='4' fill='%23fff'/%3E%3Crect y='4' width='4' height='4' fill='%23fff'/%3E%3C/svg%3E")`,
+        }}
+      />
+      <div className="absolute inset-0" style={{ backgroundColor: value }} />
+    </div>
   )
 }
 
@@ -192,7 +252,25 @@ function ColorEditor({
 }) {
   // Convert any CSS color to hex so the picker always works
   const isHex = isHexColor(effectiveValue)
-  const pickerHex = isHex ? effectiveValue : cssColorToHex(effectiveValue)
+  // For the picker, strip alpha from 8-digit hex
+  const pickerHex = isHex
+    ? effectiveValue.slice(0, 7)
+    : cssColorToHex(effectiveValue)
+  const alpha = extractAlpha(effectiveValue)
+  const alphaPercent = Math.round(alpha * 100)
+
+  const handleHexChange = (hex: string) => {
+    // When picking from the hex picker, preserve current alpha
+    if (alpha < 1) {
+      onUpdate(applyAlpha(hex, alpha))
+    } else {
+      onUpdate(hex)
+    }
+  }
+
+  const handleAlphaChange = (newAlpha: number) => {
+    onUpdate(applyAlpha(effectiveValue, newAlpha))
+  }
 
   return (
     <>
@@ -207,9 +285,47 @@ function ColorEditor({
         <div className="mt-3 p-3 bg-[var(--bg-panel)] rounded-md border border-[var(--border)]">
           {pickerHex && (
             <div className="mb-3">
-              <HexColorPicker color={pickerHex} onChange={onUpdate} />
+              <HexColorPicker color={pickerHex} onChange={handleHexChange} />
             </div>
           )}
+          {/* Alpha slider */}
+          <div className="mb-3">
+            <label className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-1.5">
+              <span>Alpha</span>
+              <span className="font-mono">{alphaPercent}%</span>
+            </label>
+            <div className="relative h-3 rounded overflow-hidden">
+              {/* Checkerboard behind the gradient */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='4' height='4' fill='%23ccc'/%3E%3Crect x='4' y='4' width='4' height='4' fill='%23ccc'/%3E%3Crect x='4' width='4' height='4' fill='%23fff'/%3E%3Crect y='4' width='4' height='4' fill='%23fff'/%3E%3C/svg%3E")`,
+                }}
+              />
+              {/* Color gradient from transparent to opaque */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: pickerHex
+                    ? `linear-gradient(to right, ${pickerHex}00, ${pickerHex})`
+                    : 'linear-gradient(to right, transparent, var(--text))',
+                }}
+              />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={alphaPercent}
+                onChange={(e) => handleAlphaChange(parseInt(e.target.value) / 100)}
+                className="absolute inset-0 w-full opacity-0 cursor-pointer"
+              />
+              {/* Thumb indicator */}
+              <div
+                className="absolute top-0 bottom-0 w-1 bg-white rounded shadow-sm pointer-events-none"
+                style={{ left: `calc(${alphaPercent}% - 2px)`, boxShadow: '0 0 2px rgba(0,0,0,0.6)' }}
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-xs text-[var(--text-muted)] mb-1">
               Raw value (hex, rgba, hsla):
