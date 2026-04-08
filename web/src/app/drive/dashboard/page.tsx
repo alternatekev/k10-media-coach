@@ -7,6 +7,7 @@ import { Download, BarChart3, Trophy, Shield, Car } from 'lucide-react'
 import RaceCard from './RaceCard'
 import RaceCalendarHeatmap, { type SessionDataPoint } from './RaceCalendarHeatmap'
 import RaceScatterGrid from './RaceScatterGrid'
+import IRacingQuickImport from './IRacingQuickImport'
 import { getCarImage, getTrackImage } from '@/lib/commentary-images'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -274,14 +275,17 @@ export default async function DashboardPage() {
       <div className="max-w-[120rem] mx-auto px-6 py-12">
         {isPluginConnected ? (
           <>
-            {/* Welcome */}
-            <section className="mb-12">
-              <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--ff-display)' }}>
-                Welcome, {displayName}
-              </h1>
-              <p className="text-[var(--text-dim)]">
-                Your overlay is connected and sending data to Pro Drive.
-              </p>
+            {/* Welcome + Quick Import */}
+            <section className="mb-12 flex items-start justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--ff-display)' }}>
+                  Welcome, {displayName}
+                </h1>
+                <p className="text-[var(--text-dim)]">
+                  Your overlay is connected and sending data to Pro Drive.
+                </p>
+              </div>
+              <IRacingQuickImport />
             </section>
 
             {/* Race History */}
