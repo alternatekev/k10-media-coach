@@ -109,38 +109,85 @@ namespace RaceCorProDrive.Plugin.Engine
                 string encodedPassword = Convert.ToBase64String(hashBytes);
 
                 // POST to auth endpoint
-                // iRacing's API requires browser-like headers; custom User-Agents get 405'd
-                var request = (HttpWebRequest)WebRequest.Create(AUTH_URL);
-                request.Method = "POST";
-                request.ContentType = "application/json";
-                request.Accept = "application/json";
-                request.CookieContainer = _cookies;
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
-                request.Headers.Add("Origin", "https://members-ng.iracing.com");
-                request.Referer = "https://members-ng.iracing.com/";
+                // Key quirks:
+                //   - iRacing requires browser-like headers (blocks custom User-Agents)
+                //   - .NET HttpWebRequest silently converts POST→GET on 302 redirects,
+                //     which causes a 405 on the destination. We disable auto-redirect
+                //     and re-POST to the Location header ourselves.
+                //   - Ensure TLS 1.2+ (iRacing rejects older protocols)
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | (SecurityProtocolType)12288; // 12288 = Tls13 (may not be defined on older .NET)
 
                 string body = JsonConvert.SerializeObject(new
                 {
                     email = email,
                     password = encodedPassword
                 });
-
                 byte[] bodyBytes = Encoding.UTF8.GetBytes(body);
-                request.ContentLength = bodyBytes.Length;
-                using (var stream = request.GetRequestStream())
-                {
-                    stream.Write(bodyBytes, 0, bodyBytes.Length);
-                }
 
-                using (var response = (HttpWebResponse)request.GetResponse())
+                string authUrl = AUTH_URL;
+                const int maxRedirects = 3;
+
+                for (int attempt = 0; attempt <= maxRedirects; attempt++)
                 {
-                    if (response.StatusCode == HttpStatusCode.OK)
+                    var request = (HttpWebRequest)WebRequest.Create(authUrl);
+                    request.Method = "POST";
+                    request.ContentType = "application/json";
+                    request.Accept = "application/json";
+                    request.CookieContainer = _cookies;
+                    request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+                    request.Headers.Add("Origin", "https://members-ng.iracing.com");
+                    request.Referer = "https://members-ng.iracing.com/";
+                    request.AllowAutoRedirect = false;
+                    request.ContentLength = bodyBytes.Length;
+
+                    using (var stream = request.GetRequestStream())
                     {
-                        _authenticated = true;
-                        SimHub.Logging.Current.Info("[IRacingData] Authenticated via email/password");
-                        return true;
+                        stream.Write(bodyBytes, 0, bodyBytes.Length);
                     }
-                    _lastError = $"Auth failed: HTTP {(int)response.StatusCode}";
+
+                    HttpWebResponse response;
+                    try
+                    {
+                        response = (HttpWebResponse)request.GetResponse();
+                    }
+                    catch (WebException wex) when (wex.Response is HttpWebResponse errResp
+                        && ((int)errResp.StatusCode >= 300 && (int)errResp.StatusCode < 400))
+                    {
+                        // Some .NET versions throw on 3xx when AllowAutoRedirect=false
+                        response = errResp;
+                    }
+
+                    using (response)
+                    {
+                        int code = (int)response.StatusCode;
+
+                        // Follow redirects while preserving POST method
+                        if (code >= 300 && code < 400)
+                        {
+                            string location = response.Headers["Location"];
+                            if (!string.IsNullOrEmpty(location))
+                            {
+                                authUrl = new Uri(new Uri(authUrl), location).ToString();
+                                SimHub.Logging.Current.Info($"[IRacingData] Auth redirect ({code}) → {authUrl}");
+                                continue;
+                            }
+                        }
+
+                        if (response.StatusCode == HttpStatusCode.OK)
+                        {
+                            _authenticated = true;
+                            SimHub.Logging.Current.Info("[IRacingData] Authenticated via email/password");
+                            return true;
+                        }
+
+                        using (var reader = new StreamReader(response.GetResponseStream()))
+                        {
+                            string respBody = reader.ReadToEnd();
+                            _lastError = $"Auth failed: HTTP {code}";
+                            SimHub.Logging.Current.Warn($"[IRacingData] Auth failed ({code}): {respBody.Substring(0, Math.Min(respBody.Length, 200))}");
+                        }
+                        break; // Non-redirect, non-OK — stop retrying
+                    }
                 }
             }
             catch (WebException ex)
