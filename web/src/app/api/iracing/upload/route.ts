@@ -88,32 +88,6 @@ export async function POST(request: NextRequest) {
     // ── 0. Build track lookup for resolving iRacing names → DB track names ──
     const trackLookup = await buildTrackLookup()
 
-    // ── 1. Upsert iRacing account link (only if custId provided) ──
-    if (custId) {
-      try {
-        const existing = await db.select().from(schema.iracingAccounts)
-          .where(eq(schema.iracingAccounts.userId, userId))
-          .limit(1)
-
-        if (existing.length > 0) {
-          await db.update(schema.iracingAccounts).set({
-            iracingCustId: custId,
-            iracingDisplayName: displayName || null,
-            importStatus: 'importing',
-            updatedAt: new Date(),
-          }).where(eq(schema.iracingAccounts.id, existing[0].id))
-        } else {
-          await db.insert(schema.iracingAccounts).values({
-            userId,
-            iracingCustId: custId,
-            iracingDisplayName: displayName || null,
-            importStatus: 'importing',
-          })
-        }
-      } catch (err: any) {
-        errors.push(`Account link: ${err.message}`)
-      }
-    }
 
     // ── 2. Import recent races ──
     const trackResolutions: Record<string, string> = {}
