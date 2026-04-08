@@ -415,6 +415,46 @@ export default function TracksSection() {
   const [search, setSearch] = useState('')
   const [game, setGame] = useState('')
   const [sort, setSort] = useState('name-asc')
+  const [renameStatus, setRenameStatus] = useState<'idle' | 'running' | 'done'>('idle')
+  const [renameResult, setRenameResult] = useState<string | null>(null)
+  const [consolidateStatus, setConsolidateStatus] = useState<'idle' | 'running' | 'done'>('idle')
+  const [consolidateResult, setConsolidateResult] = useState<string | null>(null)
+
+  const handleRename = useCallback(async () => {
+    setRenameStatus('running')
+    setRenameResult(null)
+    try {
+      const res = await fetch('/api/admin/tracks/rename-to-iracing', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setRenameResult(`Renamed ${data.renamed?.length ?? 0} tracks, updated ${data.sessionsUpdated ?? 0} sessions. ${data.ambiguous?.length ?? 0} unmapped.`)
+        fetchTracks()
+      } else {
+        setRenameResult(`Error: ${data.error}`)
+      }
+    } catch (err: any) {
+      setRenameResult(`Error: ${err.message}`)
+    }
+    setRenameStatus('done')
+  }, [])
+
+  const handleConsolidate = useCallback(async () => {
+    setConsolidateStatus('running')
+    setConsolidateResult(null)
+    try {
+      const res = await fetch('/api/iracing/consolidate-tracks', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setConsolidateResult(`Updated ${data.updated ?? 0} sessions. ${data.unmatchedTracks?.length ?? 0} unmatched tracks.`)
+        fetchTracks()
+      } else {
+        setConsolidateResult(`Error: ${data.error}`)
+      }
+    } catch (err: any) {
+      setConsolidateResult(`Error: ${err.message}`)
+    }
+    setConsolidateStatus('done')
+  }, [])
 
   const fetchTracks = useCallback(async () => {
     setLoading(true)
@@ -478,6 +518,50 @@ export default function TracksSection() {
           className="w-4/12 min-w-0 sticky top-6"
         >
           <UploadForm onUploaded={fetchTracks} />
+
+          {/* iRacing track name tools */}
+          <div className="mt-6 border border-[var(--border)] rounded-lg p-5 bg-[var(--bg-surface)]">
+            <h2 className="text-sm font-bold tracking-wide uppercase text-[var(--text-secondary)] mb-3">iRacing Track Names</h2>
+            <p className="text-xs text-[var(--text-muted)] mb-4">
+              Sync track names with iRacing's official naming, and fix race session references.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <button
+                  onClick={handleRename}
+                  disabled={renameStatus === 'running'}
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  style={{
+                    background: 'var(--surface-secondary, #333)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {renameStatus === 'running' ? 'Renaming...' : 'Use iRacing Names'}
+                </button>
+                {renameResult && (
+                  <p className="text-xs text-[var(--text-muted)] mt-1.5">{renameResult}</p>
+                )}
+              </div>
+
+              <div>
+                <button
+                  onClick={handleConsolidate}
+                  disabled={consolidateStatus === 'running'}
+                  className="px-4 py-2 rounded-md text-sm font-medium transition-all disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  style={{
+                    background: 'var(--surface-secondary, #333)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {consolidateStatus === 'running' ? 'Fixing...' : 'Fix Track Names'}
+                </button>
+                {consolidateResult && (
+                  <p className="text-xs text-[var(--text-muted)] mt-1.5">{consolidateResult}</p>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Missing tracks */}
           {missing.length > 0 && (

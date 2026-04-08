@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db, schema } from '@/db'
 import { eq } from 'drizzle-orm'
+import { resolveIRacingTrackId } from '@/data/iracing-track-map'
 
 /**
  * GET /api/tracks?trackName=xxx — Resolve track metadata and map data.
@@ -14,6 +15,7 @@ import { eq } from 'drizzle-orm'
  */
 export async function GET(request: NextRequest) {
   const trackName = request.nextUrl.searchParams.get('trackName')
+  const configName = request.nextUrl.searchParams.get('config') || undefined
 
   if (!trackName) {
     return NextResponse.json({ error: 'trackName query param required' }, { status: 400 })
@@ -35,14 +37,26 @@ export async function GET(request: NextRequest) {
     .where(eq(schema.trackMaps.trackName, trackName.trim()))
     .limit(1)
 
-  // Fall back to trackId slug match
+  // Fall back to iRacing track mapping → Pro Drive trackId
   if (results.length === 0) {
-    const slug = trackName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const mappedId = resolveIRacingTrackId(trackName.trim(), configName)
     results = await db
       .select(selectFields)
       .from(schema.trackMaps)
-      .where(eq(schema.trackMaps.trackId, slug))
+      .where(eq(schema.trackMaps.trackId, mappedId))
       .limit(1)
+  }
+
+  // Last resort: raw slug match
+  if (results.length === 0) {
+    const slug = trackName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (slug !== trackName.trim()) {
+      results = await db
+        .select(selectFields)
+        .from(schema.trackMaps)
+        .where(eq(schema.trackMaps.trackId, slug))
+        .limit(1)
+    }
   }
 
   if (results.length === 0) {

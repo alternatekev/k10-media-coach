@@ -9,6 +9,7 @@ import {
   CalendarClock,
   MapPin,
   Sparkles,
+  Upload,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { href: '/drive/when', label: 'When', icon: CalendarClock },
   { href: '/drive/tracks', label: 'Tracks & Cars', icon: MapPin },
   { href: '/drive/moments', label: 'Moments', icon: Sparkles },
+  { href: '/drive/iracing', label: 'iRacing Import', icon: Upload },
 ]
 
 export default function DriveNavLinks() {

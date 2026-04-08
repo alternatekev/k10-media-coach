@@ -6964,7 +6964,8 @@ const _defaultSettings = {
   // Remote design tokens
   useRemoteTokens: true,       // fetch CSS token builds from K10 Pro Drive API
   theme: 'dark',               // 'dark' or 'light' — synced with web dashboard preference
-  apiBase: 'https://prodrive.racecor.io' // K10 Pro Drive API base URL
+  apiBase: 'https://prodrive.racecor.io', // K10 Pro Drive API base URL
+  iracingDataSync: true // Sync race sessions to Pro Drive by default
 };
 
 let _settings = Object.assign({}, _defaultSettings);
@@ -10126,7 +10127,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Cache auth token for session-sync.js
         if (window.k10 && window.k10.getK10Token) {
-          window.k10.getK10Token().then(function(t) { _k10Token = t; }).catch(function() {});
+          window.k10.getK10Token().then(function(t) {
+            _k10Token = t;
+
+            // Trigger full iRacing career import on initial connect
+            // (deduplicates server-side, safe to call even if data exists)
+            if (_settings.iracingDataSync && window.triggerIRacingImport) {
+              console.log('[Connections] K10 connected — triggering iRacing career sync');
+              window.triggerIRacingImport();
+            }
+          }).catch(function() {});
         }
       } else {
         const errMsg = result?.error || 'Connection failed';
@@ -10414,9 +10424,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
           updateK10ConnectionCard();
 
-          // Cache auth token for session-sync.js
+          // Cache auth token for session-sync.js + check iRacing sync on load
           if (window.k10 && window.k10.getK10Token) {
-            window.k10.getK10Token().then(function(t) { _k10Token = t; }).catch(function() {});
+            window.k10.getK10Token().then(function(t) {
+              _k10Token = t;
+
+              // Check if iRacing history needs syncing (on overlay load)
+              if (_settings.iracingDataSync && window.checkAndSyncIRacingHistory) {
+                // Small delay to let the plugin HTTP server start
+                setTimeout(function() { window.checkAndSyncIRacingHistory(); }, 3000);
+              }
+            }).catch(function() {});
           }
 
           // Verify token in background
@@ -10456,9 +10474,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
       updateK10ConnectionCard();
 
-      // Cache auth token for session-sync.js
+      // Cache auth token for session-sync.js + check iRacing sync on load
       if (window.k10 && window.k10.getK10Token) {
-        window.k10.getK10Token().then(function(t) { _k10Token = t; }).catch(function() {});
+        window.k10.getK10Token().then(function(t) {
+          _k10Token = t;
+
+          // Check if iRacing history needs syncing (on overlay load)
+          if (_settings.iracingDataSync && window.checkAndSyncIRacingHistory) {
+            // Small delay to let the plugin HTTP server start
+            setTimeout(function() { window.checkAndSyncIRacingHistory(); }, 3000);
+          }
+        }).catch(function() {});
       }
     }
   }
@@ -10557,7 +10583,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var newVal = !isOn;
     el.classList.toggle('on', newVal);
     _settings.iracingDataSync = newVal;
-    if (window.setSessionSyncEnabled) window.setSessionSyncEnabled(newVal);
 
     var detail = document.getElementById('iracingSyncDetail');
     var active = document.getElementById('iracingSyncActive');
@@ -10565,8 +10590,20 @@ document.addEventListener('DOMContentLoaded', function () {
     if (active) active.style.display = newVal ? '' : 'none';
 
     saveSettings();
+
+    // If just enabled, trigger sync check now
+    if (newVal && window.checkAndSyncIRacingHistory) {
+      window.checkAndSyncIRacingHistory();
+    }
   }
   window.toggleIRacingSync = toggleIRacingSync;
+
+  // ─── iRacing OAuth Notice ───
+  // Legacy auth retired Dec 2025. Show notice when sync can't authenticate.
+  window.showIRacingOAuthNotice = function() {
+    var notice = document.getElementById('iracingOAuthNotice');
+    if (notice) notice.style.display = '';
+  };
 
   // ─── Logo subtitle ───
   function updateLogoSubtitle(value) {
@@ -10894,7 +10931,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var syncToggle = document.getElementById('iracingSyncToggle');
   if (syncToggle && _settings.iracingDataSync) {
     syncToggle.classList.add('on');
-    if (window.setSessionSyncEnabled) window.setSessionSyncEnabled(true);
     var detail = document.getElementById('iracingSyncDetail');
     var active = document.getElementById('iracingSyncActive');
     if (detail) detail.style.display = 'none';
