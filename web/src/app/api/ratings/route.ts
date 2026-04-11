@@ -45,21 +45,39 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Also record a history point so we build up iRating history over time
+    // Record a history point only when the iRating actually changed
+    let historyRecorded = false
     let historyError: string | null = null
-    if (iRating > 0) {
+    const roundedIR = Math.round(iRating)
+
+    if (roundedIR > 0) {
       try {
-        await db.insert(schema.ratingHistory).values({
-          userId: result.user.id,
-          category,
-          iRating: Math.round(iRating),
-          safetyRating: String(safetyRating || '0.00'),
-          license: license || 'R',
-          sessionType: category,
-          trackName: null,
-          carModel: null,
-          createdAt: new Date(),
-        })
+        // Check the most recent history entry for this user+category
+        const lastEntry = await db.select().from(schema.ratingHistory)
+          .where(and(
+            eq(schema.ratingHistory.userId, result.user.id),
+            eq(schema.ratingHistory.category, category)
+          ))
+          .orderBy(desc(schema.ratingHistory.createdAt))
+          .limit(1)
+
+        const lastIR = lastEntry.length > 0 ? lastEntry[0].iRating : null
+
+        if (lastIR !== roundedIR) {
+          await db.insert(schema.ratingHistory).values({
+            userId: result.user.id,
+            category,
+            iRating: roundedIR,
+            safetyRating: String(safetyRating || '0.00'),
+            license: license || 'R',
+            prevIRating: lastIR,
+            sessionType: category,
+            trackName: null,
+            carModel: null,
+            createdAt: new Date(),
+          })
+          historyRecorded = true
+        }
       } catch (histErr: unknown) {
         historyError = histErr instanceof Error ? histErr.message : String(histErr)
         console.error('[ratings] ratingHistory insert failed:', historyError)
@@ -69,8 +87,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
-      historyRecorded: iRating > 0 && !historyError,
+      historyRecorded,
       historyError,
+      historySkipped: roundedIR > 0 && !historyRecorded && !historyError ? 'unchanged' : undefined,
     })
   } catch (err) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
