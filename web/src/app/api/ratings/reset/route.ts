@@ -29,7 +29,7 @@ export async function POST() {
 
   const userId = users[0].id
 
-  // Delete all rating history and current ratings for this user
+  // Delete ALL iRacing data for this user
   const historyDeleted = await db.delete(schema.ratingHistory)
     .where(eq(schema.ratingHistory.userId, userId))
     .returning()
@@ -38,11 +38,16 @@ export async function POST() {
     .where(eq(schema.driverRatings.userId, userId))
     .returning()
 
+  const sessionsDeleted = await db.delete(schema.raceSessions)
+    .where(eq(schema.raceSessions.userId, userId))
+    .returning()
+
   return NextResponse.json({
     success: true,
     deleted: {
       historyRows: historyDeleted.length,
       ratingRows: ratingsDeleted.length,
+      sessionRows: sessionsDeleted.length,
     },
   })
 }

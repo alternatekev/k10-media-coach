@@ -110,11 +110,46 @@ export default function IRatingTimeline({ history }: Props) {
     return rows
   }, [history, categories])
 
+  // Count unique timestamps — if there's only 1, there's no trend to show
+  const uniqueDates = new Set(chartData.map(r => r._ts as string))
+  const hasTrend = uniqueDates.size >= 2
+
   if (categories.length === 0 || chartData.length === 0) {
     return (
       <div className="p-8 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] text-center">
         <p className="text-sm text-[var(--text-dim)]">
           Complete some races to see your iRating progression
+        </p>
+      </div>
+    )
+  }
+
+  // With only one data point, show current values instead of a flat line
+  if (!hasTrend) {
+    return (
+      <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] p-4">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3">
+          <TrendingUp size={20} className="text-[var(--border-accent)]" />
+          iRating
+        </div>
+        <div className="flex gap-6 px-2">
+          {categories.map(cat => {
+            const val = chartData[0]?.[cat] as number | undefined
+            const meta = CATEGORY_META[cat]
+            return val != null ? (
+              <div key={cat} className="flex flex-col items-center">
+                <span className="text-2xl font-bold" style={{ color: meta?.color ?? '#999' }}>
+                  {val.toLocaleString()}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mt-1">
+                  {meta?.label ?? cat}
+                </span>
+              </div>
+            ) : null
+          })}
+        </div>
+        <p className="text-[10px] text-[var(--text-muted)] mt-3">
+          Race to start tracking your iRating over time
         </p>
       </div>
     )
