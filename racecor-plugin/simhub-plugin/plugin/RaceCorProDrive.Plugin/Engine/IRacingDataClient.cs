@@ -337,8 +337,9 @@ namespace RaceCorProDrive.Plugin.Engine
                 }
                 else
                 {
-                    // Flat array response
-                    var arr = firstPage as JArray;
+                    // No "data" wrapper — check for a top-level results array
+                    var arr = firstPage["results"] as JArray
+                           ?? firstPage["results_page"] as JArray;
                     if (arr != null)
                     {
                         foreach (var item in arr) allRaces.Add(item);
