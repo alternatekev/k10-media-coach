@@ -33,6 +33,7 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   dirt_road:  { label: 'Dirt Road',  color: '#43a047' },
   dirt_oval:  { label: 'Dirt Oval',  color: '#ff9800' },
   sports_car: { label: 'Sports Car', color: '#ab47bc' },
+  formula:    { label: 'Formula',    color: '#00bcd4' },
 }
 
 function formatDate(dateStr: string): string {
@@ -47,8 +48,10 @@ export default function IRatingTimeline({ history }: Props) {
   const categories = useMemo(() => {
     const cats = new Set<string>()
     for (const h of history) cats.add(h.category)
-    // Return in a stable order matching CATEGORY_META keys
-    return Object.keys(CATEGORY_META).filter(c => cats.has(c))
+    // Known categories first (in stable order), then any extras
+    const known = Object.keys(CATEGORY_META).filter(c => cats.has(c))
+    const extra = [...cats].filter(c => !CATEGORY_META[c])
+    return [...known, ...extra]
   }, [history])
 
   // Build chart data: one row per timestamp, with a column per category.
@@ -126,12 +129,15 @@ export default function IRatingTimeline({ history }: Props) {
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 16 }}>
           <defs>
-            {categories.map(cat => (
-              <linearGradient key={cat} id={`grad-${cat}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CATEGORY_META[cat].color} stopOpacity={0.25} />
-                <stop offset="100%" stopColor={CATEGORY_META[cat].color} stopOpacity={0} />
-              </linearGradient>
-            ))}
+            {categories.map(cat => {
+              const color = CATEGORY_META[cat]?.color ?? '#999'
+              return (
+                <linearGradient key={cat} id={`grad-${cat}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              )
+            })}
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis
@@ -169,7 +175,7 @@ export default function IRatingTimeline({ history }: Props) {
               type="monotone"
               dataKey={cat}
               name={cat}
-              stroke={CATEGORY_META[cat].color}
+              stroke={CATEGORY_META[cat]?.color ?? '#999'}
               strokeWidth={2}
               fillOpacity={1}
               fill={`url(#grad-${cat})`}
