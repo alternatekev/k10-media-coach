@@ -4,6 +4,7 @@ import { SITE_URL, SITE_NAME } from "@/lib/constants";
 import { db, schema } from "@/db";
 import { and, eq, gt, desc } from "drizzle-orm";
 import { Download, BarChart3, Trophy, Shield } from "lucide-react";
+import { resolveIRacingTrackId } from "@/data/iracing-track-map";
 import RaceHistory from "./RaceHistory";
 import RaceCalendarHeatmap, {
   type SessionDataPoint,
@@ -533,7 +534,9 @@ export default async function DashboardPage() {
 
       for (const rh of allRatingHistory) {
         const dist = Math.abs(rh.createdAt.getTime() - sessionTime);
-        if (dist < bestDist && rh.trackName === s.trackName) {
+        const rhTrackId = resolveIRacingTrackId(rh.trackName || '')
+        const sTrackId = resolveIRacingTrackId(s.trackName || '')
+        if (dist < bestDist && rhTrackId === sTrackId) {
           bestDist = dist;
           bestMatch = {
             irDelta: rh.prevIRating != null ? rh.iRating - rh.prevIRating : 0,
@@ -578,6 +581,17 @@ export default async function DashboardPage() {
   // This prevents practices from being emitted as standalone before the backward
   // scan of the subsequent race has a chance to claim them.
 
+  // Helper: resolve a session's track to a canonical trackId for comparison.
+  // iRacing sends inconsistent names ("mexicocity gp" vs "Autódromo Hermanos Rodríguez")
+  // so we normalize via metadata.prodriveTrackId or resolveIRacingTrackId.
+  const sessionTrackId = (s: RaceSession): string => {
+    const meta = s.metadata as Record<string, unknown> | null
+    if (meta?.prodriveTrackId && typeof meta.prodriveTrackId === 'string') {
+      return meta.prodriveTrackId
+    }
+    return resolveIRacingTrackId(s.trackName || '', (meta?.iracingTrackConfig as string) || undefined)
+  }
+
   const sortedAsc = [...recentSessions].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -590,6 +604,8 @@ export default async function DashboardPage() {
     const s = sortedAsc[i];
     if (isPractice(s)) continue;
 
+    const sTrackId = sessionTrackId(s);
+
     // Find the nearest preceding unclaimed practice on the same track within 8 h
     for (let j = i - 1; j >= 0; j--) {
       const prev = sortedAsc[j];
@@ -598,7 +614,7 @@ export default async function DashboardPage() {
         new Date(s.createdAt).getTime() - new Date(prev.createdAt).getTime();
       if (
         isPractice(prev) &&
-        prev.trackName === s.trackName &&
+        sessionTrackId(prev) === sTrackId &&
         gapMs < 8 * 60 * 60 * 1000
       ) {
         practiceForRace.set(s.id, prev);

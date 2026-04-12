@@ -84,6 +84,7 @@ export const IRACING_TRACK_MAP: Record<string, string> = {
   'Autodromo Jose Carlos Pace': 'interlagos',
   'Autódromo Hermanos Rodríguez': 'mexico-city',
   'Autodromo Hermanos Rodriguez': 'mexico-city',
+  'mexicocity gp': 'mexico-city',
   'Autodromo Internacional do Algarve': 'portimao',
   'Autódromo Internacional do Algarve': 'portimao',
   'Circuit Paul Ricard': 'paul-ricard',

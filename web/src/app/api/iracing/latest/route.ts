@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateToken } from '@/lib/plugin-auth'
 import { db, schema } from '@/db'
 import { eq } from 'drizzle-orm'
+import { buildTrackLookup, resolveTrackName, consolidateUserTracks } from '@/lib/resolve-track'
+import { resolveIRacingTrackId } from '@/data/iracing-track-map'
 
 /**
  * POST /api/iracing/latest — Import only the latest recent races from iRacing
@@ -52,6 +54,9 @@ export async function POST(request: NextRequest) {
         .map(String)
     )
 
+    // Build track lookup once for resolving all races in this batch
+    const trackLookup = await buildTrackLookup()
+
     for (const race of recentRaces) {
       try {
         const subsessionId = String(race.subsession_id || race.subsessionId || '')
@@ -59,13 +64,17 @@ export async function POST(request: NextRequest) {
 
         const category = detectCategory(race.series_name || race.seriesName || '')
 
+        const iracingTrackName = race.track?.track_name || race.track_name || race.trackName || 'Unknown'
+        const iracingTrackConfig = race.track?.config_name || race.track_config || undefined
+        const resolvedTrackName = resolveTrackName(trackLookup, iracingTrackName, iracingTrackConfig) || iracingTrackName
+
         // Insert race session
         await db.insert(schema.raceSessions).values({
           userId,
           carModel: race.car_name || race.carName || 'Unknown',
           manufacturer: null,
           category,
-          trackName: race.track?.track_name || race.track_name || race.trackName || 'Unknown',
+          trackName: resolvedTrackName,
           sessionType: category,
           finishPosition: race.finish_position ?? race.finishPosition ?? null,
           incidentCount: race.incidents ?? null,
@@ -73,6 +82,9 @@ export async function POST(request: NextRequest) {
             source: 'iracing_latest',
             subsessionId: Number(subsessionId),
             gameId: subsessionId,
+            iracingTrackName,
+            iracingTrackConfig,
+            prodriveTrackId: resolveIRacingTrackId(iracingTrackName, iracingTrackConfig),
             seriesName: race.series_name || race.seriesName || '',
             seasonName: race.season_name || race.seasonName || '',
             preRaceIRating: race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0,
@@ -111,7 +123,7 @@ export async function POST(request: NextRequest) {
               prevIRating: preIR > 0 ? Math.round(preIR) : null,
               prevSafetyRating: preSR > 0 ? preSR.toFixed(2) : null,
               sessionType: category,
-              trackName: race.track?.track_name || race.track_name || race.trackName || null,
+              trackName: resolvedTrackName !== 'Unknown' ? resolvedTrackName : null,
               carModel: race.car_name || race.carName || null,
               createdAt: race.session_start_time || race.start_time
                 ? new Date(race.session_start_time || race.start_time)
@@ -127,8 +139,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update lastImportAt if we imported anything
+    // Consolidate any old sessions with mismatched track names
     if (sessionsImported > 0) {
+      try {
+        await consolidateUserTracks(userId)
+      } catch {}
+
       try {
         await db.update(schema.iracingAccounts).set({
           lastImportAt: new Date(),

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateToken } from '@/lib/plugin-auth'
 import { db, schema } from '@/db'
 import { eq, and } from 'drizzle-orm'
+import { buildTrackLookup, resolveTrackName, consolidateUserTracks } from '@/lib/resolve-track'
+import { resolveIRacingTrackId } from '@/data/iracing-track-map'
 
 /**
  * POST /api/iracing/import — Receive bulk career data from the desktop plugin
@@ -76,6 +78,9 @@ export async function POST(request: NextRequest) {
           .map(String)
       )
 
+      // Build track lookup once for resolving all races in this batch
+      const trackLookup = await buildTrackLookup()
+
       for (const race of recentRaces) {
         try {
           const subsessionId = String(race.subsession_id || race.subsessionId || '')
@@ -83,12 +88,16 @@ export async function POST(request: NextRequest) {
 
           const category = detectCategory(race.series_name || race.seriesName || '')
 
+          const iracingTrackName = race.track?.track_name || race.track_name || race.trackName || 'Unknown'
+          const iracingTrackConfig = race.track?.config_name || race.track_config || undefined
+          const resolvedTrackName = resolveTrackName(trackLookup, iracingTrackName, iracingTrackConfig) || iracingTrackName
+
           await db.insert(schema.raceSessions).values({
             userId,
             carModel: race.car_name || race.carName || 'Unknown',
             manufacturer: null,
             category,
-            trackName: race.track?.track_name || race.track_name || race.trackName || 'Unknown',
+            trackName: resolvedTrackName,
             sessionType: category,
             finishPosition: race.finish_position ?? race.finishPosition ?? null,
             incidentCount: race.incidents ?? null,
@@ -96,6 +105,9 @@ export async function POST(request: NextRequest) {
               source: 'iracing_import',
               subsessionId: Number(subsessionId),
               gameId: subsessionId,
+              iracingTrackName,
+              iracingTrackConfig,
+              prodriveTrackId: resolveIRacingTrackId(iracingTrackName, iracingTrackConfig),
               seriesName: race.series_name || race.seriesName || '',
               seasonName: race.season_name || race.seasonName || '',
               preRaceIRating: race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0,
@@ -215,7 +227,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 5. Mark import complete ──
+    // ── 5. Consolidate any old sessions with mismatched track names ──
+    let consolidation: { updated: number; unmatched: number } | null = null
+    if (sessionsImported > 0) {
+      try {
+        consolidation = await consolidateUserTracks(userId)
+      } catch {}
+    }
+
+    // ── 6. Mark import complete ──
     try {
       await db.update(schema.iracingAccounts).set({
         importStatus: 'complete',
