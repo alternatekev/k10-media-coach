@@ -67,7 +67,93 @@ function formatRelative(dateStr: string): string {
 
 const trackKey = (name: string | undefined | null) => (name || '').toLowerCase()
 
-// ── Card ──────────────────────────────────────────────────────────────────────
+// ── Compact row for stacked layout ───────────────────────────────────────────
+
+function CompactMomentRow({ moment, lookups }: { moment: Moment; lookups: MomentLookups }) {
+  const accent = ACCENT[moment.type] || '#888'
+  const icon = ICON[moment.type]
+
+  const tKey = trackKey(moment.trackName)
+  const trackSvgPath = lookups.trackMapLookup[tKey] || null
+  const trackLogoSvg = lookups.trackLogoLookup[tKey] || null
+  const brandInfo = moment.carModel ? lookups.brandLogoLookup[moment.carModel] ?? null : null
+
+  const brandLogoSrc = brandInfo?.logoSvg
+    ? `data:image/svg+xml,${encodeURIComponent(brandInfo.logoSvg)}`
+    : brandInfo?.logoPng
+      ? `data:image/png;base64,${brandInfo.logoPng}`
+      : null
+
+  // Context-aware badge content
+  const isCarMoment = moment.type === 'new_car'
+  const isTrackMoment = moment.type === 'new_track'
+  const tint = `brightness(0) invert(1) drop-shadow(0 0 2px ${accent})`
+
+  function BadgeContent() {
+    if (isCarMoment && brandLogoSrc) {
+      return <img src={brandLogoSrc} alt="" className="w-5 h-5 object-contain" style={{ filter: tint, opacity: 0.8 }} />
+    }
+    if (isTrackMoment && trackSvgPath) {
+      return (
+        <svg viewBox="0 0 100 100" className="w-6 h-6" style={{ opacity: 0.8 }}>
+          <path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    }
+    if (trackSvgPath) {
+      return (
+        <svg viewBox="0 0 100 100" className="w-6 h-6" style={{ opacity: 0.8 }}>
+          <path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    }
+    if (trackLogoSvg) {
+      return <img src={`data:image/svg+xml,${encodeURIComponent(trackLogoSvg)}`} alt="" className="w-5 h-5 object-contain" style={{ filter: tint, opacity: 0.8 }} />
+    }
+    if (brandLogoSrc) {
+      return <img src={brandLogoSrc} alt="" className="w-5 h-5 object-contain" style={{ filter: tint, opacity: 0.8 }} />
+    }
+    return icon ? icon(14) : <Star size={14} />
+  }
+
+  return (
+    <div
+      className="relative flex items-center gap-2.5 px-3 py-2 rounded-lg overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${accent}12 0%, ${accent}04 100%)`,
+        border: `1px solid ${accent}20`,
+      }}
+    >
+      {/* Badge */}
+      <div
+        className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
+        style={{ background: `${accent}18`, color: accent }}
+      >
+        <BadgeContent />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="text-sm font-bold leading-none truncate"
+            style={{ color: accent }}
+          >
+            {moment.title}
+          </span>
+          <span className="text-xs text-[var(--text-muted)] leading-none shrink-0">
+            {formatRelative(moment.date)}
+          </span>
+        </div>
+        <p className="text-xs text-[var(--text-dim)] leading-tight truncate mt-0.5">
+          {moment.description}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Full card (original horizontal scroll layout) ────────────────────────────
 
 function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookups }) {
   const accent = ACCENT[moment.type] || '#888'
@@ -76,7 +162,6 @@ function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookup
   const tKey = trackKey(moment.trackName)
   const trackSvgPath = lookups.trackMapLookup[tKey] || null
   const trackLogoSvg = lookups.trackLogoLookup[tKey] || null
-  const trackDisplayName = lookups.trackDisplayNameLookup[tKey] || moment.trackName
   const brandInfo = moment.carModel ? lookups.brandLogoLookup[moment.carModel] ?? null : null
 
   const brandLogoSrc = brandInfo?.logoSvg
@@ -99,7 +184,7 @@ function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookup
         style={{ background: accent }}
       />
 
-      {/* Badge — full-height, context-aware: car moments prefer brand logo, track moments prefer track assets */}
+      {/* Badge — full-height, context-aware */}
       <div
         className="relative shrink-0 w-10 flex items-center justify-center overflow-hidden rounded-l-lg"
         style={{ background: `${accent}20`, color: accent }}
@@ -107,23 +192,17 @@ function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookup
         {(() => {
           const isCarMoment = moment.type === 'new_car'
           const isTrackMoment = moment.type === 'new_track'
-
-          // Tint filter: make logo monochrome white with accent glow
           const tint = `brightness(0) invert(1) drop-shadow(0 0 3px ${accent})`
-          // Zoomed + cropped to abstract the artwork
           const zoomStyle = { filter: tint, opacity: 0.7, transform: 'scale(2.8)', transformOrigin: 'center' }
           const zoomSvgStyle = { opacity: 0.7, transform: 'scale(2.4)', transformOrigin: 'center' }
 
-          // Car moments: brand logo first
           if (isCarMoment && brandLogoSrc) {
             return <img src={brandLogoSrc} alt="" className="w-8 h-8 object-contain" style={zoomStyle} />
           }
-          // Track moments: track map first, then track logo
           if (isTrackMoment) {
             if (trackSvgPath) return <svg viewBox="0 0 100 100" className="w-10 h-10" style={zoomSvgStyle}><path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
             if (trackLogoSvg) return <img src={`data:image/svg+xml,${encodeURIComponent(trackLogoSvg)}`} alt="" className="w-8 h-8 object-contain" style={zoomStyle} />
           }
-          // Everything else: track map → track logo → brand logo → Lucide icon
           if (trackSvgPath) return <svg viewBox="0 0 100 100" className="w-10 h-10" style={zoomSvgStyle}><path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
           if (trackLogoSvg) return <img src={`data:image/svg+xml,${encodeURIComponent(trackLogoSvg)}`} alt="" className="w-8 h-8 object-contain" style={zoomStyle} />
           if (brandLogoSrc) return <img src={brandLogoSrc} alt="" className="w-8 h-8 object-contain" style={zoomStyle} />
@@ -134,10 +213,7 @@ function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookup
       {/* Content */}
       <div className="relative flex-1 min-w-0 p-3">
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span
-            className="text-lg font-bold leading-none"
-            style={{ color: accent }}
-          >
+          <span className="text-lg font-bold leading-none" style={{ color: accent }}>
             {moment.title}
           </span>
           <span className="text-xs text-[var(--text-muted)] leading-none shrink-0">
@@ -147,7 +223,6 @@ function MomentCard({ moment, lookups }: { moment: Moment; lookups: MomentLookup
         <p className="text-md text-[var(--text-dim)] leading-tight line-clamp-2">
           {moment.description}
         </p>
-       
       </div>
     </div>
   )
@@ -161,10 +236,32 @@ export default function RecentMoments({
   trackLogoLookup,
   trackDisplayNameLookup,
   brandLogoLookup,
-}: { moments: Moment[] } & MomentLookups) {
+  compact = false,
+}: { moments: Moment[]; compact?: boolean } & MomentLookups) {
   if (moments.length === 0) return null
 
   const lookups: MomentLookups = { trackMapLookup, trackLogoLookup, trackDisplayNameLookup, brandLogoLookup }
+
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        {/* Section header */}
+        <div className="flex items-center gap-2">
+          <Star size={16} className="text-[var(--text-secondary)]" />
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+            Recent Moments
+          </h3>
+        </div>
+
+        {/* Stacked compact rows */}
+        <div className="flex flex-col gap-1">
+          {moments.map((m, i) => (
+            <CompactMomentRow key={`${m.type}-${m.date}-${i}`} moment={m} lookups={lookups} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex gap-3 overflow-x-auto">

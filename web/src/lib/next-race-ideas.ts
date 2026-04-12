@@ -96,6 +96,7 @@ export interface RaceSuggestion {
   licenseClass: string
   isOfficial: boolean
   isFixed: boolean
+  carClassNames: string[]
   nextStartTime: Date
   minutesUntilStart: number
   sessionMinutes: number
@@ -105,6 +106,7 @@ export interface RaceSuggestion {
     trackFamiliarity: number
     trackIncidentRate: number
     carFamiliarity: number
+    carPerformance: number
     timeOfDay: number
     dayOfWeek: number
     ratingTrend: number
@@ -253,36 +255,133 @@ function scoreTrackIncidentRate(
 }
 
 /**
- * Compute Car Familiarity score (0-15)
+ * Helper: Check if a session's car model belongs to a car class.
+ * Uses two strategies:
+ *   1. Check if the class short_name or key tokens from class name appear
+ *      as whole tokens in the car model (e.g., "GT3" in "BMW M4 GT3")
+ *   2. Fall back to Jaccard similarity with a lower threshold
+ */
+function sessionMatchesCarClass(
+  session: SessionInput,
+  carClass: { name: string; short_name?: string },
+): boolean {
+  const modelTokens = tokenize(session.carModel)
+
+  // Strategy 1: class short_name appears as a token in the car model
+  if (carClass.short_name) {
+    const shortTokens = tokenize(carClass.short_name)
+    if (shortTokens.length > 0 && shortTokens.every(t => modelTokens.includes(t))) {
+      return true
+    }
+  }
+
+  // Strategy 2: key tokens from class name appear in car model
+  const classTokens = tokenize(carClass.name)
+  // Filter out generic words that don't help with matching
+  const genericWords = new Set(['class', 'cars', 'car', 'series', 'group', 'racing'])
+  const meaningfulClassTokens = classTokens.filter(t => !genericWords.has(t) && t.length > 1)
+  if (meaningfulClassTokens.length > 0 && meaningfulClassTokens.every(t => modelTokens.includes(t))) {
+    return true
+  }
+
+  // Strategy 3: Jaccard fallback (original approach, lower threshold)
+  return carsMatch(session.carModel, carClass.name, 0.4)
+}
+
+/**
+ * Find sessions where the driver raced a car matching any of the given classes
+ */
+function findMatchedCarSessions(
+  sessions: SessionInput[],
+  carClasses: Array<{ name: string; short_name?: string }>,
+): SessionInput[] {
+  return sessions.filter(session =>
+    carClasses.some(carClass => sessionMatchesCarClass(session, carClass)),
+  )
+}
+
+/**
+ * Compute Car Familiarity score (0-10)
  * Check if any car in history matches car classes in series
  */
 function scoreCarFamiliarity(
   sessions: SessionInput[],
-  carClasses: Array<{ name: string }>,
+  carClasses: Array<{ name: string; short_name?: string }>,
 ): number {
   if (carClasses.length === 0) return 0
 
-  const raceCount: Record<string, number> = {}
-  for (const session of sessions) {
-    for (const carClass of carClasses) {
-      if (carsMatch(session.carModel, carClass.name, 0.6)) {
-        raceCount[carClass.name] = (raceCount[carClass.name] || 0) + 1
-      }
-    }
-  }
+  const matchedSessions = findMatchedCarSessions(sessions, carClasses)
+  const count = matchedSessions.length
 
-  const maxRaces = Math.max(...Object.values(raceCount), 0)
-
-  if (maxRaces >= 5) return 15
-  if (maxRaces >= 3) return 12
-  if (maxRaces >= 1) return 6
+  if (count >= 10) return 10
+  if (count >= 5) return 8
+  if (count >= 3) return 6
+  if (count >= 1) return 3
   return 0
 }
 
 /**
- * Compute Time-of-Day Factor score (0-10)
+ * Compute Car Performance score (0-10)
+ * Evaluates how the driver performs in matching cars:
+ * incidents/lap relative to their overall average, plus finish position trend
  */
-function scoreTimeOfDay(sessions: SessionInput[]): number {
+function scoreCarPerformance(
+  sessions: SessionInput[],
+  carClasses: Array<{ name: string; short_name?: string }>,
+): number {
+  if (carClasses.length === 0) return 0
+
+  const matchedSessions = findMatchedCarSessions(sessions, carClasses)
+  if (matchedSessions.length < 2) return 5 // insufficient data, neutral
+
+  // Compare incidents/lap in matched cars vs overall
+  const overallAvg = sessions.length > 0
+    ? sessions.reduce((sum, s) => sum + incidentsPerLap(s), 0) / sessions.length
+    : 0
+  const matchedAvg = matchedSessions.reduce((sum, s) => sum + incidentsPerLap(s), 0) / matchedSessions.length
+
+  let incidentScore = 0
+  if (overallAvg === 0) {
+    incidentScore = 3
+  } else {
+    const ratio = matchedAvg / overallAvg
+    if (ratio < 0.6) incidentScore = 5
+    else if (ratio < 0.9) incidentScore = 4
+    else if (ratio < 1.1) incidentScore = 3
+    else if (ratio < 1.4) incidentScore = 1
+    else incidentScore = 0
+  }
+
+  // Finish position trend in matched car sessions (top half vs bottom half)
+  const withFinish = matchedSessions.filter(s => s.finishPosition !== null)
+  let finishScore = 2 // neutral if no data
+  if (withFinish.length >= 3) {
+    const sorted = [...withFinish].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    const recentHalf = sorted.slice(0, Math.ceil(sorted.length / 2))
+    const olderHalf = sorted.slice(Math.ceil(sorted.length / 2))
+
+    const recentAvgFinish = recentHalf.reduce((s, r) => s + (r.finishPosition || 0), 0) / recentHalf.length
+    const olderAvgFinish = olderHalf.length > 0
+      ? olderHalf.reduce((s, r) => s + (r.finishPosition || 0), 0) / olderHalf.length
+      : recentAvgFinish
+
+    // Lower finish position = better (1st place < 10th place)
+    if (recentAvgFinish < olderAvgFinish - 1) finishScore = 5  // improving
+    else if (recentAvgFinish <= olderAvgFinish + 1) finishScore = 3  // stable
+    else finishScore = 1  // declining
+  }
+
+  return Math.min(incidentScore + finishScore, 10)
+}
+
+/**
+ * Compute Time-of-Day Factor score (0-10)
+ * Compares the upcoming race hour against the driver's historical
+ * incident rate per hour. Lower incidents at this hour = higher score.
+ */
+function scoreTimeOfDay(sessions: SessionInput[], raceStartTime: Date): number {
   if (sessions.length < 5) return 5 // insufficient data
 
   const hourBuckets: Record<number, number[]> = {}
@@ -309,12 +408,19 @@ function scoreTimeOfDay(sessions: SessionInput[]): number {
     }),
   )
 
-  // Sort by avg incidents/lap (ascending = best)
+  if (hourScores.length === 0) return 5
+
+  // Sort by avg incidents/lap ascending (lowest = best)
   hourScores.sort((a, b) => a.avgIncidentsPerLap - b.avgIncidentsPerLap)
 
-  // Find quartile for first hour
-  const bestHour = hourScores[0].hour
-  const percentile = hourScores.findIndex(h => h.hour === bestHour) / hourScores.length
+  // Find where the upcoming race hour ranks in the driver's history
+  const raceHour = raceStartTime.getUTCHours()
+  const raceHourIndex = hourScores.findIndex(h => h.hour === raceHour)
+
+  // No data for this hour — neutral score
+  if (raceHourIndex === -1) return 5
+
+  const percentile = raceHourIndex / hourScores.length
 
   if (percentile <= 0.25) return 10
   if (percentile <= 0.5) return 7
@@ -324,8 +430,10 @@ function scoreTimeOfDay(sessions: SessionInput[]): number {
 
 /**
  * Compute Day-of-Week Factor score (0-10)
+ * Compares the upcoming race day against the driver's historical
+ * incident rate per day. Lower incidents on this day = higher score.
  */
-function scoreDayOfWeek(sessions: SessionInput[]): number {
+function scoreDayOfWeek(sessions: SessionInput[], raceStartTime: Date): number {
   if (sessions.length < 5) return 5 // insufficient data
 
   const dayBuckets: Record<number, number[]> = {}
@@ -352,12 +460,19 @@ function scoreDayOfWeek(sessions: SessionInput[]): number {
     }),
   )
 
-  // Sort by avg incidents/lap (ascending = best)
+  if (dayScores.length === 0) return 5
+
+  // Sort by avg incidents/lap ascending (lowest = best)
   dayScores.sort((a, b) => a.avgIncidentsPerLap - b.avgIncidentsPerLap)
 
-  // Find quartile for best day
-  const bestDay = dayScores[0].dayOfWeek
-  const percentile = dayScores.findIndex(d => d.dayOfWeek === bestDay) / dayScores.length
+  // Find where the upcoming race day ranks in the driver's history
+  const raceDay = raceStartTime.getUTCDay()
+  const raceDayIndex = dayScores.findIndex(d => d.dayOfWeek === raceDay)
+
+  // No data for this day — neutral score
+  if (raceDayIndex === -1) return 5
+
+  const percentile = raceDayIndex / dayScores.length
 
   if (percentile <= 0.25) return 10
   if (percentile <= 0.5) return 7
@@ -366,7 +481,7 @@ function scoreDayOfWeek(sessions: SessionInput[]): number {
 }
 
 /**
- * Compute Rating Trend score (0-15)
+ * Compute Rating Trend score (0-10)
  * From last 5 rating history entries in matching category
  */
 function scoreRatingTrend(
@@ -378,7 +493,7 @@ function scoreRatingTrend(
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5)
 
-  if (categoryHistory.length === 0) return 8 // unknown
+  if (categoryHistory.length === 0) return 5 // unknown
 
   // Compute avg iR and SR deltas
   let totalIRDelta = 0
@@ -404,23 +519,23 @@ function scoreRatingTrend(
 
   let score = 0
 
-  // iR trend scoring
+  // iR trend scoring (0-5)
   if (avgIRDelta >= 0) {
-    score += 8
+    score += 5
   } else if (avgIRDelta >= -30) {
-    score += 4
-  }
-  // else score += 0
-
-  // SR trend scoring
-  if (avgSRDelta >= 0) {
-    score += 7
-  } else if (avgSRDelta >= -0.05) {
     score += 3
   }
   // else score += 0
 
-  return Math.min(score, 15)
+  // SR trend scoring (0-5)
+  if (avgSRDelta >= 0) {
+    score += 5
+  } else if (avgSRDelta >= -0.05) {
+    score += 2
+  }
+  // else score += 0
+
+  return Math.min(score, 10)
 }
 
 /**
@@ -694,14 +809,16 @@ export function computeNextRaceIdeas(
         track.track_name,
       )
       const carFamiliarityScore = scoreCarFamiliarity(categorySessions, season.car_classes)
-      const timeOfDayScore = scoreTimeOfDay(categorySessions)
-      const dayOfWeekScore = scoreDayOfWeek(categorySessions)
+      const carPerformanceScore = scoreCarPerformance(categorySessions, season.car_classes)
+      const timeOfDayScore = scoreTimeOfDay(categorySessions, bestNextStart.nextStart)
+      const dayOfWeekScore = scoreDayOfWeek(categorySessions, bestNextStart.nextStart)
       const ratingTrendScore = scoreRatingTrend(ratingHistory, category)
 
       const totalScore =
         trackFamiliarityScore +
         trackIncidentScore +
         carFamiliarityScore +
+        carPerformanceScore +
         timeOfDayScore +
         dayOfWeekScore +
         ratingTrendScore
@@ -723,6 +840,7 @@ export function computeNextRaceIdeas(
         licenseClass,
         isOfficial: season.official,
         isFixed: season.fixed_setup,
+        carClassNames: season.car_classes.map(c => c.name),
         nextStartTime: bestNextStart.nextStart,
         minutesUntilStart,
         sessionMinutes: scheduleItem.race_time_descriptors[0].session_minutes || 60,
@@ -732,6 +850,7 @@ export function computeNextRaceIdeas(
           trackFamiliarity: trackFamiliarityScore,
           trackIncidentRate: trackIncidentScore,
           carFamiliarity: carFamiliarityScore,
+          carPerformance: carPerformanceScore,
           timeOfDay: timeOfDayScore,
           dayOfWeek: dayOfWeekScore,
           ratingTrend: ratingTrendScore,
@@ -746,6 +865,7 @@ export function computeNextRaceIdeas(
             licenseClass,
             isOfficial: season.official,
             isFixed: season.fixed_setup,
+            carClassNames: season.car_classes.map(c => c.name),
             nextStartTime: bestNextStart.nextStart,
             minutesUntilStart,
             sessionMinutes: scheduleItem.race_time_descriptors[0].session_minutes || 60,
@@ -755,6 +875,7 @@ export function computeNextRaceIdeas(
               trackFamiliarity: trackFamiliarityScore,
               trackIncidentRate: trackIncidentScore,
               carFamiliarity: carFamiliarityScore,
+              carPerformance: carPerformanceScore,
               timeOfDay: timeOfDayScore,
               dayOfWeek: dayOfWeekScore,
               ratingTrend: ratingTrendScore,
@@ -769,6 +890,68 @@ export function computeNextRaceIdeas(
     }
   }
 
-  // Sort by score descending and return top 5
-  return suggestions.sort((a, b) => b.score - a.score).slice(0, 5)
+  // Sort by soonest start time
+  suggestions.sort((a, b) => a.nextStartTime.getTime() - b.nextStartTime.getTime())
+
+  // Diversify: pick up to 5 suggestions spanning different license classes and categories.
+  // Greedy approach: iterate through time-sorted candidates. Accept a candidate if it
+  // brings a new (licenseClass + category) combination, or if we haven't filled 5 yet
+  // and no better diverse option remains.
+  return diversifySelections(suggestions, 5)
+}
+
+/**
+ * Greedy diversity selection.
+ * Pass 1: pick the soonest race for each unique (licenseClass, category) pair.
+ * Pass 2: if fewer than `count` selected, backfill from remaining candidates
+ *          sorted by score (prefer highest-scoring backfills).
+ */
+function diversifySelections(
+  timeSorted: RaceSuggestion[],
+  count: number,
+): RaceSuggestion[] {
+  const selected: RaceSuggestion[] = []
+  const seenSlots = new Set<string>()
+  const remaining: RaceSuggestion[] = []
+
+  // Pass 1: one per (licenseClass, category)
+  for (const s of timeSorted) {
+    const slot = `${s.licenseClass}:${s.category}`
+    if (!seenSlots.has(slot)) {
+      seenSlots.add(slot)
+      selected.push(s)
+      if (selected.length >= count) break
+    } else {
+      remaining.push(s)
+    }
+  }
+
+  // Pass 2: backfill from remaining by score if we need more
+  if (selected.length < count) {
+    remaining.sort((a, b) => b.score - a.score)
+    for (const s of remaining) {
+      selected.push(s)
+      if (selected.length >= count) break
+    }
+  }
+
+  // Final sort by soonest start time
+  return selected.sort((a, b) => a.nextStartTime.getTime() - b.nextStartTime.getTime())
+}
+
+/**
+ * Exported for unit testing — not part of the public API
+ */
+export const _testing = {
+  scoreTrackFamiliarity,
+  scoreTrackIncidentRate,
+  scoreCarFamiliarity,
+  scoreCarPerformance,
+  scoreTimeOfDay,
+  scoreDayOfWeek,
+  scoreRatingTrend,
+  sessionMatchesCarClass,
+  findMatchedCarSessions,
+  incidentsPerLap,
+  diversifySelections,
 }

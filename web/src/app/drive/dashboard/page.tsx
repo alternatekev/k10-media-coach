@@ -287,10 +287,10 @@ export default async function DashboardPage() {
     }))
 
     const allMoments = detectMoments(momentSessions, momentRatings)
-    // Sort by date desc for "latest 5"
+    // Sort by date desc for "latest 6"
     recentMoments = [...allMoments]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5)
+      .slice(0, 6)
   }
 
   // ── Next Race Ideas ────────────────────────────────────────────────────────
@@ -369,7 +369,79 @@ export default async function DashboardPage() {
           strategy: s.strategy.type as StrategyType,
           commentary: s.commentary,
           startsAtUtc: s.nextStartTime.toISOString(),
+          carClassNames: s.carClassNames,
         }))
+
+        // Populate image/brand lookups for suggested race tracks & car classes
+        // so the hero card can find them (existing lookups are keyed by session data)
+        const nriBrands = await db
+          .select({
+            brandKey: schema.carLogos.brandKey,
+            brandName: schema.carLogos.brandName,
+            logoSvg: schema.carLogos.logoSvg,
+            logoPng: schema.carLogos.logoPng,
+            brandColorHex: schema.carLogos.brandColorHex,
+          })
+          .from(schema.carLogos)
+
+        // Build a set of unique car models the driver has raced
+        const driverCarModels = [...new Set(sessionInputs.map(s => s.carModel).filter(Boolean))]
+
+        for (const s of rawSuggestions) {
+          // Track images keyed by schedule track name
+          if (!trackImageLookup[s.trackName]) {
+            trackImageLookup[s.trackName] = getTrackImage(s.trackName)
+          }
+          // For each car class, find driver car models that belong to it
+          // and populate brand/image lookups keyed by class name
+          for (const className of s.carClassNames) {
+            if (!carImageLookup[className]) {
+              carImageLookup[className] = getCarImage(className)
+            }
+            // Try matching driver's actual car models to this class for brand lookup
+            if (!brandLogoLookup[className]) {
+              for (const carModel of driverCarModels) {
+                const ml = carModel.toLowerCase()
+                for (const brand of nriBrands) {
+                  const bk = brand.brandKey.toLowerCase()
+                  const bn = brand.brandName.toLowerCase()
+                  if (ml.includes(bk) || ml.includes(bn)) {
+                    // Check if this car model plausibly belongs to the class
+                    const classTokens = className.toLowerCase().replace(/class/g, '').trim().split(/\s+/)
+                    const modelMatches = classTokens.some(t => t.length > 1 && ml.includes(t))
+                    if (modelMatches) {
+                      brandLogoLookup[className] = {
+                        logoSvg: brand.logoSvg,
+                        logoPng: brand.logoPng,
+                        brandColorHex: brand.brandColorHex,
+                        manufacturerName: brand.brandName,
+                      }
+                      break
+                    }
+                  }
+                }
+                if (brandLogoLookup[className]) break
+              }
+            }
+            // Fallback: direct class name to brand match
+            if (!brandLogoLookup[className]) {
+              const cl = className.toLowerCase()
+              for (const brand of nriBrands) {
+                const bk = brand.brandKey.toLowerCase()
+                const bn = brand.brandName.toLowerCase()
+                if (cl.includes(bk) || cl.includes(bn) || bk.includes(cl) || bn.includes(cl)) {
+                  brandLogoLookup[className] = {
+                    logoSvg: brand.logoSvg,
+                    logoPng: brand.logoPng,
+                    brandColorHex: brand.brandColorHex,
+                    manufacturerName: brand.brandName,
+                  }
+                  break
+                }
+              }
+            }
+          }
+        }
       }
     } catch (err) {
       console.error('[dashboard] Next Race Ideas error:', err)
@@ -562,37 +634,52 @@ export default async function DashboardPage() {
           insights={whenInsights}
         />
       )}
-      <div className="max-w-[120rem] mx-auto px-6 py-12">
+      <div className="max-w-[120rem] mx-auto px-6 py-6">
         {isPluginConnected ? (
           <>
-            {/* Welcome + Recent Moments */}
-            <section className="mb-12">
-              {recentMoments.length > 0 && (
-                <RecentMoments
-                  moments={recentMoments}
-                  trackMapLookup={trackMapLookup}
-                  trackLogoLookup={trackLogoLookup}
-                  trackDisplayNameLookup={trackDisplayNameLookup}
-                  brandLogoLookup={brandLogoLookup}
-                />
-              )}
-            </section>
-
-            {/* Next Race Ideas */}
-            {nextRaceSuggestions.length > 0 && (
-              <section className="mb-12">
-                <NextRaceIdeas suggestions={nextRaceSuggestions} />
-              </section>
-            )}
-
-            {/* Visualizations — Calendar Heatmap + Scatter Grid */}
-            {vizData.length > 0 && (
-              <section className="mb-12">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                  <RaceCalendarHeatmap sessions={vizData} />
-                  <RaceScatterGrid sessions={vizData} />
-                  <DriverDNARadar sessions={dnaSessionData} ratingHistory={dnaRatingData} />
-                  <SessionLengthCards sessions={dnaSessionData} />
+            {/* Dashboard top grid — suggested race + viz left, moments + session length right */}
+            {(nextRaceSuggestions.length > 0 || recentMoments.length > 0 || vizData.length > 0) && (
+              <section className="mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4">
+                  {/* ── Left column ── */}
+                  <div className="flex flex-col gap-4">
+                    {nextRaceSuggestions.length > 0 && (
+                      <NextRaceIdeas
+                        suggestions={nextRaceSuggestions}
+                        lookups={{
+                          trackMapLookup,
+                          trackLogoLookup,
+                          trackImageLookup,
+                          trackDisplayNameLookup,
+                          carImageLookup,
+                          brandLogoLookup,
+                        }}
+                      />
+                    )}
+                    {vizData.length > 0 && (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <RaceCalendarHeatmap sessions={vizData} />
+                        <RaceScatterGrid sessions={vizData} />
+                        <DriverDNARadar sessions={dnaSessionData} ratingHistory={dnaRatingData} />
+                      </div>
+                    )}
+                  </div>
+                  {/* ── Right column ── */}
+                  <div className="flex flex-col gap-4">
+                    {recentMoments.length > 0 && (
+                      <RecentMoments
+                        moments={recentMoments}
+                        trackMapLookup={trackMapLookup}
+                        trackLogoLookup={trackLogoLookup}
+                        trackDisplayNameLookup={trackDisplayNameLookup}
+                        brandLogoLookup={brandLogoLookup}
+                        compact
+                      />
+                    )}
+                    {vizData.length > 0 && (
+                      <SessionLengthCards sessions={dnaSessionData} />
+                    )}
+                  </div>
                 </div>
               </section>
             )}
@@ -619,9 +706,9 @@ export default async function DashboardPage() {
             )}
 
             {/* Performance */}
-            <section className="mb-12">
+            <section className="mb-6">
               <h2
-                className="font-bold mb-4 flex items-center gap-2"
+                className="font-bold mb-2 flex items-center gap-2"
                 style={{ fontSize: "var(--fs-2xl)" }}
               >
                 <BarChart3 size={24} className="text-[var(--border-accent)]" />
@@ -673,9 +760,9 @@ export default async function DashboardPage() {
 
             {/* Pro Features */}
             {!hasEnoughData && (
-              <section className="mb-12">
+              <section className="mb-6">
                 <h2
-                  className="font-bold mb-4 flex items-center gap-2"
+                  className="font-bold mb-2 flex items-center gap-2"
                   style={{ fontSize: "var(--fs-2xl)" }}
                 >
                   <Shield size={24} className="text-[var(--border-accent)]" />
@@ -732,7 +819,7 @@ export default async function DashboardPage() {
         ) : (
           <>
             {/* Not Connected */}
-            <section className="mb-12">
+            <section className="mb-6">
               <h1
                 className="text-3xl font-black mb-2"
                 style={{ fontFamily: "var(--ff-display)" }}
@@ -781,9 +868,9 @@ export default async function DashboardPage() {
               </ol>
             </section>
 
-            <section className="mb-12">
+            <section className="mb-6">
               <h2
-                className="font-bold mb-4 flex items-center gap-2"
+                className="font-bold mb-2 flex items-center gap-2"
                 style={{ fontSize: "var(--fs-2xl)" }}
               >
                 <BarChart3 size={24} className="text-[var(--border-accent)]" />
@@ -834,7 +921,7 @@ export default async function DashboardPage() {
 
             <section>
               <h2
-                className="font-bold mb-4 flex items-center gap-2"
+                className="font-bold mb-2 flex items-center gap-2"
                 style={{ fontSize: "var(--fs-2xl)" }}
               >
                 <Shield size={24} className="text-[var(--border-accent)]" />
