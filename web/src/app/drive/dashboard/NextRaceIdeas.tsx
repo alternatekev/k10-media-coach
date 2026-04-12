@@ -273,6 +273,7 @@ function HeroRaceCard({
           className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full"
           style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)' }}
         >
+          <span className="text-xs font-medium leading-none text-white/60">Match</span>
           <span className="text-sm font-bold leading-none" style={{ color: accentColor }}>
             {suggestion.score}
           </span>

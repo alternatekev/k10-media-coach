@@ -398,38 +398,74 @@ export default async function DashboardPage() {
             if (!carImageLookup[className]) {
               carImageLookup[className] = getCarImage(className)
             }
-            // Try matching driver's actual car models to this class for brand lookup
-            if (!brandLogoLookup[className]) {
-              for (const carModel of driverCarModels) {
-                const ml = carModel.toLowerCase()
-                for (const brand of nriBrands) {
-                  const bk = brand.brandKey.toLowerCase()
-                  const bn = brand.brandName.toLowerCase()
-                  if (ml.includes(bk) || ml.includes(bn)) {
-                    // Check if this car model plausibly belongs to the class
-                    const classTokens = className.toLowerCase().replace(/class/g, '').trim().split(/\s+/)
-                    const modelMatches = classTokens.some(t => t.length > 1 && ml.includes(t))
-                    if (modelMatches) {
-                      brandLogoLookup[className] = {
-                        logoSvg: brand.logoSvg,
-                        logoPng: brand.logoPng,
-                        brandColorHex: brand.brandColorHex,
-                        manufacturerName: brand.brandName,
-                      }
-                      break
-                    }
-                  }
-                }
-                if (brandLogoLookup[className]) break
+            // iRacing uses alternate manufacturer names in class/series names
+            // e.g. "Global Mazda MX-5 Cup" where "Global" = Mazda
+            const IRACING_BRAND_ALIASES: Record<string, string> = {
+              'global': 'mazda',
+              'dallara': 'dallara',
+              'riley': 'riley',
+            }
+            let cl = className.toLowerCase()
+            for (const [alias, realBrand] of Object.entries(IRACING_BRAND_ALIASES)) {
+              if (cl.includes(alias)) {
+                cl = cl.replace(alias, realBrand)
+                break
               }
             }
-            // Fallback: direct class name to brand match
+
+            // Try matching driver's actual car models to this class for brand lookup
             if (!brandLogoLookup[className]) {
-              const cl = className.toLowerCase()
+              // First: if the class name contains a brand name directly (e.g. "Mazda MX-5 Cup"),
+              // use that brand — no need to cross-reference driver car models
               for (const brand of nriBrands) {
                 const bk = brand.brandKey.toLowerCase()
                 const bn = brand.brandName.toLowerCase()
-                if (cl.includes(bk) || cl.includes(bn) || bk.includes(cl) || bn.includes(cl)) {
+                if (cl.includes(bn) || cl.includes(bk)) {
+                  brandLogoLookup[className] = {
+                    logoSvg: brand.logoSvg,
+                    logoPng: brand.logoPng,
+                    brandColorHex: brand.brandColorHex,
+                    manufacturerName: brand.brandName,
+                  }
+                  break
+                }
+              }
+
+              // Second: cross-reference driver car models, but skip generic tokens
+              // like "cup", "gt", "open", "pro" that appear across many series
+              if (!brandLogoLookup[className]) {
+                const GENERIC_TOKENS = new Set(['cup', 'gt', 'gt3', 'gt4', 'gte', 'lmp', 'open', 'pro', 'sr', 'series', 'spec', 'super', 'tour', 'touring'])
+                const classTokens = cl.replace(/class/g, '').trim().split(/\s+/).filter(t => t.length > 2 && !GENERIC_TOKENS.has(t))
+                if (classTokens.length > 0) {
+                  for (const carModel of driverCarModels) {
+                    const ml = carModel.toLowerCase()
+                    for (const brand of nriBrands) {
+                      const bk = brand.brandKey.toLowerCase()
+                      const bn = brand.brandName.toLowerCase()
+                      if (ml.includes(bk) || ml.includes(bn)) {
+                        const modelMatches = classTokens.some(t => ml.includes(t))
+                        if (modelMatches) {
+                          brandLogoLookup[className] = {
+                            logoSvg: brand.logoSvg,
+                            logoPng: brand.logoPng,
+                            brandColorHex: brand.brandColorHex,
+                            manufacturerName: brand.brandName,
+                          }
+                          break
+                        }
+                      }
+                    }
+                    if (brandLogoLookup[className]) break
+                  }
+                }
+              }
+            }
+            // Fallback: direct class name to brand match (reuses alias-resolved cl)
+            if (!brandLogoLookup[className]) {
+              for (const brand of nriBrands) {
+                const bk = brand.brandKey.toLowerCase()
+                const bn = brand.brandName.toLowerCase()
+                if (cl.includes(bk) || cl.includes(bn)) {
                   brandLogoLookup[className] = {
                     logoSvg: brand.logoSvg,
                     logoPng: brand.logoPng,
