@@ -44,7 +44,6 @@ const CAT_LABEL: Record<string, string> = {
   oval: 'Oval',
   dirt_road: 'Dirt Road',
   dirt_oval: 'Dirt Oval',
-  sports_car: 'Sports Car',
 }
 
 const CAT_COLOR: Record<string, string> = {
@@ -52,7 +51,6 @@ const CAT_COLOR: Record<string, string> = {
   oval: '#1e88e5',
   dirt_road: '#43a047',
   dirt_oval: '#ff9800',
-  sports_car: '#ab47bc',
   formula: '#00bcd4',
 }
 

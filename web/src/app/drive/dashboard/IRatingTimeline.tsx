@@ -32,7 +32,6 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   oval:       { label: 'Oval',       color: '#1e88e5' },
   dirt_road:  { label: 'Dirt Road',  color: '#43a047' },
   dirt_oval:  { label: 'Dirt Oval',  color: '#ff9800' },
-  sports_car: { label: 'Sports Car', color: '#ab47bc' },
   formula:    { label: 'Formula',    color: '#00bcd4' },
 }
 

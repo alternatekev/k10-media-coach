@@ -90,7 +90,7 @@ export const carLogos = pgTable('car_logos', {
 export const driverRatings = pgTable('driver_ratings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  category: varchar('category', { length: 16 }).notNull(), // road, oval, dirt_road, dirt_oval, sports_car
+  category: varchar('category', { length: 16 }).notNull(), // road, oval, dirt_road, dirt_oval
   iRating: integer('irating').notNull().default(0),
   safetyRating: varchar('safety_rating', { length: 8 }).notNull().default('0.00'),
   license: varchar('license', { length: 4 }).notNull().default('R'),

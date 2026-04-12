@@ -301,6 +301,6 @@ function detectCategory(seriesName: string): string {
   if (s.includes('dirt') && s.includes('road')) return 'dirt_road'
   if (s.includes('dirt')) return 'dirt_road'
   if (s.includes('oval') || s.includes('nascar') || s.includes('indycar') || s.includes('stock')) return 'oval'
-  if (s.includes('sports car') || s.includes('gt') || s.includes('prototype') || s.includes('endurance')) return 'sports_car'
+  // iRacing merged road + sports car into a single "road" license in 2024 S2
   return 'road'
 }

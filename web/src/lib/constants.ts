@@ -39,11 +39,12 @@ export const LICENSE_COLORS: Record<LicenseClass, string> = {
 }
 
 // iRacing rating categories (each has its own iRating + SR)
-export const RATING_CATEGORIES = ['road', 'oval', 'dirt_road', 'dirt_oval', 'sports_car'] as const
+// Sports car was merged into road in 2024 S2
+export const RATING_CATEGORIES = ['road', 'oval', 'dirt_road', 'dirt_oval'] as const
 export type RatingCategory = typeof RATING_CATEGORIES[number]
 
 export const CATEGORY_LABELS: Record<RatingCategory, string> = {
-  road: 'Road', oval: 'Oval', dirt_road: 'Dirt Road', dirt_oval: 'Dirt Oval', sports_car: 'Sports Car',
+  road: 'Road', oval: 'Oval', dirt_road: 'Dirt Road', dirt_oval: 'Dirt Oval',
 }
 
 // Brand palette (matches dashboard CSS variables + logomark colors)

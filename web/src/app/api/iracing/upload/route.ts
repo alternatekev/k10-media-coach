@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
 
     if (Array.isArray(careerSummary) && careerSummary.length > 0) {
       const categoryMap: Record<number, string> = {
-        1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'sports_car',
+        1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'road',
       }
       for (const cat of careerSummary) {
         categoriesToUpsert.add(categoryMap[cat.category_id] || 'road')
@@ -331,9 +331,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// iRacing license_category_id: 1=oval, 2=road, 3=dirt_oval, 4=dirt_road, 5=sports_car
+// iRacing license_category_id: 1=oval, 2=road, 3=dirt_oval, 4=dirt_road
+// 5 was sports_car but iRacing merged it into road in 2024 S2
 const IRACING_CATEGORY_MAP: Record<number, string> = {
-  1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'sports_car',
+  1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'road',
 }
 
 function detectCategoryFromRace(race: Record<string, unknown>): string {
@@ -343,7 +344,7 @@ function detectCategoryFromRace(race: Record<string, unknown>): string {
 
   // Fallback: parse license_category string
   const catStr = ((race.license_category || '') as string).toLowerCase()
-  if (catStr === 'sports car') return 'sports_car'
+  if (catStr === 'sports car') return 'road' // merged into road in 2024 S2
   if (catStr === 'dirt oval') return 'dirt_oval'
   if (catStr === 'dirt road') return 'dirt_road'
   if (catStr === 'oval') return 'oval'
@@ -354,6 +355,6 @@ function detectCategoryFromRace(race: Record<string, unknown>): string {
   if (s.includes('dirt') && s.includes('oval')) return 'dirt_oval'
   if (s.includes('dirt')) return 'dirt_road'
   if (s.includes('oval') || s.includes('nascar') || s.includes('indycar')) return 'oval'
-  if (s.includes('gt') || s.includes('prototype') || s.includes('lmp') || s.includes('endurance')) return 'sports_car'
+  // GT/prototype/endurance all fall under road now
   return 'road'
 }

@@ -21,7 +21,7 @@ const CATID_MAP: Record<number, string> = {
   1: 'oval',
   3: 'dirt_oval',
   4: 'dirt_road',
-  5: 'sports_car',
+  5: 'road',  // iRacing merged sports car into road in 2024 S2
   6: 'road',
 }
 
