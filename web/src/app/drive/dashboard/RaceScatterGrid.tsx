@@ -40,25 +40,17 @@ const METRIC_LABELS: Record<HeatMetric, string> = {
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-const TIME_LABELS = [
-  { hour: 0, label: '12 AM' },
-  { hour: 3, label: '3 AM' },
-  { hour: 6, label: '6 AM' },
-  { hour: 9, label: '9 AM' },
-  { hour: 12, label: '12 PM' },
-  { hour: 15, label: '3 PM' },
-  { hour: 18, label: '6 PM' },
-  { hour: 21, label: '9 PM' },
-]
+function formatHourLabel(hour: number): string {
+  if (hour === 0 || hour === 24) return '12 AM'
+  if (hour === 12) return '12 PM'
+  if (hour < 12) return `${hour} AM`
+  return `${hour - 12} PM`
+}
 
-// SVG dimensions
+// SVG dimensions (base — CHART_H is computed dynamically per data range)
 const MARGIN = { top: 28, right: 12, bottom: 24, left: 44 }
 const COL_W = 56
-const ROW_H = 18
 const CHART_W = 7 * COL_W
-const CHART_H = 24 * ROW_H
-const SVG_W = MARGIN.left + CHART_W + MARGIN.right
-const SVG_H = MARGIN.top + CHART_H + MARGIN.bottom
 
 const MIN_R = 4
 const MAX_R = 18
@@ -144,6 +136,29 @@ export default function RaceScatterGrid({ sessions }: Props) {
     return Array.from(map.values())
   }, [sessions])
 
+  // Compute visible hour range — crop to data with 1h padding, snapped to 3h intervals
+  const { minHour, maxHour, hourSpan, timeLabels } = useMemo(() => {
+    if (buckets.length === 0) return { minHour: 0, maxHour: 24, hourSpan: 24, timeLabels: [] as { hour: number; label: string }[] }
+    let lo = 24, hi = 0
+    for (const b of buckets) {
+      if (b.hour < lo) lo = b.hour
+      if (b.hour > hi) hi = b.hour
+    }
+    // Pad by 1 hour, snap to 3h grid
+    const padLo = Math.max(0, Math.floor((lo - 1) / 3) * 3)
+    const padHi = Math.min(24, Math.ceil((hi + 2) / 3) * 3)
+    const labels: { hour: number; label: string }[] = []
+    for (let h = padLo; h <= padHi; h += 3) {
+      labels.push({ hour: h, label: formatHourLabel(h) })
+    }
+    return { minHour: padLo, maxHour: padHi, hourSpan: padHi - padLo, timeLabels: labels }
+  }, [buckets])
+
+  const ROW_H = hourSpan > 0 ? Math.max(18, Math.min(36, 432 / hourSpan)) : 18
+  const CHART_H = hourSpan * ROW_H
+  const SVG_W = MARGIN.left + CHART_W + MARGIN.right
+  const SVG_H = MARGIN.top + CHART_H + MARGIN.bottom
+
   // Max count for radius scaling
   const maxCount = useMemo(() => Math.max(1, ...buckets.map(b => b.count)), [buckets])
 
@@ -204,8 +219,8 @@ export default function RaceScatterGrid({ sessions }: Props) {
     return MARGIN.left + col * COL_W + COL_W / 2
   }
 
-  // Y position for hour
-  const yForHour = (hour: number) => MARGIN.top + hour * ROW_H + ROW_H / 2
+  // Y position for hour (mapped to visible range)
+  const yForHour = (hour: number) => MARGIN.top + (hour - minHour) * ROW_H + ROW_H / 2
 
   if (sessions.length === 0) {
     return (
@@ -244,7 +259,7 @@ export default function RaceScatterGrid({ sessions }: Props) {
           className="block"
         >
           {/* Grid lines — horizontal */}
-          {TIME_LABELS.map(({ hour }) => (
+          {timeLabels.map(({ hour }) => (
             <line
               key={`h-${hour}`}
               x1={MARGIN.left}
@@ -270,7 +285,7 @@ export default function RaceScatterGrid({ sessions }: Props) {
           ))}
 
           {/* Y-axis labels (time) */}
-          {TIME_LABELS.map(({ hour, label }) => (
+          {timeLabels.map(({ hour, label }) => (
             <text
               key={`tl-${hour}`}
               x={MARGIN.left - 6}

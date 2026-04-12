@@ -245,28 +245,47 @@ export default function RaceCalendarHeatmap({ sessions }: Props) {
     return `${v}`
   }
 
-  const todayKey = dateKey(new Date())
+  const today = new Date()
+  const todayKey = dateKey(today)
 
   // ── SVG-based fluid calendar ──────────────────────────────────────────────
   // Render as SVG so the grid scales to fill container width.
-  // Layout: week-label column (40 units) + 7 day columns, 14 rows (header + 12 weeks + separator + week 13)
+  // Only render weeks up to (and including) the current week — omit future weeks
+  // so the calendar stretches to fill the available height.
 
   const LABEL_W = 48
-  const COL_W = 1        // 1 fractional unit — we size everything relative to total
-  const TOTAL_W = LABEL_W + 7 * 80   // 48 + 560 = 608 logical units
-  const HEADER_H = 24
-  const ROW_H = 46
-  const SEP_H = 12
-  const GRID_H = HEADER_H + 12 * ROW_H + SEP_H + ROW_H   // header + 12 weeks + sep + w13
-  const SVG_W = TOTAL_W
-  const SVG_H = GRID_H
   const DAY_W = 80
-  const CELL_PAD = 3     // padding inside each cell for the rect
+  const HEADER_H = 24
+  const BASE_ROW_H = 46  // row height at full 13-week season
+  const SEP_H = 12
+  const CELL_PAD = 3
+
+  // Target height: what a full 13-week season would be
+  const FULL_GRID_H = HEADER_H + 12 * BASE_ROW_H + SEP_H + BASE_ROW_H
+
+  // Determine how many weeks to show (only weeks that have started)
+  const visibleWeekCount = useMemo(() => {
+    if (!season) return 13
+    let count = 0
+    for (let w = 0; w < season.weeks.length; w++) {
+      if (season.weeks[w][0] <= today) count = w + 1
+    }
+    return Math.max(1, Math.min(count, 13))
+  }, [season, today])
+
+  const hasWeek13 = visibleWeekCount === 13
+  const regularWeeks = hasWeek13 ? 12 : visibleWeekCount
+  // Scale ROW_H up so fewer weeks fill the same total height
+  const totalWeekSlots = regularWeeks + (hasWeek13 ? 1 : 0)
+  const ROW_H = Math.floor((FULL_GRID_H - HEADER_H - (hasWeek13 ? SEP_H : 0)) / totalWeekSlots)
+  const GRID_H = HEADER_H + regularWeeks * ROW_H + (hasWeek13 ? SEP_H + ROW_H : 0)
+  const SVG_W = LABEL_W + 7 * DAY_W
+  const SVG_H = GRID_H
 
   const dayX = (di: number) => LABEL_W + di * DAY_W
   const weekY = (wi: number) => {
     if (wi < 12) return HEADER_H + wi * ROW_H
-    return HEADER_H + 12 * ROW_H + SEP_H // week 13
+    return HEADER_H + regularWeeks * ROW_H + SEP_H // week 13
   }
 
   if (sessions.length === 0 || !season) {
@@ -293,8 +312,9 @@ export default function RaceCalendarHeatmap({ sessions }: Props) {
         >
           {label}
         </text>
-        {/* Day cells */}
+        {/* Day cells — skip future days */}
         {week.map((day, di) => {
+          if (day > today) return null
           const k = dateKey(day)
           const val = getValue(k)
           const bg = cellColor(val)
@@ -401,22 +421,24 @@ export default function RaceCalendarHeatmap({ sessions }: Props) {
             </text>
           ))}
 
-          {/* Weeks 1–12 */}
-          {season.weeks.slice(0, 12).map((week, wi) => renderWeekRow(week, wi, `W${wi + 1}`))}
+          {/* Visible weeks (up to current week) */}
+          {season.weeks.slice(0, Math.min(regularWeeks, 12)).map((week, wi) => renderWeekRow(week, wi, `W${wi + 1}`))}
 
-          {/* Dashed separator before week 13 */}
-          <line
-            x1={LABEL_W}
-            y1={HEADER_H + 12 * ROW_H + SEP_H / 2}
-            x2={LABEL_W + 7 * DAY_W}
-            y2={HEADER_H + 12 * ROW_H + SEP_H / 2}
-            stroke="var(--border)"
-            strokeWidth={1}
-            strokeDasharray="6 4"
-          />
-
-          {/* Week 13 */}
-          {season.weeks[12] && renderWeekRow(season.weeks[12], 12, 'W13')}
+          {/* Dashed separator + week 13 (only if season is complete) */}
+          {hasWeek13 && (
+            <>
+              <line
+                x1={LABEL_W}
+                y1={HEADER_H + 12 * ROW_H + SEP_H / 2}
+                x2={LABEL_W + 7 * DAY_W}
+                y2={HEADER_H + 12 * ROW_H + SEP_H / 2}
+                stroke="var(--border)"
+                strokeWidth={1}
+                strokeDasharray="6 4"
+              />
+              {season.weeks[12] && renderWeekRow(season.weeks[12], 12, 'W13')}
+            </>
+          )}
         </svg>
       </div>
 

@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     // ── 3. Import career summary → driverRatings ──
     const categoryMap: Record<number, string> = {
-      1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'sports_car'
+      1: 'oval', 2: 'road', 3: 'dirt_oval', 4: 'dirt_road', 5: 'road'
     }
 
     if (Array.isArray(careerSummary)) {

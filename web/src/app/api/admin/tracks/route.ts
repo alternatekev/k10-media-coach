@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin'
 import { csvToSvg, generateSvgPreview } from '@/lib/track-svg'
 import { logConnection } from '@/lib/connection-logger'
 import masterTracks from '@/data/master-tracks.json'
+import { IRACING_OFFICIAL_NAMES } from '@/data/iracing-track-map'
 
 interface MasterTrack {
   id: string
@@ -66,10 +67,27 @@ export async function GET(request: NextRequest) {
   }
 
   // Compute missing tracks (in master JSON but not uploaded)
+  // DB trackIds may differ from master IDs — shtl uploads generate IDs like
+  // "spa-2024-up-grand-prix" while master expects "spa-francorchamps".
+  // Resolve by matching DB trackNames against IRACING_OFFICIAL_NAMES values,
+  // which maps canonical IDs → official track names.
   const dbTrackIds = new Set(tracks.map(t => t.trackId))
+  const dbTrackNames = new Set(tracks.map(t => t.trackName.toLowerCase()))
+
+  // IRACING_OFFICIAL_NAMES: { "spa-francorchamps": "Circuit de Spa-Francorchamps", ... }
+  // If a DB track's name matches an official name, the corresponding canonical ID is "present"
+  const resolvedCanonicalIds = new Set<string>()
+  for (const [canonicalId, officialName] of Object.entries(IRACING_OFFICIAL_NAMES)) {
+    if (dbTrackIds.has(canonicalId) || dbTrackNames.has(officialName.toLowerCase())) {
+      resolvedCanonicalIds.add(canonicalId)
+    }
+  }
+  // Also add all raw DB trackIds
+  for (const id of dbTrackIds) resolvedCanonicalIds.add(id)
+
   const allMasterTracks = masterTracks as MasterTrack[]
   let missing = allMasterTracks
-    .filter(t => !dbTrackIds.has(t.id))
+    .filter(t => !resolvedCanonicalIds.has(t.id))
     .map(t => ({ trackId: t.id, name: t.name, games: t.games }))
 
   if (game) {
