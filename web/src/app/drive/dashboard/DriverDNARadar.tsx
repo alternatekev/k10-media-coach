@@ -62,7 +62,7 @@ export default function DriverDNARadar({ sessions, ratingHistory }: Props) {
     <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] p-4 h-full relative flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)]">
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
           <Target size={24} className="text-[var(--border-accent)]" />
           Driver DNA
         </div>

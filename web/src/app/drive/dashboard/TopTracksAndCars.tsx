@@ -57,7 +57,7 @@ export default function TopTracksAndCars({ tracks, cars, trackMapLookup, trackDi
       {/* Top Tracks */}
       {top3Tracks.length > 0 && (
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3" style={{ fontFamily: 'var(--ff-display)' }}>
             <MapPin size={24} className="text-[var(--border-accent)]" />
             Top Tracks
           </div>
@@ -122,9 +122,9 @@ export default function TopTracksAndCars({ tracks, cars, trackMapLookup, trackDi
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-[var(--text-muted)]">
                       <span>{track.totalSessions} race{track.totalSessions !== 1 ? 's' : ''}</span>
                       {track.avgPosition != null && (
-                        <span>P{track.avgPosition.toFixed(1)}</span>
+                        <span className="tabular-nums" style={{ fontFamily: 'var(--ff-display)', fontSize: '0.8rem' }}>P{track.avgPosition.toFixed(1)}</span>
                       )}
-                      <span>{track.avgIncidents.toFixed(1)}x</span>
+                      <span className="tabular-nums" style={{ fontFamily: 'var(--ff-display)', fontSize: '0.8rem' }}>{track.avgIncidents.toFixed(1)}x</span>
                     </div>
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function TopTracksAndCars({ tracks, cars, trackMapLookup, trackDi
       {/* Top Cars */}
       {top3Cars.length > 0 && (
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3" style={{ fontFamily: 'var(--ff-display)' }}>
             <Car size={24} className="text-[var(--border-accent)]" />
             Top Cars
           </div>
@@ -204,7 +204,7 @@ export default function TopTracksAndCars({ tracks, cars, trackMapLookup, trackDi
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-[var(--text-muted)]">
                       <span>{car.totalSessions} race{car.totalSessions !== 1 ? 's' : ''}</span>
                       {car.avgPosition != null && (
-                        <span>P{car.avgPosition.toFixed(1)}</span>
+                        <span className="tabular-nums" style={{ fontFamily: 'var(--ff-display)', fontSize: '0.8rem' }}>P{car.avgPosition.toFixed(1)}</span>
                       )}
                       <span>{car.cars.length} car{car.cars.length !== 1 ? 's' : ''}</span>
                     </div>

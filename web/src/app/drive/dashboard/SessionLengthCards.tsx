@@ -73,7 +73,7 @@ export default function SessionLengthCards({ sessions }: Props) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] mb-3" style={{ fontFamily: 'var(--ff-display)' }}>
         <Zap size={24} className="text-[var(--border-accent)]" />
         Session Length
       </div>
@@ -92,7 +92,7 @@ export default function SessionLengthCards({ sessions }: Props) {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-[var(--text-secondary)]">
+                <span className="text-sm font-bold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
                   {bucket.label}
                 </span>
                 <span className="text-sm text-[var(--text-muted)]">
@@ -104,16 +104,16 @@ export default function SessionLengthCards({ sessions }: Props) {
                   {bucket.avgPosition != null && (
                     <div>
                       <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Pos</div>
-                      <div className="text-lg font-bold text-[var(--text-dim)]">P{bucket.avgPosition.toFixed(1)}</div>
+                      <div className="text-xl font-bold text-[var(--text-dim)] tabular-nums" style={{ fontFamily: 'var(--ff-display)' }}>P{bucket.avgPosition.toFixed(1)}</div>
                     </div>
                   )}
                   <div>
                     <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Podium</div>
-                    <div className="text-lg font-bold text-green-500">{(bucket.podiumRate * 100).toFixed(0)}%</div>
+                    <div className="text-xl font-bold text-green-500 tabular-nums" style={{ fontFamily: 'var(--ff-display)' }}>{(bucket.podiumRate * 100).toFixed(0)}%</div>
                   </div>
                   <div>
                     <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Inc</div>
-                    <div className="text-lg font-bold text-[var(--text-dim)]">{bucket.avgIncidents.toFixed(1)}</div>
+                    <div className="text-xl font-bold text-[var(--text-dim)] tabular-nums" style={{ fontFamily: 'var(--ff-display)' }}>{bucket.avgIncidents.toFixed(1)}</div>
                   </div>
                 </div>
               ) : (

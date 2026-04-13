@@ -342,7 +342,7 @@ function HeroRaceCard({
                   className="w-5 h-5 flex-shrink-0"
                 />
               )}
-              <h3 className="text-xl font-bold text-[var(--text)] truncate leading-tight">
+              <h3 className="text-xl font-bold text-[var(--text)] truncate leading-tight" style={{ fontFamily: 'var(--ff-display)' }}>
                 {trackDisplay}
               </h3>
             </div>
@@ -436,7 +436,7 @@ export default function NextRaceIdeas({ suggestions, lookups }: NextRaceIdeasPro
       {/* Section header */}
       <div className="flex items-center gap-2">
         <Clock size={16} className="text-[var(--text-secondary)]" />
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+        <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
           Next Race Ideas
         </h3>
       </div>

@@ -789,7 +789,7 @@ export default async function DashboardPage() {
               <section className="mb-6">
                 <h2
                   className="font-bold mb-2 flex items-center gap-2"
-                  style={{ fontSize: "var(--fs-2xl)" }}
+                  style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}
                 >
                   <Shield size={24} className="text-[var(--border-accent)]" />
                   Pro Features
@@ -871,7 +871,7 @@ export default async function DashboardPage() {
             </section>
 
             <section className="mb-12 p-6 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)]">
-              <h2 className="font-bold mb-4" style={{ fontSize: "var(--fs-2xl)" }}>
+              <h2 className="font-bold mb-4" style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}>
                 Get Connected
               </h2>
               <ol className="space-y-3 text-sm text-[var(--text-dim)]">
@@ -897,7 +897,7 @@ export default async function DashboardPage() {
             <section className="mb-6">
               <h2
                 className="font-bold mb-2 flex items-center gap-2"
-                style={{ fontSize: "var(--fs-2xl)" }}
+                style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}
               >
                 <BarChart3 size={24} className="text-[var(--border-accent)]" />
                 Performance
@@ -948,7 +948,7 @@ export default async function DashboardPage() {
             <section>
               <h2
                 className="font-bold mb-2 flex items-center gap-2"
-                style={{ fontSize: "var(--fs-2xl)" }}
+                style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}
               >
                 <Shield size={24} className="text-[var(--border-accent)]" />
                 Pro Features

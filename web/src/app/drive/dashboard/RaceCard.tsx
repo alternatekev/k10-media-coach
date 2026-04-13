@@ -228,11 +228,11 @@ export default function RaceCard({
             <div className="flex flex-col items-end shrink-0 leading-none" style={{ color: posColor }}>
               <div className="flex items-end">
                 {isDNF ? (
-                  <span className="text-base font-black tracking-tight">DNF</span>
+                  <span className="text-lg font-black tracking-tight" style={{ fontFamily: 'var(--ff-display)' }}>DNF</span>
                 ) : (
                   <>
-                    <span className="text-sm font-bold mr-0.5 mb-0.5 opacity-70">P</span>
-                    <span className="text-5xl font-black tracking-tight leading-none">{pos}</span>
+                    <span className="text-base font-bold mr-0.5 mb-0.5 opacity-70" style={{ fontFamily: 'var(--ff-display)' }}>P</span>
+                    <span className="text-6xl font-black tracking-tight leading-none" style={{ fontFamily: 'var(--ff-display)' }}>{pos}</span>
                   </>
                 )}
               </div>

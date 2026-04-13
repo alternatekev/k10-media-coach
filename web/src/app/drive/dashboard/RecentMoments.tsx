@@ -310,7 +310,7 @@ export default function RecentMoments({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Trophy size={16} className="text-[var(--text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
                 Highlights
               </h3>
             </div>
@@ -327,7 +327,7 @@ export default function RecentMoments({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Star size={16} className="text-[var(--text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
                 Recent Moments
               </h3>
             </div>

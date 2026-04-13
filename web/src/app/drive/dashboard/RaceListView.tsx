@@ -199,8 +199,8 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
                   <div className="flex justify-center">
                     {!practice ? (
                       <span
-                        className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold"
-                        style={{ background: posBadge.bg, color: posBadge.text }}
+                        className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-sm font-bold tabular-nums"
+                        style={{ background: posBadge.bg, color: posBadge.text, fontFamily: 'var(--ff-display)' }}
                       >
                         {posBadge.label}
                         {fieldSize ? <span className="font-normal opacity-60 ml-0.5">/{fieldSize}</span> : null}
@@ -227,7 +227,7 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
                   </div>
 
                   {/* Col 8 — Incidents */}
-                  <div className="text-xs text-[var(--text-muted)] tabular-nums text-right">
+                  <div className="text-sm text-[var(--text-muted)] tabular-nums text-right" style={{ fontFamily: 'var(--ff-display)' }}>
                     {incidents > 0 ? `${incidents}x` : ''}
                   </div>
 
