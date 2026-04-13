@@ -130,6 +130,58 @@ export const raceSessions = pgTable('race_sessions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// ── Lap Telemetry (per-lap granular data for SR/behavior analysis) ──
+export const lapTelemetry = pgTable('lap_telemetry', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: uuid('session_id').notNull().references(() => raceSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  lapNumber: integer('lap_number').notNull(),
+  lapTime: doublePrecision('lap_time'),             // seconds
+  sector1: doublePrecision('sector_1'),              // seconds
+  sector2: doublePrecision('sector_2'),
+  sector3: doublePrecision('sector_3'),
+  incidentCount: integer('incident_count').default(0),
+  incidentPoints: integer('incident_points').default(0),  // 1x, 2x, 4x accumulated
+  isCleanLap: boolean('is_clean_lap').default(true),
+  incidentTrackPosition: doublePrecision('incident_track_position'), // 0–1 where on track
+  rageScore: doublePrecision('rage_score'),           // avg rage score during lap
+  throttleAggression: doublePrecision('throttle_aggression'),   // 0–25
+  steeringErraticism: doublePrecision('steering_erraticism'),   // 0–20
+  brakingAggression: doublePrecision('braking_aggression'),     // 0–20
+  proximityChasing: doublePrecision('proximity_chasing'),       // 0–25
+  metadata: jsonb('metadata'),                        // additional per-lap data
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// ── Session Behavior (per-session behavioral summary from IncidentCoachEngine) ──
+export const sessionBehavior = pgTable('session_behavior', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: uuid('session_id').notNull().references(() => raceSessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Aggression metrics
+  hardBrakingEvents: integer('hard_braking_events').default(0),
+  closePassCount: integer('close_pass_count').default(0),
+  tailgatingSeconds: doublePrecision('tailgating_seconds').default(0),
+  // Consistency
+  offTrackCount: integer('off_track_count').default(0),
+  spinCount: integer('spin_count').default(0),
+  cleanLaps: integer('clean_laps').default(0),
+  totalLaps: integer('total_laps').default(0),
+  // Composure
+  peakRageScore: doublePrecision('peak_rage_score').default(0),
+  avgRageScore: doublePrecision('avg_rage_score').default(0),
+  rageSpikes: integer('rage_spikes').default(0),
+  cooldownsTriggered: integer('cooldowns_triggered').default(0),
+  retaliationAttempts: integer('retaliation_attempts').default(0),
+  totalRageRecoverySeconds: doublePrecision('total_rage_recovery_seconds').default(0),
+  // Incident details (JSONB for flexible querying)
+  incidentsByPhase: jsonb('incidents_by_phase'),       // { early: n, mid: n, late: n }
+  incidentLocations: jsonb('incident_locations'),      // [{ trackPosition, lapNumber, type, points }]
+  threatLedger: jsonb('threat_ledger'),                // serialized per-driver threat entries
+  commentaryLog: jsonb('commentary_log'),              // [{ lap, topic, severity, sentiment, text }]
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 // ── Design Tokens (canonical source of truth for all design variables) ──
 export const designTokens = pgTable('design_tokens', {
   id: uuid('id').defaultRandom().primaryKey(),
