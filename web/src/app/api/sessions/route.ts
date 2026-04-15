@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateToken } from '@/lib/plugin-auth'
 import { db, schema } from '@/db'
 import { eq, desc, and } from 'drizzle-orm'
+import { buildTrackLookup, resolveTrackName } from '@/lib/resolve-track'
 
 /**
  * POST /api/sessions — Record a completed race session
@@ -45,6 +46,40 @@ export async function POST(request: NextRequest) {
     const normalizedGameName = (gameName || 'iRacing').trim()
     const isIRacing = normalizedGameName.toLowerCase() === 'iracing'
 
+    // ── Resolve track name to canonical form (same as /api/iracing/latest) ──
+    let resolvedTrack = trackName
+    try {
+      const trackLookup = await buildTrackLookup()
+      resolvedTrack = resolveTrackName(trackLookup, trackName) || trackName
+    } catch {
+      // Track resolution is best-effort — fall back to raw name
+    }
+
+    // ── Dedup: skip if a session with this gameId or subsessionId already exists ──
+    if (gameId || body.subsessionId) {
+      const existingWithMeta = await db.select({
+        id: schema.raceSessions.id,
+        metadata: schema.raceSessions.metadata,
+      }).from(schema.raceSessions)
+        .where(eq(schema.raceSessions.userId, result.user.id))
+        .limit(500)
+
+      // Collect all known IDs from existing sessions (gameId + subsessionId)
+      const knownIds = new Set<string>()
+      for (const s of existingWithMeta) {
+        const meta = s.metadata as Record<string, unknown> | null
+        if (meta?.gameId) knownIds.add(String(meta.gameId))
+        if (meta?.subsessionId) knownIds.add(String(meta.subsessionId))
+      }
+
+      if (gameId && knownIds.has(String(gameId))) {
+        return NextResponse.json({ success: true, sessionId: null, deduplicated: true, reason: 'gameId' })
+      }
+      if (body.subsessionId && knownIds.has(String(body.subsessionId))) {
+        return NextResponse.json({ success: true, sessionId: null, deduplicated: true, reason: 'subsessionId' })
+      }
+    }
+
     // Insert session (race or practice/qualifying/warmup)
     const session = await db.insert(schema.raceSessions).values({
       userId: result.user.id,
@@ -52,13 +87,16 @@ export async function POST(request: NextRequest) {
       manufacturer: null, // Could be extracted from carModel later
       category: _detectCategory(sessionType),
       gameName: isIRacing ? 'iracing' : normalizedGameName.toLowerCase(),
-      trackName,
+      trackName: resolvedTrack,
       sessionType,
       finishPosition: finishPosition || null,
       incidentCount: incidentCount || null,
       metadata: {
+        source: 'overlay_autosync',
         gameId,
+        subsessionId: body.subsessionId || null,
         gameName: normalizedGameName,
+        rawTrackName: trackName !== resolvedTrack ? trackName : undefined,
         preRaceIRating,
         preRaceSR,
         preRaceLicense,
@@ -86,7 +124,7 @@ export async function POST(request: NextRequest) {
         safetyRating: String(preRaceSR || 0),
         license: preRaceLicense || 'R',
         sessionType,
-        trackName,
+        trackName: resolvedTrack,
         carModel
       })
     }

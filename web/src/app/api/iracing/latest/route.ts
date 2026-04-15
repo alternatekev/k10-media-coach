@@ -42,25 +42,39 @@ export async function POST(request: NextRequest) {
     let ratingsImported = 0
     const errors: string[] = []
 
-    // Load existing sessions to deduplicate by subsessionId
-    const existingSessions = await db.select().from(schema.raceSessions)
+    // Load existing sessions — build dedup set from BOTH gameId AND subsessionId
+    // so we catch auto-synced sessions (which store iRacing SessionID as gameId
+    // and SubSessionID as subsessionId) as well as prior /api/iracing/latest imports
+    const existingSessions = await db.select({
+      id: schema.raceSessions.id,
+      metadata: schema.raceSessions.metadata,
+    }).from(schema.raceSessions)
       .where(eq(schema.raceSessions.userId, userId))
       .limit(500)
 
-    const existingGameIds = new Set(
-      existingSessions
-        .map(s => (s.metadata as Record<string, unknown>)?.gameId)
-        .filter(Boolean)
-        .map(String)
-    )
+    // Map subsessionId → existing row ID for auto-synced sessions we should upgrade
+    const autoSyncedBySubId = new Map<string, string>()
+    const knownIds = new Set<string>()
+    for (const s of existingSessions) {
+      const meta = s.metadata as Record<string, unknown> | null
+      if (meta?.gameId) knownIds.add(String(meta.gameId))
+      if (meta?.subsessionId) {
+        knownIds.add(String(meta.subsessionId))
+        // Track auto-synced sessions so we can upgrade them with richer API data
+        if (meta?.source === 'overlay_autosync') {
+          autoSyncedBySubId.set(String(meta.subsessionId), s.id)
+        }
+      }
+    }
 
     // Build track lookup once for resolving all races in this batch
     const trackLookup = await buildTrackLookup()
+    let sessionsUpgraded = 0
 
     for (const race of recentRaces) {
       try {
         const subsessionId = String(race.subsession_id || race.subsessionId || '')
-        if (!subsessionId || existingGameIds.has(subsessionId)) continue
+        if (!subsessionId) continue
 
         const category = detectCategory(race.series_name || race.seriesName || '')
 
@@ -68,7 +82,53 @@ export async function POST(request: NextRequest) {
         const iracingTrackConfig = race.track?.config_name || race.track_config || undefined
         const resolvedTrackName = resolveTrackName(trackLookup, iracingTrackName, iracingTrackConfig) || iracingTrackName
 
-        // Insert race session
+        const apiMetadata = {
+          source: 'iracing_latest' as const,
+          subsessionId: Number(subsessionId),
+          gameId: subsessionId,
+          iracingTrackName,
+          iracingTrackConfig,
+          prodriveTrackId: resolveIRacingTrackId(iracingTrackName, iracingTrackConfig),
+          seriesName: race.series_name || race.seriesName || '',
+          seasonName: race.season_name || race.seasonName || '',
+          preRaceIRating: race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0,
+          postRaceIRating: race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0,
+          actualIRatingDelta: (race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0)
+            - (race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0),
+          preRaceSR: (race.old_sub_level ?? race.oldSubLevel ?? 0) / 100,
+          postRaceSR: (race.new_sub_level ?? race.newSubLevel ?? 0) / 100,
+          startPosition: race.starting_position ?? race.start_position ?? race.startingPosition ?? 0,
+          completedLaps: race.laps_complete ?? race.laps ?? race.lapsComplete ?? 0,
+          lapsLed: race.laps_led ?? race.lapsLed ?? 0,
+          champPoints: race.champ_points ?? race.champPoints ?? 0,
+          strengthOfField: race.strength_of_field ?? race.sof ?? race.strengthOfField ?? 0,
+          startedAt: race.session_start_time || race.start_time || race.sessionStartTime || null,
+        }
+
+        // Check if we already have this race from auto-sync — upgrade it with API data
+        const autoSyncId = autoSyncedBySubId.get(subsessionId)
+        if (autoSyncId) {
+          // Upgrade the auto-synced session with richer API data + resolved track name
+          await db.update(schema.raceSessions).set({
+            trackName: resolvedTrackName,
+            category,
+            finishPosition: race.finish_position ?? race.finishPosition ?? null,
+            incidentCount: race.incidents ?? null,
+            metadata: apiMetadata,
+            createdAt: race.session_start_time || race.start_time
+              ? new Date(race.session_start_time || race.start_time)
+              : undefined,
+          }).where(eq(schema.raceSessions.id, autoSyncId))
+          sessionsUpgraded++
+          // Mark as known so we don't re-insert
+          knownIds.add(subsessionId)
+          continue
+        }
+
+        // Already imported via a prior /api/iracing/latest or /api/iracing/import call — skip
+        if (knownIds.has(subsessionId)) continue
+
+        // New race — insert
         await db.insert(schema.raceSessions).values({
           userId,
           carModel: race.car_name || race.carName || 'Unknown',
@@ -78,33 +138,13 @@ export async function POST(request: NextRequest) {
           sessionType: category,
           finishPosition: race.finish_position ?? race.finishPosition ?? null,
           incidentCount: race.incidents ?? null,
-          metadata: {
-            source: 'iracing_latest',
-            subsessionId: Number(subsessionId),
-            gameId: subsessionId,
-            iracingTrackName,
-            iracingTrackConfig,
-            prodriveTrackId: resolveIRacingTrackId(iracingTrackName, iracingTrackConfig),
-            seriesName: race.series_name || race.seriesName || '',
-            seasonName: race.season_name || race.seasonName || '',
-            preRaceIRating: race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0,
-            postRaceIRating: race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0,
-            actualIRatingDelta: (race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0)
-              - (race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0),
-            preRaceSR: (race.old_sub_level ?? race.oldSubLevel ?? 0) / 100,
-            postRaceSR: (race.new_sub_level ?? race.newSubLevel ?? 0) / 100,
-            startPosition: race.starting_position ?? race.start_position ?? race.startingPosition ?? 0,
-            completedLaps: race.laps_complete ?? race.laps ?? race.lapsComplete ?? 0,
-            lapsLed: race.laps_led ?? race.lapsLed ?? 0,
-            champPoints: race.champ_points ?? race.champPoints ?? 0,
-            strengthOfField: race.strength_of_field ?? race.sof ?? race.strengthOfField ?? 0,
-            startedAt: race.session_start_time || race.start_time || race.sessionStartTime || null,
-          },
+          metadata: apiMetadata,
           createdAt: race.session_start_time || race.start_time
             ? new Date(race.session_start_time || race.start_time)
             : new Date(),
         })
         sessionsImported++
+        knownIds.add(subsessionId)
 
         // Also insert a rating_history entry for each new race with rating deltas
         const postIR = race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0
@@ -140,7 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Consolidate any old sessions with mismatched track names or stale categories
-    if (sessionsImported > 0) {
+    if (sessionsImported > 0 || sessionsUpgraded > 0) {
       try {
         await consolidateUserTracks(userId)
       } catch {}
@@ -170,6 +210,7 @@ export async function POST(request: NextRequest) {
       success: true,
       imported: {
         sessions: sessionsImported,
+        upgraded: sessionsUpgraded,
         ratings: ratingsImported,
       },
       errors: errors.length > 0 ? errors : undefined,

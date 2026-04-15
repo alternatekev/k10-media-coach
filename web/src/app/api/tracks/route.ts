@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     displayName: schema.trackMaps.displayName,
     sectorCount: schema.trackMaps.sectorCount,
     sectorBoundaries: schema.trackMaps.sectorBoundaries,
+    svgPath: schema.trackMaps.svgPath,
     rawCsv: schema.trackMaps.rawCsv,
   }
 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (results.length === 0) {
-    return NextResponse.json({ trackName, displayName: trackName, trackId: null, sectorCount: 3, sectorBoundaries: null, rawCsv: null })
+    return NextResponse.json({ trackName, displayName: trackName, trackId: null, sectorCount: 3, sectorBoundaries: null, svgPath: null, rawCsv: null })
   }
 
   const track = results[0]
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
     displayName: track.displayName || track.trackName,
     sectorCount: track.sectorCount,
     sectorBoundaries: parsedBoundaries,
+    svgPath: track.svgPath ?? null,
     rawCsv: track.rawCsv ?? null,
   })
 }
