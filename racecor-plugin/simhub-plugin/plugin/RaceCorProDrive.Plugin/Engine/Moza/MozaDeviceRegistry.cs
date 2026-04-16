@@ -71,24 +71,65 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
         /// USB descriptor patterns for identifying connected Moza devices.
         /// Match against the product/description string from WMI Win32_PnPEntity.
         /// All patterns are case-insensitive.
+        ///
+        /// Note: The WMI full description is "{Manufacturer} {Name} {Description}".
+        /// Older Moza firmware uses "Gudsen" as the manufacturer; newer firmware
+        /// (late 2025+) reports "MOZA" or "MOZA Racing". Patterns must accept both.
         /// </summary>
         public static readonly DevicePattern[] UsbPatterns = new[]
         {
+            // ── Wheelbases ──────────────────────────────────────────────
+            // Matches: "Gudsen MOZA R9 Base", "MOZA R12 Ultra Base",
+            //          "MOZA Racing R21 Base", "MOZA R5 Racing Wheel and Pedals"
             new DevicePattern(MozaDeviceType.Wheelbase,
-                new Regex(@"gudsen\s+(moza\s+)?r\d{1,2}\s+(ultra\s+base|base|racing\s+wheel\s+and\s+pedals)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+                new Regex(@"(?:gudsen|moza(?:\s+racing)?)\s+(?:moza\s+)?r\d{1,2}\s+(ultra\s+base|base|racing\s+wheel\s+and\s+pedals)", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Pedals ──────────────────────────────────────────────────
+            // Matches: "Gudsen MOZA SRP Pedals", "MOZA CRP2 Pedals",
+            //          "MOZA SR-P Lite Pedals", "MOZA FSR Pedals"
             new DevicePattern(MozaDeviceType.Pedals,
-                new Regex(@"gudsen\s+moza\s+(srp|sr-p|crp)\d?\s+pedals", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+                new Regex(@"(?:gudsen\s+)?(?:moza(?:\s+racing)?\s+)?(srp|sr-p|crp|fsr)\d?(?:\s+\w+)?\s+pedals", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+            // Broader pedal fallback: any "moza" string with "pedal" in it
+            new DevicePattern(MozaDeviceType.Pedals,
+                new Regex(@"moza\s+.*pedal", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Shifters ────────────────────────────────────────────────
             new DevicePattern(MozaDeviceType.Shifter,
                 new Regex(@"hgp\s+shifter", RegexOptions.IgnoreCase | RegexOptions.Compiled),
                 "HPattern"),
             new DevicePattern(MozaDeviceType.Shifter,
                 new Regex(@"sgp\s+shifter", RegexOptions.IgnoreCase | RegexOptions.Compiled),
                 "Sequential"),
+            // Broader: "MOZA ... shifter"
+            new DevicePattern(MozaDeviceType.Shifter,
+                new Regex(@"moza\s+.*shifter", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Handbrake ───────────────────────────────────────────────
             new DevicePattern(MozaDeviceType.Handbrake,
                 new Regex(@"hbp\s+handbrake", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+            // Broader: "MOZA ... handbrake"
+            new DevicePattern(MozaDeviceType.Handbrake,
+                new Regex(@"moza\s+.*handbrake", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Universal Hub ───────────────────────────────────────────
             new DevicePattern(MozaDeviceType.UniversalHub,
-                new Regex(@"gudsen\s+universal\s+hub", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
-            // Fallback: any Gudsen/Moza device not matching specific patterns
+                new Regex(@"(?:gudsen|moza(?:\s+racing)?)\s+universal\s+hub", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Dashboard ───────────────────────────────────────────────
+            // Moza dashboards (CM, RM) — no pattern existed before
+            new DevicePattern(MozaDeviceType.Dashboard,
+                new Regex(@"moza\s+.*dashboard", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Steering Wheels ─────────────────────────────────────────
+            // CS V2, KS, GS, etc. — distinguish from wheelbases by "wheel" without "base"
+            new DevicePattern(MozaDeviceType.SteeringWheel,
+                new Regex(@"moza\s+(?:cs|ks|gs|es|fsr)\s*v?\d?\s+(?:steering\s+)?wheel", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── E-Stop ──────────────────────────────────────────────────
+            new DevicePattern(MozaDeviceType.EStop,
+                new Regex(@"moza\s+.*e-?stop", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
+
+            // ── Fallback: any Gudsen/Moza device not matching above ─────
             new DevicePattern(MozaDeviceType.Unknown,
                 new Regex(@"gudsen|moza", RegexOptions.IgnoreCase | RegexOptions.Compiled)),
         };

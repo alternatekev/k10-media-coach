@@ -337,6 +337,11 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                     var match = ClassifyDevice(description);
                     if (match == null) continue;
 
+                    if (match.Value.type == MozaDeviceRegistry.MozaDeviceType.Unknown)
+                    {
+                        _logWarn($"[MozaSerial] Detected Moza device on {portName} but could not determine specific type — USB descriptor: \"{description}\". Device will be tracked but not polled for settings.");
+                    }
+
                     var device = new MozaDevice(
                         portName,
                         match.Value.type,
