@@ -45,8 +45,10 @@ export async function ingest(dir, opts = {}) {
   const lines = raw.trim().split('\n');
   const frames = [];
   let summary = null;
+  let skippedLines = 0;
 
   for (const line of lines) {
+    if (!line.trim()) continue;  // skip empty lines
     try {
       const obj = JSON.parse(line);
       if (obj._type === 'summary') {
@@ -54,7 +56,21 @@ export async function ingest(dir, opts = {}) {
       } else {
         frames.push(obj);
       }
-    } catch { /* skip malformed lines */ }
+    } catch {
+      skippedLines++;
+    }
+  }
+
+  // Warn if >5% of lines were skipped
+  const totalParsedLines = frames.length + (summary ? 1 : 0) + skippedLines;
+  if (totalParsedLines > 0) {
+    const skipPercentage = (skippedLines / totalParsedLines) * 100;
+    if (skipPercentage > 5) {
+      console.warn(
+        `  Warning: ${skippedLines}/${totalParsedLines} lines (${skipPercentage.toFixed(1)}%) ` +
+        `skipped during JSONL parsing in ${sidecarFile}. This may indicate corrupted telemetry.`
+      );
+    }
   }
 
   if (frames.length === 0) {

@@ -68,7 +68,7 @@ function Separator() {
 
 function Stat({ label, value, mono = true }: { label: string; value: string | number; mono?: boolean }) {
   return (
-    <div className="flex flex-col items-left gap-0.5 px-3" style={{color: 'var(--text-secondary)'}}>
+    <div className="flex flex-col items-left gap-0.5 px-3" style={{color: 'var(--text-secondary)'}} aria-label={`${label}: ${typeof value === 'number' ? value.toLocaleString() : value}`}>
       <span className="text-xs uppercase tracking-wider leading-none" style={{color: 'var(--text-muted)'}}>{label}</span>
       <span
         className="text-xs font-bold leading-none"
@@ -116,7 +116,7 @@ function Sparkline({ points, color, label, current, sr }: {
     : `${pathD} L${(SPARK_W - SPARK_PAD).toFixed(1)},${SPARK_H} L${SPARK_PAD},${SPARK_H} Z`
 
   return (
-    <div className="flex items-center gap-2 px-3 shrink-0" style={{ width: SPARK_W + 100, color: 'var(--text-secondary)' }}>
+    <div className="flex items-center gap-2 px-3 shrink-0" style={{ width: SPARK_W + 100, color: 'var(--text-secondary)' }} aria-label={`${label}: ${current.toLocaleString()}${sr ? ` Safety Rating ${sr.license}${sr.safetyRating}` : ''}`}>
       {/* Label + value */}
       <div className="flex flex-col gap-0.5 shrink-0 min-w-[70px]">
         <span className="text-xs uppercase tracking-wider leading-none"  style={{color: 'var(--text-muted)'}}>
@@ -144,6 +144,7 @@ function Sparkline({ points, color, label, current, sr }: {
         viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
         className="shrink-0"
         style={{ opacity: 0.9 }}
+        aria-hidden="true"
       >
         <defs>
           <linearGradient id={`spark-fill-${sr?.category}`} x1="0" y1="0" x2="0" y2="1">

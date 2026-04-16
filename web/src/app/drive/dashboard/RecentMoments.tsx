@@ -5,15 +5,9 @@ import {
   MapPin, Car, Clock, Flame, HeartCrack, ArrowUpFromLine,
 } from 'lucide-react'
 import type { Moment } from '@/lib/moments'
+import type { BrandInfo } from '@/types/brand'
 
 // ── Lookups ───────────────────────────────────────────────────────────────────
-
-interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
-}
 
 interface MomentLookups {
   trackMapLookup: Record<string, string>
@@ -304,17 +298,17 @@ export default function RecentMoments({
 
   if (compact) {
     return (
-      <div className="space-y-3">
+      <section className="space-y-3">
         {/* Highlights */}
         {highlights.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Trophy size={16} className="text-[var(--text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+              <Trophy size={16} className="text-[var(--text-secondary)]" aria-hidden="true" />
+              <h3 id="highlights-heading" className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
                 Highlights
               </h3>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2" aria-labelledby="highlights-heading">
               {highlights.map((m, i) => (
                 <HighlightCard key={`hl-${m.type}-${m.date}-${i}`} moment={m} lookups={lookups} />
               ))}
@@ -326,27 +320,27 @@ export default function RecentMoments({
         {moments.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Star size={16} className="text-[var(--text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+              <Star size={16} className="text-[var(--text-secondary)]" aria-hidden="true" />
+              <h3 id="recent-moments-heading" className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
                 Recent Moments
               </h3>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1" aria-labelledby="recent-moments-heading">
               {moments.map((m, i) => (
                 <CompactMomentRow key={`${m.type}-${m.date}-${i}`} moment={m} lookups={lookups} />
               ))}
             </div>
           </div>
         )}
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto">
+    <section className="flex gap-3 overflow-x-auto" aria-label="Recent moments">
       {moments.map((m, i) => (
         <MomentCard key={`${m.type}-${m.date}-${i}`} moment={m} lookups={lookups} />
       ))}
-    </div>
+    </section>
   )
 }

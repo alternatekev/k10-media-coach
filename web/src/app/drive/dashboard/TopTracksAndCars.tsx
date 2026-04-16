@@ -3,13 +3,7 @@
 import Link from 'next/link'
 import { MapPin, Car } from 'lucide-react'
 import type { TrackMastery, CarAffinity } from '@/lib/mastery'
-
-interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
-}
+import type { BrandInfo } from '@/types/brand'
 
 interface Props {
   tracks: TrackMastery[]

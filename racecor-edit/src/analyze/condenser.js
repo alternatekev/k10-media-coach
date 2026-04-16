@@ -47,9 +47,31 @@ export async function condense(dir, opts = {}) {
   // ── Load telemetry ────────────────────────────────────────
   const sidecarPath = join(dir, session.sidecarFile);
   const raw = readFileSync(sidecarPath, 'utf8');
-  const frames = raw.trim().split('\n')
-    .map(line => { try { return JSON.parse(line); } catch { return null; } })
+  const lines = raw.trim().split('\n');
+  let skippedLines = 0;
+  const frames = lines
+    .map(line => {
+      if (!line.trim()) return null;
+      try {
+        return JSON.parse(line);
+      } catch {
+        skippedLines++;
+        return null;
+      }
+    })
     .filter(f => f && !f._type);
+
+  // Warn if >5% of lines were skipped
+  const totalParsedLines = frames.length + skippedLines;
+  if (totalParsedLines > 0) {
+    const skipPercentage = (skippedLines / totalParsedLines) * 100;
+    if (skipPercentage > 5) {
+      console.warn(
+        `  Warning: ${skippedLines}/${totalParsedLines} lines (${skipPercentage.toFixed(1)}%) ` +
+        `skipped during JSONL parsing in ${session.sidecarFile}. This may indicate corrupted telemetry.`
+      );
+    }
+  }
 
   // ── Score every second ────────────────────────────────────
   console.log('  Scoring telemetry...');
@@ -180,7 +202,10 @@ function classifySegments(scores, keepThreshold, maybeThreshold) {
     else action = 'cut';
 
     if (action !== currentAction && currentAction !== null) {
-      const avgInterest = segmentScores.reduce((a, b) => a + b, 0) / segmentScores.length;
+      // Guard against division by zero
+      const avgInterest = segmentScores.length > 0
+        ? segmentScores.reduce((a, b) => a + b, 0) / segmentScores.length
+        : 0;
       segments.push({
         start: segmentStart,
         end: s.t,
@@ -197,7 +222,10 @@ function classifySegments(scores, keepThreshold, maybeThreshold) {
 
   // Close final segment
   if (currentAction !== null && scores.length > 0) {
-    const avgInterest = segmentScores.reduce((a, b) => a + b, 0) / segmentScores.length;
+    // Guard against division by zero
+    const avgInterest = segmentScores.length > 0
+      ? segmentScores.reduce((a, b) => a + b, 0) / segmentScores.length
+      : 0;
     segments.push({
       start: segmentStart,
       end: scores[scores.length - 1].t,

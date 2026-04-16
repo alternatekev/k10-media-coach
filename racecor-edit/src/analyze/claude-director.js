@@ -177,7 +177,18 @@ function askClaudeCLI(prompt) {
  * SDK mode: use @anthropic-ai/sdk.
  */
 async function askClaudeSDK(prompt, { maxTokens = 4096 } = {}) {
-  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  let Anthropic;
+  try {
+    const module = await import('@anthropic-ai/sdk');
+    Anthropic = module.default;
+  } catch (err) {
+    throw new Error(
+      'Anthropic SDK not installed or not found. ' +
+      'Install with: npm install @anthropic-ai/sdk\n' +
+      `Details: ${err.message}`
+    );
+  }
+
   const client = new Anthropic();
 
   const response = await client.messages.create({

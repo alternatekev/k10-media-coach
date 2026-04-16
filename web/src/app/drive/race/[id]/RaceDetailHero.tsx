@@ -156,7 +156,7 @@ export default function RaceDetailHero(props: RaceDetailHeroProps) {
           href="/drive/dashboard"
           className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors mb-6"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-hidden="true" />
           Back to Dashboard
         </Link>
 
@@ -203,12 +203,12 @@ export default function RaceDetailHero(props: RaceDetailHeroProps) {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-muted)] mt-2">
               {trackLocation && (
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={14} />
+                  <MapPin size={14} aria-hidden="true" />
                   {trackLocation.city}, {trackLocation.country} {trackLocation.flag}
                 </span>
               )}
               <span className="flex items-center gap-1.5">
-                <Clock size={14} />
+                <Clock size={14} aria-hidden="true" />
                 {dateStr} at {timeStr}
               </span>
             </div>
@@ -297,25 +297,25 @@ export default function RaceDetailHero(props: RaceDetailHeroProps) {
             {/* Stat chips row */}
             <div className="flex items-center gap-3">
               {bestLapTime && bestLapTime > 0 && (
-                <div className="text-right">
+                <div className="text-right" aria-label={`Best Lap: ${formatLapTime(bestLapTime)}`}>
                   <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Best Lap</div>
                   <div className="text-lg font-bold text-[var(--text)] tabular-nums" style={{ fontFamily: 'var(--ff-mono)' }}>
                     {formatLapTime(bestLapTime)}
                   </div>
                 </div>
               )}
-              <div className="text-right">
+              <div className="text-right" aria-label={`Laps: ${completedLaps}`}>
                 <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Laps</div>
                 <div className="text-lg font-bold text-[var(--text)]">{completedLaps}</div>
               </div>
-              <div className="text-right">
+              <div className="text-right" aria-label={`Incidents: ${incidentCount}`}>
                 <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Incidents</div>
                 <div className={`text-lg font-bold ${incidentCount === 0 ? 'text-emerald-400' : incidentCount >= 6 ? 'text-rose-400' : 'text-[var(--text)]'}`}>
                   {incidentCount}x
                 </div>
               </div>
               {irDelta !== null && !isPractice && (
-                <div className="text-right">
+                <div className="text-right" aria-label={`iRating: ${irDelta >= 0 ? '+' : ''}${irDelta}`}>
                   <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">iRating</div>
                   <div className={`text-lg font-bold ${irDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {irDelta >= 0 ? '+' : ''}{irDelta}
@@ -323,7 +323,7 @@ export default function RaceDetailHero(props: RaceDetailHeroProps) {
                 </div>
               )}
               {srDelta !== null && !isPractice && (
-                <div className="text-right">
+                <div className="text-right" aria-label={`Safety Rating: ${srDelta >= 0 ? '+' : ''}${srDelta.toFixed(2)}`}>
                   <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">SR</div>
                   <div className={`text-lg font-bold ${srDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {srDelta >= 0 ? '+' : ''}{srDelta.toFixed(2)}

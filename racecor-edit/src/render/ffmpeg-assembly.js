@@ -42,6 +42,18 @@ export async function renderEdit(dir, opts = {}) {
     console.log('  Note: No TV-view video found. All cuts will use cockpit source.');
   }
 
+  // Validate source files exist before expensive rendering pipeline
+  try {
+    if (!existsSync(cockpitPath)) {
+      throw new Error(`Source video missing: ${cockpitPath}`);
+    }
+    if (hasTVView && !existsSync(tvPath)) {
+      throw new Error(`Source video missing: ${tvPath}`);
+    }
+  } catch (err) {
+    throw new Error(`Source file validation failed: ${err.message}`);
+  }
+
   // ── Determine output settings ─────────────────────────────
   const quality = opts.quality || 'final';
   const resolution = opts.resolution || '1080';
@@ -63,73 +75,80 @@ export async function renderEdit(dir, opts = {}) {
   const segmentFiles = [];
   console.log(`  Rendering ${cuts.length} segments (${encoder}, ${resolution}p, ${bitrate})...`);
 
-  for (let i = 0; i < cuts.length; i++) {
-    const cut = cuts[i];
-    const startSec = parseDuration(cut.start);
-    const endSec = parseDuration(cut.end);
-    const duration = endSec - startSec;
-    if (duration <= 0) continue;
+  const { unlinkSync } = await import('node:fs');
 
-    // Choose source file
-    const sourceFile = (cut.source === 'tv' && hasTVView) ? tvPath : cockpitPath;
-    const segmentPath = join(dir, `_segment_${String(i).padStart(3, '0')}.ts`);
+  try {
+    for (let i = 0; i < cuts.length; i++) {
+      const cut = cuts[i];
+      const startSec = parseDuration(cut.start);
+      const endSec = parseDuration(cut.end);
+      const duration = endSec - startSec;
+      if (duration <= 0) continue;
 
-    // Extract segment with FFmpeg
-    const segArgs = [
-      '-y',
-      '-ss', toFFmpegTime(startSec),
-      '-i', sourceFile,
-      '-t', duration.toFixed(3),
-      '-c:v', encoder,
-      '-b:v', bitrate,
-      '-c:a', 'aac', '-b:a', '128k',
-      '-vf', `scale=${scaleFilter}:force_original_aspect_ratio=decrease,pad=${scaleFilter}:(ow-iw)/2:(oh-ih)/2`,
-      '-f', 'mpegts',
-      segmentPath,
-    ];
+      // Choose source file
+      const sourceFile = (cut.source === 'tv' && hasTVView) ? tvPath : cockpitPath;
+      const segmentPath = join(dir, `_segment_${String(i).padStart(3, '0')}.ts`);
 
-    // Add quality-specific encoder args
-    if (encoder === 'libx264') {
-      segArgs.splice(segArgs.indexOf('-c:v') + 2, 0, '-preset', quality === 'draft' ? 'ultrafast' : 'fast');
-    } else if (encoder === 'h264_videotoolbox') {
-      // macOS hardware encoder
-    } else if (encoder === 'h264_nvenc') {
-      segArgs.splice(segArgs.indexOf('-c:v') + 2, 0, '-preset', 'p4');
+      // Extract segment with FFmpeg
+      const segArgs = [
+        '-y',
+        '-ss', toFFmpegTime(startSec),
+        '-i', sourceFile,
+        '-t', duration.toFixed(3),
+        '-c:v', encoder,
+        '-b:v', bitrate,
+        '-c:a', 'aac', '-b:a', '128k',
+        '-vf', `scale=${scaleFilter}:force_original_aspect_ratio=decrease,pad=${scaleFilter}:(ow-iw)/2:(oh-ih)/2`,
+        '-f', 'mpegts',
+        segmentPath,
+      ];
+
+      // Add quality-specific encoder args
+      if (encoder === 'libx264') {
+        segArgs.splice(segArgs.indexOf('-c:v') + 2, 0, '-preset', quality === 'draft' ? 'ultrafast' : 'fast');
+      } else if (encoder === 'h264_videotoolbox') {
+        // macOS hardware encoder
+      } else if (encoder === 'h264_nvenc') {
+        segArgs.splice(segArgs.indexOf('-c:v') + 2, 0, '-preset', 'p4');
+      }
+
+      process.stdout.write(`  [${i + 1}/${cuts.length}] ${cut.start}–${cut.end} (${cut.source})...`);
+      await runFFmpeg(segArgs);
+      console.log(' ✓');
+
+      segmentFiles.push(segmentPath);
     }
 
-    process.stdout.write(`  [${i + 1}/${cuts.length}] ${cut.start}–${cut.end} (${cut.source})...`);
-    await runFFmpeg(segArgs);
-    console.log(' ✓');
+    // ── Concatenate segments ──────────────────────────────────
+    if (segmentFiles.length === 0) throw new Error('No segments were rendered');
 
-    segmentFiles.push(segmentPath);
+    console.log('  Concatenating segments...');
+    // Escape single quotes and special characters in paths for concat demuxer
+    const concatInput = segmentFiles.map(f => {
+      const escaped = f.replace(/'/g, "'\\''");
+      return `file '${escaped}'`;
+    }).join('\n');
+    const concatListPath = join(dir, '_concat_list.txt');
+    writeFileSync(concatListPath, concatInput);
+
+    const concatArgs = [
+      '-y',
+      '-f', 'concat', '-safe', '0',
+      '-i', concatListPath,
+      '-c', 'copy',
+      '-movflags', '+faststart',
+      outputPath,
+    ];
+
+    await runFFmpeg(concatArgs);
+    console.log(`  ✓ Output: ${outputPath}`);
+  } finally {
+    // ── Cleanup temp segments (always runs, even on FFmpeg failure) ─
+    for (const f of segmentFiles) {
+      try { unlinkSync(f); } catch { /* ok */ }
+    }
+    try { unlinkSync(join(dir, '_concat_list.txt')); } catch { /* ok */ }
   }
-
-  // ── Concatenate segments ──────────────────────────────────
-  if (segmentFiles.length === 0) throw new Error('No segments were rendered');
-
-  console.log('  Concatenating segments...');
-  const concatInput = segmentFiles.map(f => `file '${f}'`).join('\n');
-  const concatListPath = join(dir, '_concat_list.txt');
-  writeFileSync(concatListPath, concatInput);
-
-  const concatArgs = [
-    '-y',
-    '-f', 'concat', '-safe', '0',
-    '-i', concatListPath,
-    '-c', 'copy',
-    '-movflags', '+faststart',
-    outputPath,
-  ];
-
-  await runFFmpeg(concatArgs);
-  console.log(`  ✓ Output: ${outputPath}`);
-
-  // ── Cleanup temp segments ─────────────────────────────────
-  const { unlinkSync } = await import('node:fs');
-  for (const f of segmentFiles) {
-    try { unlinkSync(f); } catch { /* ok */ }
-  }
-  try { unlinkSync(concatListPath); } catch { /* ok */ }
 
   // ── Social media export (optional) ────────────────────────
   if (opts.social) {

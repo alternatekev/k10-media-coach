@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
     // Load existing sessions — build dedup set from BOTH gameId AND subsessionId
     // so we catch auto-synced sessions (which store iRacing SessionID as gameId
     // and SubSessionID as subsessionId) as well as prior /api/iracing/latest imports
+    // No limit: fetch all sessions for accurate dedup even with large session counts
     const existingSessions = await db.select({
       id: schema.raceSessions.id,
       metadata: schema.raceSessions.metadata,
     }).from(schema.raceSessions)
       .where(eq(schema.raceSessions.userId, userId))
-      .limit(500)
 
     // Map subsessionId → existing row ID for auto-synced sessions we should upgrade
     const autoSyncedBySubId = new Map<string, string>()

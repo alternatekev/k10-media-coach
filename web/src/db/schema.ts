@@ -168,12 +168,13 @@ export const sessionBehavior = pgTable('session_behavior', {
   cleanLaps: integer('clean_laps').default(0),
   totalLaps: integer('total_laps').default(0),
   // Composure
-  peakRageScore: doublePrecision('peak_rage_score').default(0),
-  avgRageScore: doublePrecision('avg_rage_score').default(0),
+  peakRageScore: doublePrecision('peak_rage_score'),
+  avgRageScore: doublePrecision('avg_rage_score'),
   rageSpikes: integer('rage_spikes').default(0),
   cooldownsTriggered: integer('cooldowns_triggered').default(0),
   retaliationAttempts: integer('retaliation_attempts').default(0),
   totalRageRecoverySeconds: doublePrecision('total_rage_recovery_seconds').default(0),
+  rageRecoveryCount: integer('rage_recovery_count').default(0),
   // Incident details (JSONB for flexible querying)
   incidentsByPhase: jsonb('incidents_by_phase'),       // { early: n, mid: n, late: n }
   incidentLocations: jsonb('incident_locations'),      // [{ trackPosition, lapNumber, type, points }]

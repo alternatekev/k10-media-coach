@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
+import type { BrandInfo } from '@/types/brand'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -22,13 +23,6 @@ interface DisplayCard {
   session: RaceSession
   practiceSession?: RaceSession
   qualifyingSession?: RaceSession
-}
-
-interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
 }
 
 interface CardLookups {
@@ -103,8 +97,8 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
             {month}
           </div>
 
-          {/* Rows */}
-          <div className="space-y-1.5 ml-3">
+          {/* Rows — scroll horizontally on mobile, normal on tablet+ */}
+          <div className="space-y-1.5 ml-3 overflow-x-auto md:overflow-x-visible">
             {monthCards.map(({ session, practiceSession, qualifyingSession }) => {
               const meta = (session.metadata || {}) as Record<string, any>
               const gameName = meta.gameName || 'iRacing'
@@ -126,7 +120,7 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
                 <Link
                   key={session.id}
                   href={`/drive/race/${session.id}`}
-                  className="grid items-center gap-2 px-3 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
+                  className="grid items-center gap-x-2 px-3 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--text-muted)] transition-colors"
                   style={{ gridTemplateColumns: GRID_COLS }}
                 >
                   {/* Col 1 — Date */}

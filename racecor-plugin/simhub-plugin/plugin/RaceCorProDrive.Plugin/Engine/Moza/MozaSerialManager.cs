@@ -45,6 +45,7 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
 
         private Thread _pollThread;
         private volatile bool _running;
+        private volatile bool _disposed = false;
         private DateTime _lastDiscovery = DateTime.MinValue;
 
         // ── Logging callback (injected by Plugin.cs) ──────────────────
@@ -130,9 +131,17 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
 
         public void Dispose()
         {
-            Stop();
+            if (_disposed) return;
+            _disposed = true;
+
+            _running = false;
+            _pollThread?.Join(3000);
+            CloseAllPorts();
+
             foreach (var sem in _portLocks.Values)
-                sem.Dispose();
+            {
+                try { sem.Dispose(); } catch { }
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -339,8 +348,11 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
 
                     if (TryOpenPort(device))
                     {
-                        _devices[portName] = device;
-                        _logInfo($"[MozaSerial] Discovered: {device.DisplayName} ({description})");
+                        // Use TryAdd to avoid TOCTOU race condition
+                        if (_devices.TryAdd(portName, device))
+                        {
+                            _logInfo($"[MozaSerial] Discovered: {device.DisplayName} ({description})");
+                        }
                     }
                 }
             }
@@ -475,14 +487,34 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
 
         private void ClosePort(string portName)
         {
-            if (_ports.TryRemove(portName, out var port))
+            // Acquire semaphore to ensure no SendAndReceive is in progress
+            SemaphoreSlim semaphore = null;
+            if (_portLocks.TryGetValue(portName, out semaphore))
             {
-                try { port.Close(); } catch { }
-                try { port.Dispose(); } catch { }
+                if (!semaphore.Wait(WriteTimeoutMs))
+                    _logWarn($"[MozaSerial] Timeout acquiring lock for {portName} during close");
             }
 
-            if (_devices.TryGetValue(portName, out var device))
-                device.IsConnected = false;
+            try
+            {
+                if (_ports.TryRemove(portName, out var port))
+                {
+                    try { port.Close(); } catch { }
+                    try { port.Dispose(); } catch { }
+                }
+
+                if (_devices.TryGetValue(portName, out var device))
+                    device.IsConnected = false;
+            }
+            finally
+            {
+                // Release the semaphore and dispose it
+                if (semaphore != null)
+                {
+                    try { semaphore.Release(); } catch { }
+                    try { _portLocks.TryRemove(portName, out _); semaphore.Dispose(); } catch { }
+                }
+            }
         }
 
         private void CloseAllPorts()
@@ -711,10 +743,15 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                 port.DiscardInBuffer();
                 port.Write(packet, 0, packet.Length);
 
-                // Wait briefly for response
-                Thread.Sleep(50);
+                // Retry loop: wait up to ~200ms total for data to appear
+                int available = 0;
+                for (int retry = 0; retry < 5; retry++)
+                {
+                    Thread.Sleep(50);
+                    available = port.BytesToRead;
+                    if (available > 0) break;
+                }
 
-                int available = port.BytesToRead;
                 if (available <= 0) return null;
 
                 byte[] buffer = new byte[Math.Min(available, ReadBufferSize)];

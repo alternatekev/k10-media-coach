@@ -1684,6 +1684,16 @@ namespace RaceCorProDrive.Plugin
                     Jp(sb, "RaceCorProDrive.Plugin.Strategy.StintNumber", _strategy.StintCount);
                     Jp(sb, "RaceCorProDrive.Plugin.Strategy.StintLaps", _strategy.CurrentStint != null ? _strategy.CurrentStint.LapsCompleted : 0);
 
+                    // ── Incident Coach ──
+                    Jp(sb, "RaceCorProDrive.Plugin.DS.IncidentCoach.Active", _incidentCoach.Enabled ? 1 : 0);
+                    Jp(sb, "RaceCorProDrive.Plugin.DS.IncidentCoach.LastIncidentLap", _incidentCoach.LastIncidentLap);
+                    // Raw JSON objects — NOT string-escaped, injected directly
+                    sb.AppendFormat("  \"RaceCorProDrive.Plugin.DS.IncidentCoach.ThreatDrivers\":{0},\n", _incidentCoach.ThreatDriversJson ?? "[]");
+                    sb.AppendFormat("  \"RaceCorProDrive.Plugin.DS.IncidentCoach.ActiveAlert\":{0},\n", _incidentCoach.ActiveAlertJson ?? "{}");
+                    Jp(sb, "RaceCorProDrive.Plugin.DS.IncidentCoach.RageScore", _incidentCoach.RageScore, ic);
+                    Jp(sb, "RaceCorProDrive.Plugin.DS.IncidentCoach.CooldownActive", _incidentCoach.IsCooldownActive ? 1 : 0);
+                    sb.AppendFormat("  \"RaceCorProDrive.Plugin.DS.IncidentCoach.SessionBehavior\":{0},\n", _incidentCoach.SessionBehaviorJson ?? "{}");
+
                     // ── Demo mode ──
                     Jp(sb, "RaceCorProDrive.Plugin.DemoMode", demo ? 1 : 0);
                     Jp(sb, "RaceCorProDrive.Plugin.Demo.Gear", Escape(dt.Gear ?? "N"));

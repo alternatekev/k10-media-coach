@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Clock, Target, AlertTriangle, Flame, Shield, Zap, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { resolveIRacingTrackId } from '@/data/iracing-track-map'
 import { useElectron } from '@/hooks/useElectron'
+import type { BrandInfo } from '@/types/brand'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,13 +25,6 @@ export interface RaceSuggestion {
   carClassNames?: string[]
   seasonId?: number
   seriesId?: number
-}
-
-export interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
 }
 
 export interface RaceLookups {
@@ -280,7 +274,7 @@ function HeroRaceCard({
         {/* Score chip — top right */}
         <div
           className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full"
-          style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)' }}
+          style={{ background: 'var(--bg-panel-overlay)', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(6px)' }}
         >
           <span className="text-xs font-medium leading-none text-white/60">Match</span>
           <span className="text-sm font-bold leading-none" style={{ color: accentColor }}>
@@ -303,8 +297,8 @@ function HeroRaceCard({
                   key={brand.manufacturerName}
                   className="brand-chip flex items-center gap-1.5 px-2 py-1.5"
                   style={{
-                    background: color ? `${color}55` : 'rgba(0,0,0,0.55)',
-                    border: `1px solid ${color ? `${color}99` : 'var(--border)'}`,
+                    background: color ? `${color}55` : 'var(--bg-panel-overlay)',
+                    border: `1px solid ${color ? `${color}99` : 'var(--border-subtle)'}`,
                     backdropFilter: 'blur(6px)',
                     borderRadius: 'var(--corner-r-sm)',
                   } as React.CSSProperties}
@@ -381,7 +375,7 @@ function HeroRaceCard({
             </span>
           )}
           {carClassNames.length > 0 && (
-            <span className="text-sm text-[var(--text-muted)] leading-none ml-auto">
+            <span className="text-sm text-[var(--text-muted)] leading-none ml-auto truncate max-w-full">
               {carClassNames.join(' · ')}
             </span>
           )}
@@ -437,13 +431,13 @@ export default function NextRaceIdeas({ suggestions, lookups }: NextRaceIdeasPro
   const hasNext = activeIndex < suggestions.length - 1
 
   return (
-    <div className="space-y-2">
+    <section className="space-y-2">
       {/* Section header */}
       <div className="flex items-center gap-2">
-        <Clock size={16} className="text-[var(--text-secondary)]" />
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+        <Clock size={16} className="text-[var(--text-secondary)]" aria-hidden="true" />
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
           Next Race Ideas
-        </h3>
+        </h2>
       </div>
 
       {/* Hero card */}
@@ -505,6 +499,6 @@ export default function NextRaceIdeas({ suggestions, lookups }: NextRaceIdeasPro
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }

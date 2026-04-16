@@ -290,16 +290,16 @@ export default async function DebriefPage({
   return (
     <main className="bg-[var(--bg)] min-h-screen">
       {/* Hero */}
-      <div className="px-6 pt-12 pb-0">
+      <section className="px-6 pt-12 pb-0">
         <div className="max-w-5xl mx-auto">
           <div className="rounded-xl bg-[var(--bg-panel)] p-8 sm:p-12 overflow-hidden relative mb-8">
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-10" aria-hidden="true">
               <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-amber-400 to-orange-400 rounded-full blur-3xl" />
               <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-rose-400 to-red-400 rounded-full blur-3xl" />
             </div>
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-4">
-                <BarChart3 size={40} className="text-amber-400" />
+                <BarChart3 size={40} className="text-amber-400" aria-hidden="true" />
                 <h1 className="text-4xl sm:text-5xl font-bold" style={{ fontFamily: 'var(--ff-display)' }}>
                   Post-Session Debrief
                 </h1>
@@ -310,7 +310,7 @@ export default async function DebriefPage({
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Main Content */}
       <div className="px-6 pb-12 space-y-6">

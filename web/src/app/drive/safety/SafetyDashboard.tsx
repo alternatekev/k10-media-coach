@@ -114,14 +114,14 @@ export default function SafetyDashboard({
     <main className="min-h-screen bg-[var(--bg)]">
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Hero Section */}
-        <div className="rounded-xl bg-[var(--bg-panel)] p-8 sm:p-12 overflow-hidden relative mb-16">
-          <div className="absolute inset-0 opacity-10">
+        <section className="rounded-xl bg-[var(--bg-panel)] p-8 sm:p-12 overflow-hidden relative mb-16">
+          <div className="absolute inset-0 opacity-10" aria-hidden="true">
             <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-emerald-400 to-green-400 rounded-full blur-3xl" />
             <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-cyan-400 to-teal-400 rounded-full blur-3xl" />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-4">
-              <Shield size={40} className="text-emerald-400" />
+              <Shield size={40} className="text-emerald-400" aria-hidden="true" />
               <h1
                 className="text-4xl sm:text-5xl font-bold"
                 style={{ fontFamily: 'var(--ff-display)' }}
@@ -133,18 +133,18 @@ export default function SafetyDashboard({
               Improve your iRacing Safety Rating with data-driven insights
             </p>
           </div>
-        </div>
+        </section>
 
         {!hasData ? (
           // Empty state
-          <div
+          <section
             className="rounded-lg p-12 text-center"
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border)',
             }}
           >
-            <AlertCircle size={48} className="mx-auto mb-4 text-[var(--text-muted)]" />
+            <AlertCircle size={48} className="mx-auto mb-4 text-[var(--text-muted)]" aria-hidden="true" />
             <h2 className="text-xl font-semibold mb-2">No racing data yet</h2>
             <p className="text-[var(--text-dim)] mb-6">
               Import your iRacing results to get started with Safety Rating analysis.
@@ -153,10 +153,10 @@ export default function SafetyDashboard({
               href="/drive/iracing"
               className="inline-flex items-center px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors"
             >
-              <Zap size={18} className="mr-2" />
+              <Zap size={18} className="mr-2" aria-hidden="true" />
               Import iRacing Data
             </a>
-          </div>
+          </section>
         ) : (
           <>
             {/* Overview Cards */}
@@ -170,7 +170,7 @@ export default function SafetyDashboard({
             )}
 
             {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
               {/* Clean Streak Tracker */}
               <CleanStreakTracker lapTelemetry={lapTelemetry} raceSessions={raceSessions} />
 
@@ -183,7 +183,7 @@ export default function SafetyDashboard({
             </div>
 
             {/* Phase-based incident analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
               <IncidentPhaseChart sessionBehaviors={sessionBehaviors} />
 
               {/* Hotspots */}

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Car, LayoutGrid, List } from 'lucide-react'
 import RaceCard from './RaceCard'
 import RaceListView from './RaceListView'
+import type { BrandInfo } from '@/types/brand'
 
 // ── Types (mirrored from page.tsx) ────────────────────────────────────────────
 
@@ -18,13 +19,6 @@ interface RaceSession {
   category: string
   metadata: Record<string, any> | null
   createdAt: Date
-}
-
-interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
 }
 
 interface DisplayCard {

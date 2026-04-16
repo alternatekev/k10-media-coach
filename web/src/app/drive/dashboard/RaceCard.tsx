@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import IRatingSparkline from './IRatingSparkline'
+import type { BrandInfo } from '@/types/brand'
 
 interface RaceSession {
   id: string
@@ -14,13 +15,6 @@ interface RaceSession {
   category: string
   metadata: Record<string, any> | null
   createdAt: Date
-}
-
-interface BrandInfo {
-  logoSvg: string | null
-  logoPng: string | null
-  brandColorHex: string | null
-  manufacturerName: string
 }
 
 export default function RaceCard({

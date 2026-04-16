@@ -129,8 +129,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Initial state capture (don't emit events for existing data)
-      poll().then(() => {
-        // After initial poll captures current state, start the interval
+      // Wrap in try/catch so intervals still start even if first poll fails
+      poll().catch((err) => {
+        console.warn('[SSE sync] initial poll failed:', err)
+      }).finally(() => {
+        // After initial poll (success or failure), start the interval
         const interval = setInterval(poll, 5000)
 
         // Keepalive ping every 30s

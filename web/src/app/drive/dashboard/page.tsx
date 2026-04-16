@@ -27,6 +27,8 @@ import { computeNextRaceIdeas, type SessionInput, type RatingInput, type DriverR
 import { computeTrackMastery, computeCarAffinity } from "@/lib/mastery";
 import { fetchIRacingSchedule } from "@/lib/iracing-schedule-fetcher";
 
+import type { BrandInfo } from '@/types/brand';
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type RaceSession = {
@@ -40,13 +42,6 @@ type RaceSession = {
   category: string;
   metadata: Record<string, any> | null;
   createdAt: Date;
-};
-
-type BrandInfo = {
-  logoSvg: string | null;
-  logoPng: string | null;
-  brandColorHex: string | null;
-  manufacturerName: string; // canonical brand name from carLogos table
 };
 
 type DisplayCard = {
@@ -499,7 +494,9 @@ export default async function DashboardPage() {
         }
       }
     } catch (err) {
-      console.error('[dashboard] Next Race Ideas error:', err)
+      console.warn('[dashboard] Next Race Ideas computation failed:', err)
+      // If NRI fails, we continue gracefully — the dashboard still works,
+      // just without suggestions. The error is logged for debugging.
     }
   }
 
@@ -724,7 +721,7 @@ export default async function DashboardPage() {
             {/* Dashboard top grid — suggested race + viz left, moments + session length right */}
             {(nextRaceSuggestions.length > 0 || recentMoments.length > 0 || vizData.length > 0) && (
               <section className="mb-6">
-                <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] lg:grid-cols-[3fr_1fr] gap-4">
                   {/* ── Left column ── */}
                   <div className="flex flex-col gap-4">
                     {nextRaceSuggestions.length > 0 && (
@@ -788,6 +785,15 @@ export default async function DashboardPage() {
                     )}
                   </div>
                 </div>
+              </section>
+            )}
+
+            {/* Empty state: plugin connected but all data sources are empty */}
+            {isPluginConnected && raceCount > 0 && nextRaceSuggestions.length === 0 && recentMoments.length === 0 && vizData.length === 0 && (
+              <section className="mb-6 p-8 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] text-center">
+                <p className="text-sm text-[var(--text-muted)]">
+                  Insights and visualizations will appear as you record more sessions.
+                </p>
               </section>
             )}
 

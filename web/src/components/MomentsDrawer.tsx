@@ -100,25 +100,31 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
         <div
           className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Drawer */}
       <div
+        id="moments-drawer"
         className="fixed top-0 right-0 h-full w-[420px] max-w-[90vw] bg-[var(--bg-elevated)] border-l border-[var(--border)] z-[70] flex flex-col transition-transform duration-300 ease-out"
         style={{
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="moments-drawer-title"
+        aria-hidden={!isOpen}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] flex-shrink-0">
-          <h2 className="text-lg font-semibold text-[var(--text-secondary)]">Moments</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-secondary)]" id="moments-drawer-title">Moments</h2>
           <button
             onClick={() => setIsOpen(false)}
             className="flex items-center justify-center p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] transition-colors"
-            title="Close"
+            aria-label="Close moments drawer"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -133,13 +139,13 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
 
           {/* Highlights Section */}
           {highlights.length > 0 && (
-            <div className="px-3 py-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
+            <section className="px-3 py-4">
+              <h3 id="highlights-section" className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
                 Highlights
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2" aria-labelledby="highlights-section">
                 {highlights.map((moment, idx) => (
-                  <div
+                  <article
                     key={idx}
                     className="rounded-lg border border-l-4 bg-[var(--bg-panel)] p-3 text-xs"
                     style={{
@@ -171,19 +177,19 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
           {/* Timeline Section */}
           {moments.length > 0 && (
-            <div className="px-3 py-4 border-t border-[var(--border)]">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
+            <section className="px-3 py-4 border-t border-[var(--border)]">
+              <h3 id="timeline-section" className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
                 Timeline
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-4" aria-labelledby="timeline-section">
                 {Array.from(grouped.entries()).map(([month, monthMoments]) => (
                   <div key={month}>
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">
@@ -191,7 +197,7 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
                     </h4>
                     <div className="space-y-2">
                       {monthMoments.map((moment, idx) => (
-                        <div
+                        <article
                           key={idx}
                           className="rounded-lg border border-l-4 border-[var(--border)] bg-[var(--bg-panel)] p-2.5 flex items-start gap-2 text-xs"
                           style={{
@@ -210,13 +216,13 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
                           <div className="flex-shrink-0 text-right text-[var(--text-muted)] whitespace-nowrap text-[10px]">
                             <div>{formatDate(moment.date)}</div>
                           </div>
-                        </div>
+                        </article>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
           {/* View All Link */}
@@ -242,11 +248,13 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center p-2 rounded-md text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors relative flex-shrink-0"
-        title="Moments"
+        aria-label={`Moments${moments.length > 0 && hasRecent ? ' (new)' : ''}`}
+        aria-expanded={isOpen}
+        aria-controls="moments-drawer"
       >
-        <Star size={20} />
+        <Star size={20} aria-hidden="true" />
         {moments.length > 0 && hasRecent && (
-          <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" aria-hidden="true" />
         )}
       </button>
 

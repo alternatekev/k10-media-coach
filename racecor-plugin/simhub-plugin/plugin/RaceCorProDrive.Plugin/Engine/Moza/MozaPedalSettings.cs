@@ -40,16 +40,19 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
             if (commandId >= MozaDeviceRegistry.PedalCmd.ClutchBase)
             {
                 axis = Clutch;
+                if (commandId < MozaDeviceRegistry.PedalCmd.ClutchBase) return; // Bounds check
                 offset = (byte)(commandId - MozaDeviceRegistry.PedalCmd.ClutchBase);
             }
             else if (commandId >= MozaDeviceRegistry.PedalCmd.BrakeBase)
             {
                 axis = Brake;
+                if (commandId < MozaDeviceRegistry.PedalCmd.BrakeBase) return; // Bounds check
                 offset = (byte)(commandId - MozaDeviceRegistry.PedalCmd.BrakeBase);
             }
             else
             {
                 axis = Throttle;
+                if (commandId < MozaDeviceRegistry.PedalCmd.ThrottleBase) return; // Bounds check
                 offset = (byte)(commandId - MozaDeviceRegistry.PedalCmd.ThrottleBase);
             }
 

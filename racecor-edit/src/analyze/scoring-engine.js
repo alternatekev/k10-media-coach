@@ -218,8 +218,10 @@ export function applyCameraHysteresis(scores, tvThreshold = 40) {
   }
 
   // Close final segment
-  const lastT = scores[scores.length - 1]?.t || 0;
-  segments.push({ start: segmentStart, end: lastT, source: currentSource });
+  const lastT = scores.length > 0 ? (scores[scores.length - 1]?.t || 0) : 0;
+  if (scores.length > 0) {
+    segments.push({ start: segmentStart, end: lastT, source: currentSource });
+  }
 
   return segments;
 }

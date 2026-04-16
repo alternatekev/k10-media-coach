@@ -76,12 +76,13 @@ export async function POST(request: NextRequest) {
             spinCount: behavior.spinCount ?? 0,
             cleanLaps: behavior.cleanLaps ?? 0,
             totalLaps: behavior.totalLaps ?? 0,
-            peakRageScore: behavior.peakRageScore ?? 0,
-            avgRageScore: behavior.avgRageScore ?? 0,
+            peakRageScore: behavior.peakRageScore ?? null,
+            avgRageScore: behavior.avgRageScore ?? null,
             rageSpikes: behavior.rageSpikes ?? 0,
             cooldownsTriggered: behavior.cooldownsTriggered ?? 0,
             retaliationAttempts: behavior.retaliationAttempts ?? 0,
             totalRageRecoverySeconds: behavior.totalRageRecoverySeconds ?? 0,
+            rageRecoveryCount: behavior.rageRecoveryCount ?? 0,
             incidentsByPhase: behavior.incidentsByPhase ?? null,
             incidentLocations: behavior.incidentLocations ?? null,
             threatLedger: behavior.threatLedger ?? null,
@@ -139,11 +140,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Report as ok:true only if we successfully processed at least one data type,
+    // or if there was nothing to insert. Partial failures are tracked in errors array.
+    const hasPartialFailure = errors.length > 0 && (behaviorInserted || lapsInserted > 0)
     return NextResponse.json({
-      ok: true,
+      ok: errors.length === 0 || (!behaviorInserted && lapsInserted === 0),
       sessionId,
       behaviorInserted,
       lapsInserted,
+      partialFailure: hasPartialFailure,
       errors: errors.length > 0 ? errors : undefined,
     })
   } catch (err: any) {
