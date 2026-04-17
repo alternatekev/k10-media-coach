@@ -44,8 +44,23 @@ function getGameBadgeColor(gameName: string): { bg: string; text: string; badge:
   return { bg: 'hsla(270,50%,50%,0.15)', text: 'hsl(270,60%,70%)', badge: gameName.substring(0, 3).toUpperCase() }
 }
 
-function getPositionColor(position: number | null): { bg: string; text: string; label: string } {
-  if (!position || position === 0) return { bg: 'hsla(270,50%,40%,0.3)', text: 'hsl(270,60%,70%)', label: 'DNF' }
+function getPositionColor(position: number | null, sessionType?: string | null, meta?: Record<string, any> | null): { bg: string; text: string; label: string } {
+  const eventType = (meta?.eventType || sessionType || '').toLowerCase()
+
+  // Non-race sessions: time trial, qualifying, practice
+  if (eventType.includes('time trial') || eventType.includes('time_trial') || eventType.includes('lone qualifying')) {
+    return { bg: 'hsla(200,50%,45%,0.2)', text: 'hsl(200,60%,65%)', label: 'TT' }
+  }
+
+  if (!position || position === 0) {
+    // Check if it's a real DNF (had laps completed but no finish) vs no data
+    const lapsComplete = meta?.completedLaps ?? 0
+    if (lapsComplete > 0) {
+      return { bg: 'hsla(0,70%,45%,0.25)', text: 'hsl(0,70%,65%)', label: 'DNF' }
+    }
+    // No position and no laps — likely a non-race session or no data
+    return { bg: 'hsla(0,0%,50%,0.15)', text: 'hsl(0,0%,55%)', label: '—' }
+  }
   if (position === 1) return { bg: 'hsla(45,90%,50%,0.2)', text: 'hsl(45,90%,60%)', label: `P${position}` }
   if (position === 2) return { bg: 'hsla(0,0%,75%,0.15)', text: 'hsl(0,0%,75%)', label: `P${position}` }
   if (position === 3) return { bg: 'hsla(30,60%,45%,0.2)', text: 'hsl(30,60%,55%)', label: `P${position}` }
@@ -103,7 +118,7 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
               const meta = (session.metadata || {}) as Record<string, any>
               const gameName = meta.gameName || 'iRacing'
               const gameBadge = getGameBadgeColor(gameName)
-              const posBadge = getPositionColor(session.finishPosition)
+              const posBadge = getPositionColor(session.finishPosition, session.sessionType, meta)
               const incidents = session.incidentCount ?? 0
               const practice = isPractice(session)
               const bestLap = formatLapTime(meta.bestLapTime)

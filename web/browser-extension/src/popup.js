@@ -61,8 +61,9 @@ retryBtn.addEventListener('click', () => {
 // ─── Navigation helper ─────────────────────────────────────────────────────
 
 /**
- * Navigate the tab to a URL and wait for it to finish loading.
- * Returns once the content script is ready on the new page.
+ * Navigate the tab to a path on the same iRacing domain.
+ * Uses the content script's window.location to preserve session cookies.
+ * Falls back to chrome.tabs.update if content script can't navigate.
  */
 function navigateTab(tabId, url) {
   return new Promise((resolve, reject) => {
@@ -82,7 +83,14 @@ function navigateTab(tabId, url) {
     }
 
     chrome.tabs.onUpdated.addListener(listener);
-    chrome.tabs.update(tabId, { url });
+
+    // Extract path from URL and use content script to navigate
+    // (preserves iRacing session cookies vs chrome.tabs.update)
+    const path = new URL(url).pathname;
+    chrome.tabs.sendMessage(tabId, { type: 'NAVIGATE', path }).catch(() => {
+      // Content script not available — fall back to direct tab update
+      chrome.tabs.update(tabId, { url });
+    });
   });
 }
 
@@ -137,30 +145,63 @@ async function run() {
     setStep(1, 'active');
     setStatus('Scraping profile & ratings…', 'syncing');
 
-    // Build the profile stats URL from the current page
     const currentUrl = new URL(tab.url);
-    const profileStatsUrl = `${currentUrl.origin}/web/member-home/profile/tab/stats`;
+    const origin = currentUrl.origin;
 
-    // Navigate if not already on profile stats page
-    if (!tab.url.includes('profile') || !tab.url.includes('tab/stats')) {
-      await navigateTab(activeTabId, profileStatsUrl);
+    // Navigate to profile page (licenses are in sidebar here)
+    if (!tab.url.includes('profile')) {
+      await navigateTab(activeTabId, `${origin}/web/member-home/profile`);
     }
     await waitForContentScript(activeTabId);
 
-    // Scrape profile data
-    const profileResp = await chrome.tabs.sendMessage(activeTabId, { type: 'SCRAPE_STATS' });
+    // Wait for React to render the sidebar
+    await sleep(2500);
+
+    // Scrape profile data — retry if license sidebar wasn't found yet
+    let profileResp = await chrome.tabs.sendMessage(activeTabId, { type: 'SCRAPE_STATS' });
     if (!profileResp?.ok) {
       throw new Error(profileResp?.error || 'Profile scrape failed');
     }
+
+    if (!profileResp.data?.licenseData?.length) {
+      setStatus('Waiting for license data…', 'syncing');
+      await sleep(3000);
+      const retry = await chrome.tabs.sendMessage(activeTabId, { type: 'SCRAPE_STATS' });
+      if (retry?.ok && retry.data?.licenseData?.length) {
+        profileResp = retry;
+      }
+    }
+
     profileData = profileResp.data;
+
+    // Navigate to the stats tab for the SVG iRating chart + career stats table
+    if (!tab.url.includes('tab/stats') && !tab.url.includes('tab=stats')) {
+      await navigateTab(activeTabId, `${origin}/web/member-home/profile/tab/stats`);
+      await waitForContentScript(activeTabId);
+      await sleep(2000);
+
+      const statsResp = await chrome.tabs.sendMessage(activeTabId, { type: 'SCRAPE_STATS' });
+      if (statsResp?.ok && statsResp.data) {
+        // Merge: chart + career from stats page, keep license data from profile page
+        if (statsResp.data.ratingHistory?.length > 0) {
+          profileData.ratingHistory = statsResp.data.ratingHistory;
+          profileData.category = statsResp.data.category;
+        }
+        if (statsResp.data.careerStats?.length > 0) {
+          profileData.careerStats = statsResp.data.careerStats;
+        }
+        if (statsResp.data.licenseData?.length > 0 && !profileData.licenseData?.length) {
+          profileData.licenseData = statsResp.data.licenseData;
+        }
+      }
+    }
     setStep(1, 'done');
 
     // ── Step 3: Navigate to results-stats → capture race history ──
     setStep(2, 'active');
     setStatus('Capturing race history…', 'syncing');
 
-    const resultsUrl = `${currentUrl.origin}/web/racing/results-stats/results`;
-    await navigateTab(activeTabId, resultsUrl);
+    await navigateTab(activeTabId, `${origin}/web/racing/results-stats/results`);
     await waitForContentScript(activeTabId);
 
     // Wait a moment for the page to render its search form

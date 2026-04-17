@@ -58,6 +58,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       .catch(err => sendResponse({ ok: false, error: err.message }));
     return true;
   }
+
+  if (msg.type === 'NAVIGATE') {
+    // Navigate using window.location to preserve iRacing session cookies
+    const targetPath = msg.path || '';
+    if (targetPath) {
+      window.location.href = `${window.location.origin}${targetPath}`;
+      sendResponse({ ok: true });
+    } else {
+      sendResponse({ ok: false, error: 'No path provided' });
+    }
+    return;
+  }
 });
 
 // ─── Main scraper ───────────────────────────────────────────────────────────
@@ -326,22 +338,43 @@ function scrapeCareerStats() {
 function scrapeLicenseSidebar() {
   const CATEGORY_ORDER = ['oval', 'road', 'formula', 'dirt_oval', 'dirt_road'];
 
-  // Find the "Licenses" heading
-  const allEls = document.querySelectorAll('*');
+  // Find the "Licenses" heading — walk up to find the full sidebar container.
+  // The heading might be nested inside wrappers, so search broadly.
   let licensesSection = null;
+
+  // Strategy 1: look for a leaf element with exact text "Licenses"
+  const allEls = document.querySelectorAll('*');
   for (const el of allEls) {
     if (el.children.length === 0 && el.textContent.trim() === 'Licenses') {
-      licensesSection = el.parentElement;
-      break;
+      // Walk up to find a container with enough content (the sidebar widget)
+      let container = el.parentElement;
+      for (let depth = 0; depth < 5 && container; depth++) {
+        const leafTexts = Array.from(container.querySelectorAll('*'))
+          .filter(e => e.children.length === 0 && e.textContent.trim())
+          .map(e => e.textContent.trim());
+        // The licenses section should have license letters like "B 1.76"
+        if (leafTexts.some(t => /^[ABCDPR]\s+\d+\.\d+$/.test(t))) {
+          licensesSection = container;
+          break;
+        }
+        container = container.parentElement;
+      }
+      if (licensesSection) break;
     }
   }
-  if (!licensesSection) return [];
+
+  if (!licensesSection) {
+    console.log('[RaceCor] License sidebar not found in DOM');
+    return [];
+  }
 
   // Extract all leaf text nodes in the Licenses section
   const texts = Array.from(licensesSection.querySelectorAll('*'))
     .filter(el => el.children.length === 0 && el.textContent.trim())
     .map(el => el.textContent.trim())
     .filter(t => t !== 'Licenses');
+
+  console.log('[RaceCor] License sidebar texts:', texts);
 
   // Parse in pairs/triples: each category has "X N.NN" (license+SR)
   // and optionally "iR NNN" (iRating). "----" means no iRating.
