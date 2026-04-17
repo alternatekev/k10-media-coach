@@ -200,7 +200,7 @@ export default function DataStrip({
         top: 'var(--header-h)',
       }}
     >
-      <div className="max-w-[120rem] mx-auto px-6 flex items-center justify-start gap-0 py-1.5 overflow-x-auto">
+      <div className="max-w-[120rem] mx-auto px-6 flex items-center justify-start gap-0 py-2.5 overflow-x-auto">
         <Stat label="Races" value={raceCount} />
         <Separator />
         <Stat label="Laps" value={totalLaps} />

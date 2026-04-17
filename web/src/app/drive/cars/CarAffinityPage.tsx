@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { computeCarAffinity, type CarAffinity } from '@/lib/mastery'
+import GameBadge from '@/components/GameBadge'
 
 interface RaceSession {
   id: string
@@ -179,7 +180,7 @@ function CarAffinityCard({
                 >
                   <span className="text-[var(--text-secondary)] font-medium">{car.carModel}</span>
                   <span className="text-xs text-[var(--text-dim)]">
-                    {car.sessionCount} session{car.sessionCount !== 1 ? 's' : ''} in {car.gameName}
+                    <span className="inline-flex items-center gap-1">{car.sessionCount} session{car.sessionCount !== 1 ? 's' : ''} <GameBadge game={car.gameName} size={10} /></span>
                   </span>
                 </Link>
               ))}

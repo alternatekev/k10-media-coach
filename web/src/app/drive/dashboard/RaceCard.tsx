@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import IRatingSparkline from './IRatingSparkline'
 import type { BrandInfo } from '@/types/brand'
+import GameBadge from '@/components/GameBadge'
 
 interface RaceSession {
   id: string
@@ -181,11 +182,7 @@ export default function RaceCard({
           className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-1 rounded-full"
           style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)' }}
         >
-          {gameLogoUrl ? (
-            <img src={gameLogoUrl} alt={gameLabel} className="h-3.5 w-auto object-contain" />
-          ) : (
-            <span className="text-xs font-bold leading-none text-[var(--text-secondary)]">{gameLabel}</span>
-          )}
+          <GameBadge game={gameName} size={14} />
         </div>
 
         {/* Brand chip — bottom left, sits on dark gradient */}

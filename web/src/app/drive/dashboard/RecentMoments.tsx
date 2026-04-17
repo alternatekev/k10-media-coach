@@ -4,6 +4,7 @@ import {
   Trophy, Medal, Shield, TrendingUp, Star,
   MapPin, Car, Clock, Flame, HeartCrack, ArrowUpFromLine,
 } from 'lucide-react'
+import GameBadge from '@/components/GameBadge'
 import type { Moment } from '@/lib/moments'
 import type { BrandInfo } from '@/types/brand'
 
@@ -268,7 +269,7 @@ function HighlightCard({ moment, lookups }: { moment: Moment; lookups: MomentLoo
             {moment.gameName && (
               <>
                 <span className="opacity-40">·</span>
-                <span>{moment.gameName}</span>
+                <GameBadge game={moment.gameName} size={10} />
               </>
             )}
           </div>

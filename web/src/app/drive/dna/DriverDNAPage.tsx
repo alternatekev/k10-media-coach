@@ -112,9 +112,9 @@ export default function DriverDNAPage({ sessions, ratingHistory }: Props) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Hero — full-width banner matching Tracks / Cars page pattern */}
-      <div className="relative overflow-hidden bg-[var(--bg-panel)]">
-        {/* Decorative radar chart — positioned right, translucent */}
-        <div className="absolute inset-0 flex items-center justify-end pointer-events-none pr-8 lg:pr-16">
+      <div className="relative overflow-hidden bg-[var(--bg-panel)]" style={{ minHeight: 180 }}>
+        {/* Decorative radar chart — positioned right, bottom-aligned so it's never clipped by header */}
+        <div className="absolute bottom-0 right-0 flex items-end justify-end pointer-events-none pr-8 lg:pr-16 pb-4">
           <div className="w-[300px] h-[300px] lg:w-[380px] lg:h-[380px] opacity-25">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
@@ -166,6 +166,8 @@ export default function DriverDNAPage({ sessions, ratingHistory }: Props) {
               insight.trend === 'improving' ? 'Improving' : insight.trend === 'declining' ? 'Declining' : 'Stable'
             const trendColor =
               insight.trend === 'improving' ? 'hsl(142,60%,55%)' : insight.trend === 'declining' ? 'hsl(0,80%,60%)' : 'var(--text-muted)'
+            const trendBg =
+              insight.trend === 'improving' ? 'hsl(142 60% 55% / 0.13)' : insight.trend === 'declining' ? 'hsl(0 80% 60% / 0.13)' : 'hsl(0 0% 50% / 0.1)'
 
             return (
               <div
@@ -176,7 +178,7 @@ export default function DriverDNAPage({ sessions, ratingHistory }: Props) {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div style={{ color: 'var(--border-accent)' }}>{icon}</div>
-                    <h3 className="font-semibold" style={{ color: 'var(--text)' }}>
+                    <h3 className="font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--ff-display)' }}>
                       {insight.label}
                     </h3>
                   </div>
@@ -207,7 +209,7 @@ export default function DriverDNAPage({ sessions, ratingHistory }: Props) {
                 </p>
 
                 {/* Trend Badge */}
-                <div className="flex items-center gap-1 w-fit px-2 py-1 rounded-full" style={{ backgroundColor: `${trendColor}22` }}>
+                <div className="flex items-center gap-1 w-fit px-2 py-1 rounded-full" style={{ backgroundColor: trendBg }}>
                   {trendIcon}
                   <span className="text-xs font-medium" style={{ color: trendColor }}>
                     {trendLabel}

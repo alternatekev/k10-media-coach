@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import type { BrandInfo } from '@/types/brand'
+import GameBadge from '@/components/GameBadge'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -199,12 +200,7 @@ export default function RaceListView({ cards, lookups }: { cards: DisplayCard[];
 
                   {/* Col 5 — Game badge */}
                   <div className="flex justify-center">
-                    <span
-                      className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-xs font-semibold"
-                      style={{ background: gameBadge.bg, color: gameBadge.text }}
-                    >
-                      {gameBadge.badge}
-                    </span>
+                    <GameBadge game={gameName} size={12} />
                   </div>
 
                   {/* Col 6 — Position / Practice label */}

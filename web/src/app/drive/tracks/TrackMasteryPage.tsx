@@ -3,6 +3,8 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { computeTrackMastery, type TrackMastery } from '@/lib/mastery'
+import { getTrackLocation, type TrackLocation } from '@/data/track-metadata'
+import GameBadge from '@/components/GameBadge'
 
 interface RaceSession {
   id: string
@@ -16,10 +18,18 @@ interface RaceSession {
   gameName: string
 }
 
+interface TrackVisual {
+  svgPath?: string
+  logoSvg?: string
+  logoPng?: string
+  imageUrl?: string
+}
+
 interface Props {
   sessions: RaceSession[]
   heroImageUrl: string | null
   heroSvgPath: string | null
+  trackVisuals: Record<string, TrackVisual>
 }
 
 function formatRelativeTime(isoDate: string): string {
@@ -52,7 +62,7 @@ const TIER_COLORS: Record<string, string> = {
 
 function TierBadge({ tier }: { tier: TrackMastery['masteryTier'] }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-[var(--text-secondary)] bg-[rgba(255,255,255,0.05)] border border-[var(--border)]">
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-[rgba(0,0,0,0.4)] backdrop-blur-sm border border-[rgba(255,255,255,0.1)]" style={{ color: TIER_COLORS[tier] }}>
       <div
         className="w-1.5 h-1.5 rounded-full"
         style={{ backgroundColor: TIER_COLORS[tier] }}
@@ -126,62 +136,132 @@ function TrendIndicator({ trend }: { trend: string }) {
   )
 }
 
-function TrackCard({ track, color }: { track: TrackMastery; color: string }) {
+function TrackCard({ track, color, visual }: { track: TrackMastery; color: string; visual?: TrackVisual }) {
+  const hasImage = !!visual?.imageUrl
+  const hasSvg = !!visual?.svgPath
+  const hasLogo = !!(visual?.logoSvg || visual?.logoPng)
+  const location = getTrackLocation(track.trackName)
+
   return (
     <Link
       href={`/drive/track/${encodeURIComponent(track.trackName)}`}
-      className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5 flex flex-col gap-4 transition-colors hover:border-[var(--border-accent)]"
+      className="group rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] overflow-hidden flex flex-col transition-colors hover:border-[var(--border-accent)]"
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
-      <div className="flex justify-between items-start gap-4">
-        <h3 className="text-base font-semibold text-[var(--text-secondary)] flex-1">{track.trackName}</h3>
-        <TierBadge tier={track.masteryTier} />
+      {/* Visual header — large abstract track map as the dominant element */}
+      <div className="relative h-44 overflow-hidden bg-[var(--bg-panel)]">
+        {/* Background photo — very subtle */}
+        {hasImage && (
+          <img
+            src={visual!.imageUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-15 group-hover:opacity-25 transition-opacity"
+          />
+        )}
+
+        {/* Track map SVG — LARGE, cropped, abstract — the hero of the card */}
+        {hasSvg && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+            <svg
+              viewBox="0 0 100 100"
+              className="w-[200%] h-[200%] opacity-40 group-hover:opacity-60 transition-opacity"
+              preserveAspectRatio="xMidYMid meet"
+              style={{ filter: 'blur(0.3px)' }}
+            >
+              <path
+                d={visual!.svgPath}
+                fill="none"
+                stroke="var(--track-stroke)"
+                strokeWidth="0.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        )}
+
+        {/* Gradient fade — bottom to card body, left for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-elevated)] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[var(--bg-elevated)]/60 to-transparent" />
+
+        {/* Top row: flag + location | logo */}
+        <div className="absolute top-3 left-4 right-4 flex items-start justify-between z-10">
+          <div className="flex items-center gap-2">
+            {location && (
+              <span className="text-base leading-none">{location.flag}</span>
+            )}
+            {location && (
+              <span className="text-xs text-[var(--text-dim)]">{location.city}</span>
+            )}
+          </div>
+          {hasLogo && (
+            <div className="w-7 h-7 opacity-50">
+              {visual?.logoSvg ? (
+                <div dangerouslySetInnerHTML={{ __html: visual.logoSvg }} className="w-full h-full [&>svg]:w-full [&>svg]:h-full" />
+              ) : visual?.logoPng ? (
+                <img src={`data:image/png;base64,${visual.logoPng}`} alt="" className="w-full h-full object-contain" />
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom overlay: track name + tier badge */}
+        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between z-10">
+          <div className="flex items-center gap-2">
+            <div className="bg-[var(--bg-elevated)] rounded-full p-0.5">
+              <MasteryProgressRing score={track.masteryScore} color={TIER_COLORS[track.masteryTier]} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text)] leading-tight" style={{ fontFamily: 'var(--ff-display)' }}>
+                {track.trackName}
+              </h3>
+              {location && (
+                <span className="text-xs text-[var(--text-muted)]">{location.country}</span>
+              )}
+            </div>
+          </div>
+          <TierBadge tier={track.masteryTier} />
+        </div>
       </div>
 
-      <div className="flex gap-4 items-start">
-        <MasteryProgressRing
-          score={track.masteryScore}
-          color={TIER_COLORS[track.masteryTier]}
-        />
-        <div className="flex-1 flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-[var(--text-dim)]">Sessions</span>
-            <span className="text-sm font-semibold text-[var(--text-secondary)]">{track.totalSessions}</span>
+      {/* Card body — stats + metadata */}
+      <div className="px-4 py-3 flex flex-col gap-2">
+        <div className="flex gap-5 text-sm">
+          <div>
+            <span className="text-xs text-[var(--text-dim)] block">Sessions</span>
+            <span className="font-semibold text-[var(--text-secondary)]">{track.totalSessions}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-[var(--text-dim)]">Avg Position</span>
-            <span className="text-sm font-semibold text-[var(--text-secondary)]">
+          <div>
+            <span className="text-xs text-[var(--text-dim)] block">Avg Pos</span>
+            <span className="font-semibold text-[var(--text-secondary)]">
               {track.avgPosition !== null ? formatPosition(track.avgPosition) : '—'}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-[var(--text-dim)]">Incidents/Race</span>
-            <span className="text-sm font-semibold text-[var(--text-secondary)]">{track.avgIncidents.toFixed(1)}</span>
+          <div>
+            <span className="text-xs text-[var(--text-dim)] block">Inc/Race</span>
+            <span className="font-semibold text-[var(--text-secondary)]">{track.avgIncidents.toFixed(1)}</span>
           </div>
         </div>
-      </div>
 
-      {track.gameNames.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {track.gameNames.map(game => (
-            <span key={game} className="px-2 py-1 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] rounded-full text-xs text-[var(--text-secondary)] font-medium">
-              {game}
-            </span>
-          ))}
+        <div className="flex justify-between items-center pt-2 border-t border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <TrendIndicator trend={track.trend} />
+            {track.gameNames.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                {track.gameNames.map(game => (
+                  <GameBadge key={game} game={game} size={10} />
+                ))}
+              </div>
+            )}
+          </div>
+          <span className="text-xs text-[var(--text-dim)]">{formatRelativeTime(track.lastRaced)}</span>
         </div>
-      )}
-
-      <div className="flex justify-between items-center pt-3 border-t border-[var(--border)] text-xs">
-        <TrendIndicator trend={track.trend} />
-        <span className="text-xs text-[var(--text-dim)]">
-          {formatRelativeTime(track.lastRaced)}
-        </span>
       </div>
     </Link>
   )
 }
 
-export default function TrackMasteryPage({ sessions, heroImageUrl, heroSvgPath }: Props) {
+export default function TrackMasteryPage({ sessions, heroImageUrl, heroSvgPath, trackVisuals }: Props) {
   const tracks = useMemo(() => {
     const converted = sessions.map(s => ({
       ...s,
@@ -240,9 +320,14 @@ export default function TrackMasteryPage({ sessions, heroImageUrl, heroSvgPath }
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tracks.map(track => (
-              <TrackCard key={track.trackName} track={track} color={TIER_COLORS[track.masteryTier]} />
-            ))}
+            {tracks.map(track => {
+              // Try exact match first, then case-insensitive
+              const visual = trackVisuals[track.trackName]
+                || Object.entries(trackVisuals).find(([k]) => k.toLowerCase() === track.trackName.toLowerCase())?.[1]
+              return (
+                <TrackCard key={track.trackName} track={track} color={TIER_COLORS[track.masteryTier]} visual={visual} />
+              )
+            })}
           </div>
         )}
       </div>

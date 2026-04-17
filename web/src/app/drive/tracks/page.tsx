@@ -63,6 +63,46 @@ export default async function Page() {
     }
   }
 
+  // Fetch all track maps for SVG paths + logos
+  const allTrackMaps = await db
+    .select({
+      trackName: schema.trackMaps.trackName,
+      svgPath: schema.trackMaps.svgPath,
+      logoSvg: schema.trackMaps.logoSvg,
+      logoPng: schema.trackMaps.logoPng,
+    })
+    .from(schema.trackMaps)
+
+  // Build a lookup: trackName → { svgPath, logoSvg, logoPng, imageUrl }
+  const trackVisuals: Record<string, { svgPath?: string; logoSvg?: string; logoPng?: string; imageUrl?: string }> = {}
+  for (const tm of allTrackMaps) {
+    trackVisuals[tm.trackName] = {
+      svgPath: tm.svgPath || undefined,
+      logoSvg: tm.logoSvg || undefined,
+      logoPng: tm.logoPng || undefined,
+    }
+  }
+  // Add photo images from commentary-images
+  for (const tn of uniqueTrackNames) {
+    if (!tn) continue
+    const img = getTrackImage(tn)
+    if (img) {
+      if (!trackVisuals[tn]) trackVisuals[tn] = {}
+      trackVisuals[tn].imageUrl = img
+    }
+    // Also try fuzzy match for track maps (session trackName might differ from DB trackName)
+    if (!trackVisuals[tn]) {
+      const match = allTrackMaps.find(m => m.trackName.toLowerCase() === tn.toLowerCase())
+      if (match) {
+        trackVisuals[tn] = {
+          svgPath: match.svgPath || undefined,
+          logoSvg: match.logoSvg || undefined,
+          logoPng: match.logoPng || undefined,
+        }
+      }
+    }
+  }
+
   // Serialize race sessions (convert Date objects to ISO strings)
   const serializedSessions = raceSessions.map(s => ({
     ...s,
@@ -76,6 +116,7 @@ export default async function Page() {
       sessions={serializedSessions as any}
       heroImageUrl={heroImageUrl}
       heroSvgPath={heroSvgPath}
+      trackVisuals={trackVisuals}
     />
   )
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import GameBadge from '@/components/GameBadge'
 import {
   Trophy,
   Medal,
@@ -186,7 +187,7 @@ export default function MomentsPage({ sessions, ratingHistory }: MomentsPageProp
                       <div className="flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
                         <span>{formatDate(moment.date)}</span>
                         {moment.gameName && <span>•</span>}
-                        {moment.gameName && <span>{moment.gameName}</span>}
+                        {moment.gameName && <GameBadge game={moment.gameName} size={10} />}
                         {moment.carModel && <span>•</span>}
                         {moment.carModel && <Link href={`/drive/car/${encodeURIComponent(moment.carModel)}`} className="hover:text-[var(--text-secondary)] transition-colors">{moment.carModel}</Link>}
                         {moment.trackName && <span>•</span>}

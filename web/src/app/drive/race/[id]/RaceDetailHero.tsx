@@ -2,6 +2,7 @@
 
 import { Clock, Flag, MapPin } from 'lucide-react'
 import Link from 'next/link'
+import GameBadge from '@/components/GameBadge'
 
 interface RaceDetailHeroProps {
   trackName: string
@@ -156,12 +157,7 @@ export default function RaceDetailHero(props: RaceDetailHeroProps) {
           <div className="flex-1 min-w-0">
             {/* Game + Session type chips */}
             <div className="flex items-center gap-2 mb-3">
-              <span
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
-              >
-                {gameName}
-              </span>
+              <GameBadge game={gameName} size={14} />
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold"
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}

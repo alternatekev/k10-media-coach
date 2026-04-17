@@ -796,7 +796,7 @@ export default async function DashboardPage() {
                     className="overflow-y-auto pb-6 pr-2"
                     style={{
                       scrollbarGutter: 'stable',
-                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 16px)',
+                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 24px)',
                     }}
                   >
                     <div className="flex flex-col gap-4">
@@ -906,7 +906,7 @@ export default async function DashboardPage() {
                     className="overflow-y-auto pb-6 pl-2"
                     style={{
                       scrollbarGutter: 'stable',
-                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 16px)',
+                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 24px)',
                     }}
                   >
                     <div className="flex flex-col gap-4">
