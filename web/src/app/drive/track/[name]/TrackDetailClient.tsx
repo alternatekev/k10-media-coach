@@ -252,7 +252,7 @@ export default function TrackDetailClient(props: TrackDetailClientProps) {
                   <Tooltip
                     contentStyle={{ background: 'rgba(10,10,20,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
                     labelFormatter={(v: any) => formatDate(v)}
-                    formatter={(v: any, name: string) => [`P${v}`, name]}
+                    formatter={(v: any, name: any) => [`P${v}`, name]}
                   />
                   {stats.avgPosition && <ReferenceLine y={stats.avgPosition} stroke="rgba(255,255,255,0.15)" strokeDasharray="4 4" />}
                   {carNames.map(car => (
