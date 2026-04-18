@@ -137,13 +137,14 @@ export default function DriverDNAPage({ sessions, ratingHistory }: Props) {
           <h1 className="text-3xl lg:text-4xl font-black tracking-tight mb-2" style={{ fontFamily: 'var(--ff-display)', color: 'var(--text)' }}>
             Driver DNA
           </h1>
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <p className="text-2xl font-bold" style={{ color: 'var(--border-accent)' }}>
-              {archetype.name}
+              {archetype.variant}
             </p>
           </div>
-          <p style={{ color: 'var(--text-secondary)' }} className="text-sm max-w-xl">
-            {archetype.description}
+          <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{archetype.major}</p>
+          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }} className="text-sm max-w-xl whitespace-pre-line leading-relaxed">
+            {archetype.variantDescription}
           </p>
         </div>
       </div>

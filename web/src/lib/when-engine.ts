@@ -22,6 +22,9 @@ export interface WhenProfile {
   peakDays: string
   worstHours: string
   worstDays: string
+  peakHourStart: number            // starting hour index of best 3h window
+  worstHourStart: number           // starting hour index of worst 3h window
+  windowSize: number               // how many hours in each window (3)
   insights: WhenInsight[]
   heatmapData: { day: number; hour: number; score: number; count: number }[]
 }
@@ -71,14 +74,14 @@ function createEmptyTemporalSlice(label: string): TemporalSlice {
 }
 
 function getHourLabel(hour: number): string {
-  if (hour === 0) return '12a'
-  if (hour < 12) return `${hour}a`
-  if (hour === 12) return '12p'
-  return `${hour - 12}p`
+  if (hour === 0) return '12am'
+  if (hour < 12) return `${hour}am`
+  if (hour === 12) return '12pm'
+  return `${hour - 12}pm`
 }
 
 function getDayLabel(day: number): string {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   return days[day] || 'Unknown'
 }
 
@@ -252,21 +255,38 @@ export function computeWhenProfile(
     heatmapData.push({ day, hour, score: Math.max(0, Math.min(1, normalizedScore)), count: data.count })
   })
 
-  // Find peak and worst hours/days
-  const peakHourIdx = byHour.reduce((bestIdx, slice, idx) => {
-    const bestSlice = byHour[bestIdx]
-    const bestScore = (bestSlice.avgIRatingDelta ?? 0) + bestSlice.podiumRate * 50
-    const currentScore = (slice.avgIRatingDelta ?? 0) + slice.podiumRate * 50
-    return currentScore > bestScore ? idx : bestIdx
-  }, 0)
+  // Find best/worst 3-hour windows (sliding window across 24h, wraps around)
+  const WINDOW = 3
+  function hourScore(slice: TemporalSlice): number {
+    if (slice.sessionCount === 0) return 0
+    return (slice.avgIRatingDelta ?? 0) + slice.podiumRate * 50
+  }
 
-  const worstHourIdx = byHour.reduce((worstIdx, slice, idx) => {
-    const worstSlice = byHour[worstIdx]
-    const worstScore = (worstSlice.avgIRatingDelta ?? 0) + worstSlice.podiumRate * 50
-    const currentScore = (slice.avgIRatingDelta ?? 0) + slice.podiumRate * 50
-    return currentScore < worstScore ? idx : worstIdx
-  }, 0)
+  let bestWindowStart = 0, bestWindowScore = -Infinity
+  let worstWindowStart = 0, worstWindowScore = Infinity
+  for (let start = 0; start < 24; start++) {
+    let totalScore = 0, totalSessions = 0
+    for (let offset = 0; offset < WINDOW; offset++) {
+      const idx = (start + offset) % 24
+      totalScore += hourScore(byHour[idx])
+      totalSessions += byHour[idx].sessionCount
+    }
+    // Only consider windows with at least some data
+    const avgScore = totalSessions > 0 ? totalScore / WINDOW : 0
+    if (avgScore > bestWindowScore) {
+      bestWindowScore = avgScore
+      bestWindowStart = start
+    }
+    if (avgScore < worstWindowScore && totalSessions > 0) {
+      worstWindowScore = avgScore
+      worstWindowStart = start
+    }
+  }
 
+  const peakHoursLabel = `${getHourLabel(bestWindowStart)} – ${getHourLabel((bestWindowStart + WINDOW) % 24)}`
+  const worstHoursLabel = `${getHourLabel(worstWindowStart)} – ${getHourLabel((worstWindowStart + WINDOW) % 24)}`
+
+  // Find best/worst days
   const peakDayIdx = byDayOfWeek.reduce((bestIdx, slice, idx) => {
     const bestSlice = byDayOfWeek[bestIdx]
     const bestScore = (bestSlice.avgIRatingDelta ?? 0) + bestSlice.podiumRate * 50
@@ -285,10 +305,13 @@ export function computeWhenProfile(
     byHour,
     byDayOfWeek,
     bySessionLength,
-    peakHours: byHour[peakHourIdx].label,
+    peakHours: peakHoursLabel,
     peakDays: byDayOfWeek[peakDayIdx].label,
-    worstHours: byHour[worstHourIdx].label,
+    worstHours: worstHoursLabel,
     worstDays: byDayOfWeek[worstDayIdx].label,
+    peakHourStart: bestWindowStart,
+    worstHourStart: worstWindowStart,
+    windowSize: WINDOW,
     insights: [],
     heatmapData,
   }
@@ -297,76 +320,168 @@ export function computeWhenProfile(
 export function generateWhenInsights(profile: WhenProfile): WhenInsight[] {
   const insights: WhenInsight[] = []
 
-  // Find peak and worst hours
-  const peakHour = profile.byHour.find(h => h.label === profile.peakHours)!
-  const worstHour = profile.byHour.find(h => h.label === profile.worstHours)!
+  const activeHours = profile.byHour.filter(h => h.sessionCount > 0)
+  const activeDays = profile.byDayOfWeek.filter(d => d.sessionCount >= 3)
 
-  // Compare best time slot vs worst (iRating delta)
-  if (peakHour.avgIRatingDelta !== null && worstHour.avgIRatingDelta !== null) {
-    const diff = peakHour.avgIRatingDelta - worstHour.avgIRatingDelta
-    if (Math.abs(diff) > 20) {
-      const direction = diff > 0 ? 'gain' : 'lose'
-      const absValue = Math.abs(diff).toFixed(0)
+  // ── Weekday vs weekend ─────────────────────────────────────────────────────
+  // (Not shown in the badges, so this is new information)
+  const weekdayDays = profile.byDayOfWeek.filter((_, i) => i < 5)
+  const weekendDays = profile.byDayOfWeek.filter((_, i) => i >= 5)
+  const weekdayRaces = weekdayDays.reduce((n, d) => n + d.sessionCount, 0)
+  const weekendRaces = weekendDays.reduce((n, d) => n + d.sessionCount, 0)
+
+  if (weekdayRaces > 3 && weekendRaces > 3) {
+    const weekdayAvgPodium = weekdayDays.reduce((sum, d) => sum + d.podiumRate, 0) / weekdayDays.length
+    const weekendAvgPodium = weekendDays.reduce((sum, d) => sum + d.podiumRate, 0) / weekendDays.length
+    const diff = weekendAvgPodium - weekdayAvgPodium
+
+    if (Math.abs(diff) > 0.08) {
+      const better = diff > 0 ? 'weekends' : 'weekdays'
+      const betterRate = diff > 0 ? weekendAvgPodium : weekdayAvgPodium
+      const worseRate = diff > 0 ? weekdayAvgPodium : weekendAvgPodium
       insights.push({
-        type: diff > 0 ? 'positive' : 'negative',
-        text: `You ${direction} an average of ${direction === 'gain' ? '+' : '-'}${absValue} iRating during ${profile.peakHours} but lose ${(worstHour.avgIRatingDelta < 0 ? worstHour.avgIRatingDelta.toFixed(0) : '-' + worstHour.avgIRatingDelta.toFixed(0))} during ${profile.worstHours}`,
+        type: 'positive',
+        text: `Stronger on ${better}: ${(betterRate * 100).toFixed(0)}% podium rate vs ${(worseRate * 100).toFixed(0)}%`,
       })
     }
   }
 
-  // Day comparison
-  const peakDay = profile.byDayOfWeek.find(d => d.label === profile.peakDays)!
-  const weekdayDays = profile.byDayOfWeek.filter((_, i) => i < 5)
-  const weekendDays = profile.byDayOfWeek.filter((_, i) => i >= 5)
+  // ── Session length comparison ──────────────────────────────────────────────
+  const buckets = profile.bySessionLength.filter(b => b.sessionCount >= 3)
+  if (buckets.length >= 2) {
+    const scored = buckets.map(b => ({
+      label: b.label,
+      score: (b.avgIRatingDelta ?? 0) / 50 + b.podiumRate + b.topTenRate * 0.5,
+      delta: b.avgIRatingDelta ?? 0,
+      podium: b.podiumRate,
+      count: b.sessionCount,
+    }))
+    scored.sort((a, b) => b.score - a.score)
+    const best = scored[0]
+    const worst = scored[scored.length - 1]
 
-  const peakDayPodiumRate = peakDay.podiumRate
-  const weekdayAvgPodium = weekdayDays.length > 0 ? weekdayDays.reduce((sum, d) => sum + d.podiumRate, 0) / weekdayDays.length : 0
-  const weekendAvgPodium = weekendDays.length > 0 ? weekendDays.reduce((sum, d) => sum + d.podiumRate, 0) / weekendDays.length : 0
-
-  if (weekendAvgPodium - weekdayAvgPodium > 0.15) {
-    insights.push({
-      type: 'positive',
-      text: `Weekends are your strongest days - your podium rate is ${(weekendAvgPodium * 100).toFixed(0)}% vs ${(weekdayAvgPodium * 100).toFixed(0)}% on weekdays`,
-    })
-  } else if (weekdayAvgPodium - weekendAvgPodium > 0.15) {
-    insights.push({
-      type: 'positive',
-      text: `You perform better on weekdays - your podium rate is ${(weekdayAvgPodium * 100).toFixed(0)}% vs ${(weekendAvgPodium * 100).toFixed(0)}% on weekends`,
-    })
+    if (best.score - worst.score > 0.15) {
+      const format = best.label === 'Short' ? 'sprint' : best.label === 'Long' ? 'endurance' : 'mid-length'
+      insights.push({
+        type: 'neutral',
+        text: `Better in ${format} races: ${(best.podium * 100).toFixed(0)}% podium rate across ${best.count} races`,
+      })
+    }
   }
 
-  // Session length comparison
-  const shortPerf = profile.bySessionLength[0].podiumRate + (profile.bySessionLength[0].avgIRatingDelta ?? 0) / 100
-  const mediumPerf = profile.bySessionLength[1].podiumRate + (profile.bySessionLength[1].avgIRatingDelta ?? 0) / 100
-  const longPerf = profile.bySessionLength[2].podiumRate + (profile.bySessionLength[2].avgIRatingDelta ?? 0) / 100
+  // ── Incident patterns ──────────────────────────────────────────────────────
+  const hoursWithData = profile.byHour.filter(h => h.sessionCount > 0 && h.avgIncidents > 0)
+  if (hoursWithData.length >= 3) {
+    const avgInc = hoursWithData.reduce((sum, h) => sum + h.avgIncidents, 0) / hoursWithData.length
+    const worstIncHour = hoursWithData.reduce((worst, h) => h.avgIncidents > worst.avgIncidents ? h : worst)
 
-  const maxPerf = Math.max(shortPerf, mediumPerf, longPerf)
-  if (shortPerf === maxPerf) {
-    insights.push({
-      type: 'neutral',
-      text: 'You perform best in short races - consider focusing on sprint formats',
-    })
-  } else if (mediumPerf === maxPerf) {
-    insights.push({
-      type: 'neutral',
-      text: 'You perform best in medium-length races - you have good stamina and consistency',
-    })
-  } else if (longPerf === maxPerf) {
-    insights.push({
-      type: 'positive',
-      text: 'You perform best in long races - your endurance and consistency shine in extended competitions',
-    })
+    if (worstIncHour.avgIncidents > avgInc * 1.4 && worstIncHour.sessionCount >= 3) {
+      insights.push({
+        type: 'negative',
+        text: `Incident rate spikes at ${worstIncHour.label} (${worstIncHour.avgIncidents.toFixed(1)} avg). Watch for fatigue or traffic`,
+      })
+    }
   }
 
-  // Incident pattern
-  const peakHourIncidents = worstHour.avgIncidents
-  const avgIncidents = profile.byHour.reduce((sum, h) => sum + h.avgIncidents, 0) / profile.byHour.length
-  if (peakHourIncidents > avgIncidents * 1.5) {
-    insights.push({
-      type: 'negative',
-      text: `Your incident rate spikes during ${profile.worstHours} - fatigue or focus issues may be a factor`,
-    })
+  // ── Consistency / trending ─────────────────────────────────────────────────
+  const allDeltas = activeHours
+    .filter(h => h.avgIRatingDelta !== null)
+    .map(h => h.avgIRatingDelta!)
+  if (allDeltas.length >= 4) {
+    const avgDelta = allDeltas.reduce((a, b) => a + b, 0) / allDeltas.length
+    if (avgDelta > 15) {
+      insights.push({
+        type: 'positive',
+        text: `Trending upward: averaging +${avgDelta.toFixed(0)} iRating per session across all time slots`,
+      })
+    } else if (avgDelta < -15) {
+      insights.push({
+        type: 'negative',
+        text: `iRating slipping: averaging ${avgDelta.toFixed(0)} per session. Consider reviewing replays`,
+      })
+    }
   }
 
-  return insights.slice(0, 6)
+  // ── Volume insight ─────────────────────────────────────────────────────────
+  if (activeDays.length >= 5) {
+    const totalRaces = activeDays.reduce((n, d) => n + d.sessionCount, 0)
+    const racesPerDay = totalRaces / activeDays.length
+    if (racesPerDay > 2) {
+      const highVolumeDays = activeDays.filter(d => d.sessionCount > racesPerDay * 1.5)
+      if (highVolumeDays.length > 0) {
+        const heavyDay = highVolumeDays[0]
+        const heavyDayDelta = heavyDay.avgIRatingDelta ?? 0
+        if (heavyDayDelta < -5) {
+          insights.push({
+            type: 'negative',
+            text: `High volume on ${heavyDay.label} but avg ${heavyDayDelta.toFixed(0)} iR. Quality over quantity`,
+          })
+        }
+      }
+    }
+  }
+
+  // Pull in detailed insights from the extended generator
+  try {
+    const { generateDetailedInsights } = require('@/lib/insights/when-generator')
+    const detailed = generateDetailedInsights(profile) as WhenInsight[]
+    const existingTexts = new Set(insights.map(i => i.text.toLowerCase().slice(0, 40)))
+    for (const d of detailed) {
+      const key = d.text.toLowerCase().slice(0, 40)
+      if (!existingTexts.has(key)) {
+        insights.push(d)
+        existingTexts.add(key)
+      }
+    }
+  } catch {
+    // Detailed insights are optional
+  }
+
+  // Split into good (positive + neutral) and bad (negative), return exactly 3 of each
+  const good = insights.filter(i => i.type === 'positive' || i.type === 'neutral')
+  const bad = insights.filter(i => i.type === 'negative')
+
+  while (good.length < 3) {
+    good.push({ type: 'neutral', text: pickFallbackGood(good.length, profile) })
+  }
+  while (bad.length < 3) {
+    bad.push({ type: 'negative', text: pickFallbackBad(bad.length, profile) })
+  }
+
+  return [...good.slice(0, 3), ...bad.slice(0, 3)]
+}
+
+function pickFallbackGood(index: number, profile: WhenProfile): string {
+  const activeHours = profile.byHour.filter(h => h.sessionCount > 0)
+  const avgPodium = activeHours.length > 0
+    ? activeHours.reduce((sum, h) => sum + h.podiumRate, 0) / activeHours.length
+    : 0
+  const avgTopTen = activeHours.length > 0
+    ? activeHours.reduce((sum, h) => sum + h.topTenRate, 0) / activeHours.length
+    : 0
+  const cleanHours = activeHours.filter(h => h.avgIncidents <= 1)
+
+  const fallbacks = [
+    avgPodium > 0 ? `${(avgPodium * 100).toFixed(0)}% podium rate across all time slots` : `Building a solid data set with more races`,
+    avgTopTen > 0 ? `Top 10 in ${(avgTopTen * 100).toFixed(0)}% of races. Consistently competitive` : `Racing regularly is the best way to improve`,
+    cleanHours.length > 0 ? `${cleanHours.length} racing hours average 1 or fewer incidents` : `More insights will appear with more races`,
+  ]
+  return fallbacks[index % fallbacks.length]
+}
+
+function pickFallbackBad(index: number, profile: WhenProfile): string {
+  const activeHours = profile.byHour.filter(h => h.sessionCount > 0)
+  const activeDays = profile.byDayOfWeek.filter(d => d.sessionCount > 0)
+  const avgIncidents = activeHours.length > 0
+    ? activeHours.reduce((sum, h) => sum + h.avgIncidents, 0) / activeHours.length
+    : 0
+  const lowWinHours = activeHours.filter(h => h.winRate === 0 && h.sessionCount >= 2)
+  const highIncHours = activeHours.filter(h => h.avgIncidents > avgIncidents * 1.2)
+
+  const fallbacks = [
+    avgIncidents > 0 ? `${avgIncidents.toFixed(1)} avg incidents per session. Room to improve` : `Not enough data to find patterns yet`,
+    lowWinHours.length > 0 ? `${lowWinHours.length} time slots with zero wins despite multiple races` : `No major red flags yet. Stay consistent`,
+    highIncHours.length > 0 ? `${highIncHours.length} hours show above-average incidents. Fatigue or traffic` : `More laps will reveal track-specific weaknesses`,
+  ]
+  return fallbacks[index % fallbacks.length]
 }

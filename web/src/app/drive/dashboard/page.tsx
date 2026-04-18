@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { SITE_URL, SITE_NAME } from "@/lib/constants";
 import { db, schema } from "@/db";
 import { and, eq, gt, desc } from "drizzle-orm";
-import { Download, BarChart3, Trophy, Shield } from "lucide-react";
+import { Download, BarChart3, Trophy } from "lucide-react";
 import { resolveIRacingTrackId } from "@/data/iracing-track-map";
 import RaceHistory from "./RaceHistory";
 import RaceCalendarHeatmap, {
@@ -17,12 +17,14 @@ import IRatingTimeline, { type RatingHistoryPoint } from "./IRatingTimeline";
 import DataManagement from "./DataManagement";
 import WhenInsightsPanel from "./WhenInsightsPanel";
 import DataStrip from "./DataStrip";
-import RecentMoments from "./RecentMoments";
+// RecentMoments moved to header drawer (MomentsDrawer)
 import { getCarImage, getTrackImage } from "@/lib/commentary-images";
-import { computeWhenProfile, generateWhenInsights } from "@/lib/when-engine";
+import { computeWhenProfile, generateWhenInsights, type WhenProfile, type WhenInsight } from "@/lib/when-engine";
 import { detectMoments, type Moment, type SessionRecord as MomentSession, type RatingRecord as MomentRating } from "@/lib/moments";
 import NextRaceIdeas, { type RaceSuggestion as NRISuggestion, type StrategyType } from "./NextRaceIdeas";
-import TopTracksAndCars from "./TopTracksAndCars";
+import { TopTracks, TopCars } from "./TopTracksAndCars";
+import DashboardMainTabs from "./DashboardMainTabs";
+import SidebarTabs from "./SidebarTabs";
 import { computeNextRaceIdeas, type SessionInput, type RatingInput, type DriverRatingInput, type IRacingSchedule } from "@/lib/next-race-ideas";
 import { computeTrackMastery, computeCarAffinity } from "@/lib/mastery";
 import { fetchIRacingSchedule } from "@/lib/iracing-schedule-fetcher";
@@ -250,7 +252,8 @@ export default async function DashboardPage() {
   }
 
   // ── When-engine insights ────────────────────────────────────────────────────
-  let whenInsights: { type: 'positive' | 'negative' | 'neutral'; text: string }[] = []
+  let whenInsights: WhenInsight[] = []
+  let whenProfile: WhenProfile | null = null
   let safetyRatingByCategory: { category: string; safetyRating: string; license: string }[] = []
 
   // When-engine insights (needs 5+ sessions)
@@ -261,11 +264,11 @@ export default async function DashboardPage() {
       .where(eq(schema.ratingHistory.userId, dbUser.id))
       .orderBy(desc(schema.ratingHistory.createdAt))
 
-    const profile = computeWhenProfile(
+    whenProfile = computeWhenProfile(
       JSON.parse(JSON.stringify(allSessions)),
       JSON.parse(JSON.stringify(fullRatingHistory)),
     )
-    whenInsights = generateWhenInsights(profile)
+    whenInsights = generateWhenInsights(whenProfile)
   }
 
   // Safety rating per category — always fetch if connected (not gated by session count)
@@ -278,6 +281,10 @@ export default async function DashboardPage() {
 
     const seenSR = new Set<string>()
     for (const row of srHistory) {
+      // Skip time trials — they report bogus license data (level 1)
+      const st = (row.sessionType || '').toLowerCase()
+      const isTT = st.includes('time trial') || st.includes('time_trial') || st.includes('timetrial') || st.includes('lone qual')
+      if (isTT) continue
       if (!seenSR.has(row.category) && row.license !== 'R') {
         seenSR.add(row.category)
         safetyRatingByCategory.push({
@@ -345,6 +352,7 @@ export default async function DashboardPage() {
       prevIRating: r.prevIRating ?? 0,
       prevLicense: r.prevLicense || undefined,
       license: r.license,
+      sessionType: r.sessionType || undefined,
       createdAt: r.createdAt,
     }))
 
@@ -790,164 +798,127 @@ export default async function DashboardPage() {
           uniqueTracks={careerStats.uniqueTracks}
           uniqueCars={careerStats.uniqueCars}
           iRatingHistory={iRatingFullHistory}
-          insights={whenInsights}
         />
       )}
       <div className="absolute inset-0 max-w-[120rem] mx-auto px-6 w-full">
         {isPluginConnected ? (
           <>
-            {/* Dashboard top grid — suggested races + viz left, moments + session length right */}
-            {(nextRaceSuggestions.length > 0 || recentMoments.length > 0 || vizData.length > 0) && (
-              <section
-                className="h-full grid grid-cols-1 md:grid-cols-[3fr_1fr] lg:grid-cols-[3fr_1fr] gap-4"
-              >
-                  {/* ── Left column — scrolls under the headers ── */}
-                  <div
-                    className="overflow-y-auto pb-6 pr-2"
-                    style={{
-                      scrollbarGutter: 'stable',
-                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 24px)',
-                    }}
-                  >
-                    <div className="flex flex-col gap-4">
-                    {nextRaceSuggestions.length > 0 && (
-                      <NextRaceIdeas
-                        suggestions={nextRaceSuggestions}
-                        lookups={{
-                          trackMapLookup,
-                          trackLogoLookup,
-                          trackImageLookup,
-                          trackDisplayNameLookup,
-                          carImageLookup,
-                          brandLogoLookup,
-                        }}
-                      />
-                    )}
-                    {vizData.length > 0 && (
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <RaceCalendarHeatmap sessions={vizData} />
-                        <RaceScatterGrid sessions={vizData} />
-                        <DriverDNARadar sessions={dnaSessionData} ratingHistory={dnaRatingData} />
-                      </div>
-                    )}
-                    {vizData.length > 0 && (
-                      <SessionLengthCards sessions={dnaSessionData} />
-                    )}
-                    {/* Race History — card grid / list toggle */}
-                    <RaceHistory
-                      displayCards={displayCards}
-                      lookups={{
-                        trackMapLookup,
-                        carImageLookup,
-                        trackImageLookup,
-                        trackLogoLookup,
-                        trackDisplayNameLookup,
-                        brandLogoLookup,
-                        iRatingHistory,
-                      }}
-                    />
-
-                    {/* Data Management (collapsible) */}
-                    {isPluginConnected && raceCount > 0 && (
-                      <DataManagement totalSessions={raceCount} emptySessions={emptySessionCount} />
-                    )}
-
-                    {/* Pro Features */}
-                    {!hasEnoughData && (
-                      <section className="mb-6">
-                        <h2
-                          className="font-bold mb-2 flex items-center gap-2"
-                          style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}
+            <section
+              className="absolute inset-x-0 bottom-0 grid grid-cols-1 md:grid-cols-[3fr_1fr] lg:grid-cols-[3fr_1fr] gap-4 px-4"
+              style={{ top: 'calc(var(--header-h) + var(--datastrip-h))' }}
+            >
+                {/* ── Left column ── */}
+                <div
+                  className="overflow-y-auto pt-6 pb-6 pr-2"
+                  style={{ scrollbarGutter: 'stable' }}
+                >
+                  <DashboardMainTabs
+                    performanceContent={
+                      <>
+                        {(whenInsights.length > 0 || whenProfile) && (
+                          <WhenInsightsPanel insights={whenInsights} profile={whenProfile} />
+                        )}
+                        {vizData.length > 0 && (
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <RaceCalendarHeatmap sessions={vizData} />
+                            <RaceScatterGrid sessions={vizData} />
+                            <DriverDNARadar sessions={dnaSessionData} ratingHistory={dnaRatingData} />
+                          </div>
+                        )}
+                        {vizData.length > 0 && (
+                          <SessionLengthCards sessions={dnaSessionData} />
+                        )}
+                      </>
+                    }
+                    nextRaceContent={
+                      <>
+                        {nextRaceSuggestions.length > 0 ? (
+                          <NextRaceIdeas
+                            suggestions={nextRaceSuggestions}
+                            lookups={{
+                              trackMapLookup,
+                              trackLogoLookup,
+                              trackImageLookup,
+                              trackDisplayNameLookup,
+                              carImageLookup,
+                              brandLogoLookup,
+                            }}
+                          />
+                        ) : (
+                          <div className="text-sm text-[var(--text-muted)] py-8 text-center">
+                            Race suggestions will appear here once you have more data.
+                          </div>
+                        )}
+                      </>
+                    }
+                    previousRacesContent={
+                      <>
+                        <RaceHistory
+                          displayCards={displayCards}
+                          lookups={{
+                            trackMapLookup,
+                            carImageLookup,
+                            trackImageLookup,
+                            trackLogoLookup,
+                            trackDisplayNameLookup,
+                            brandLogoLookup,
+                            iRatingHistory,
+                          }}
+                        />
+                        {isPluginConnected && raceCount > 0 && (
+                          <DataManagement totalSessions={raceCount} emptySessions={emptySessionCount} />
+                        )}
+                      </>
+                    }
+                    footerContent={
+                      <footer className="mt-16 pt-6 border-t border-[var(--border)] text-center pb-6">
+                        <a
+                          href={SITE_URL}
+                          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors"
                         >
-                          <Shield size={24} className="text-[var(--border-accent)]" />
-                          Pro Features
-                        </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {[
-                            { label: "AI Commentary", icon: "🎙️" },
-                            { label: "Incidents Panel", icon: "⚠️" },
-                            { label: "Virtual Spotter", icon: "👁️" },
-                            { label: "Live Leaderboard", icon: "🏆" },
-                            { label: "Datastream", icon: "📊" },
-                            { label: "WebGL Effects", icon: "✨" },
-                            { label: "Reflections", icon: "🔮" },
-                            { label: "Module Config", icon: "⚙️" },
-                          ].map((f) => (
-                            <div
-                              key={f.label}
-                              className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] text-center"
-                            >
-                              <div className="text-lg mb-1">{f.icon}</div>
-                              <div className="text-xs font-semibold text-[var(--text-secondary)]">
-                                {f.label}
-                              </div>
-                            </div>
-                          ))}
+                          &larr; Back to {SITE_NAME}
+                        </a>
+                      </footer>
+                    }
+                    downloadUrl="/api/download/latest"
+                  />
+                </div>
+                {/* ── Right column ── */}
+                <div
+                  className="overflow-y-auto pt-6 pb-6 pl-1 pr-1"
+                >
+                  <SidebarTabs
+                    tracksContent={
+                      trackMasteryList.length > 0 ? (
+                        <TopTracks
+                          tracks={trackMasteryList}
+                          trackMapLookup={trackMapLookup}
+                          trackDisplayNameLookup={trackDisplayNameLookup}
+                        />
+                      ) : (
+                        <div className="text-sm text-[var(--text-muted)] py-8 text-center">
+                          Track data will appear after your first races.
                         </div>
-                        <p className="mt-3 text-xs text-[var(--text-muted)]">
-                          All Pro features are unlocked when your overlay is connected
-                          to your Pro Drive account.
-                        </p>
-                      </section>
-                    )}
-                    {/* Download link */}
-                    <section className="text-center">
-                      <a
-                        href="/api/download/latest"
-                        className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors"
-                      >
-                        <Download size={24} />
-                        Need to reinstall? Download RaceCor.io Overlay
-                      </a>
-                    </section>
-
-                    <footer className="mt-16 pt-6 border-t border-[var(--border)] text-center pb-6">
-                      <a
-                        href={SITE_URL}
-                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors"
-                      >
-                        &larr; Back to {SITE_NAME}
-                      </a>
-                    </footer>
-                    </div>
-                  </div>
-                  {/* ── Right column — scrolls under the headers ── */}
-                  <div
-                    className="overflow-y-auto pb-6 pl-2"
-                    style={{
-                      scrollbarGutter: 'stable',
-                      paddingTop: 'calc(var(--header-h) + var(--datastrip-h) + 24px)',
-                    }}
-                  >
-                    <div className="flex flex-col gap-4">
-                    {(trackMasteryList.length > 0 || carAffinityList.length > 0) && (
-                      <TopTracksAndCars
-                        tracks={trackMasteryList}
-                        cars={carAffinityList}
-                        trackMapLookup={trackMapLookup}
-                        trackDisplayNameLookup={trackDisplayNameLookup}
-                        brandLogoLookup={brandLogoLookup}
-                      />
-                    )}
-                    {(recentMoments.length > 0 || momentHighlights.length > 0) && (
-                      <RecentMoments
-                        moments={recentMoments}
-                        highlights={momentHighlights}
-                        trackMapLookup={trackMapLookup}
-                        trackLogoLookup={trackLogoLookup}
-                        trackDisplayNameLookup={trackDisplayNameLookup}
-                        brandLogoLookup={brandLogoLookup}
-                        compact
-                      />
-                    )}
-                    </div>
-                  </div>
-              </section>
-            )}
-
+                      )
+                    }
+                    carsContent={
+                      carAffinityList.length > 0 ? (
+                        <TopCars
+                          cars={carAffinityList}
+                          brandLogoLookup={brandLogoLookup}
+                        />
+                      ) : (
+                        <div className="text-sm text-[var(--text-muted)] py-8 text-center">
+                          Car data will appear after your first races.
+                        </div>
+                      )
+                    }
+                  />
+                </div>
+            </section>
           </>
         ) : (
-          <div className="h-full overflow-y-auto pb-6" style={{ paddingTop: '24px' }}>
+          <div className="h-full overflow-y-auto pb-6" style={{ paddingTop: 'calc(var(--header-h) + 24px)' }}>
             {/* Not Connected */}
             <section className="mb-6">
               <h1
@@ -1047,42 +1018,6 @@ export default async function DashboardPage() {
                   </p>
                 </div>
               )}
-            </section>
-
-            <section>
-              <h2
-                className="font-bold mb-2 flex items-center gap-2"
-                style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--ff-display)" }}
-              >
-                <Shield size={24} className="text-[var(--border-accent)]" />
-                Pro Features
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "AI Commentary", icon: "🎙️" },
-                  { label: "Incidents Panel", icon: "⚠️" },
-                  { label: "Virtual Spotter", icon: "👁️" },
-                  { label: "Live Leaderboard", icon: "🏆" },
-                  { label: "Datastream", icon: "📊" },
-                  { label: "WebGL Effects", icon: "✨" },
-                  { label: "Reflections", icon: "🔮" },
-                  { label: "Module Config", icon: "⚙️" },
-                ].map((f) => (
-                  <div
-                    key={f.label}
-                    className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] text-center"
-                  >
-                    <div className="text-lg mb-1">{f.icon}</div>
-                    <div className="text-xs font-semibold text-[var(--text-secondary)]">
-                      {f.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-[var(--text-muted)]">
-                All Pro features are unlocked when your overlay is connected to
-                your Pro Drive account.
-              </p>
             </section>
 
             <footer className="mt-16 pt-6 border-t border-[var(--border)] text-center pb-6">

@@ -89,17 +89,24 @@ export default async function SafetyPage() {
       : null,
   }))
 
-  const processedHistory = ratingHistory.map((r) => ({
-    category: r.category,
-    iRating: r.iRating,
-    safetyRating: r.safetyRating,
-    license: r.license,
-    prevSafetyRating: r.prevSafetyRating,
-    prevIRating: r.prevIRating,
-    trackName: r.trackName,
-    carModel: r.carModel,
-    createdAt: r.createdAt.toISOString(),
-  }))
+  const processedHistory = ratingHistory
+    // Time trials report bogus license data (level 1) — exclude them
+    .filter((r) => {
+      const st = (r.sessionType || '').toLowerCase()
+      return !(st.includes('time trial') || st.includes('time_trial') || st.includes('timetrial') || st.includes('lone qual'))
+    })
+    .map((r) => ({
+      category: r.category,
+      iRating: r.iRating,
+      safetyRating: r.safetyRating,
+      license: r.license,
+      prevSafetyRating: r.prevSafetyRating,
+      prevIRating: r.prevIRating,
+      trackName: r.trackName,
+      carModel: r.carModel,
+      sessionType: r.sessionType,
+      createdAt: r.createdAt.toISOString(),
+    }))
 
   const processedLapTelemetry = lapTelemetry.map((l) => ({
     id: l.id,

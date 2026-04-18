@@ -147,6 +147,8 @@ export async function POST(request: NextRequest) {
         knownIds.add(subsessionId)
 
         // Also insert a rating_history entry for each new race with rating deltas
+        // Time trials report bogus license data (level 1) — skip them
+        if (isTimeTrialEvent(race as Record<string, unknown>)) continue
         const postIR = race.newi_rating ?? race.new_irating ?? race.newIRating ?? 0
         const preIR = race.oldi_rating ?? race.old_irating ?? race.oldIRating ?? 0
         const postSR = (race.new_sub_level ?? race.newSubLevel ?? 0) / 100
@@ -242,4 +244,10 @@ function licenseFromLevel(level: number): string {
   if (level >= 8) return 'C'
   if (level >= 4) return 'D'
   return 'R'
+}
+
+/** Time attacks / time trials report license_level as 1 (Rookie) regardless of actual license. */
+function isTimeTrialEvent(race: Record<string, unknown>): boolean {
+  const t = String(race.event_type_name || race.event_type || race.sessionType || '').toLowerCase()
+  return t.includes('time trial') || t.includes('time_trial') || t.includes('timetrial') || t.includes('lone qual')
 }

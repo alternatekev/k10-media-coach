@@ -16,6 +16,7 @@ interface Props {
 
 interface Bucket {
   label: string
+  criteria: string
   sessions: number
   avgPosition: number | null
   podiumRate: number
@@ -32,6 +33,7 @@ function getBucket(completedLaps: number | null | undefined): 0 | 1 | 2 {
 export default function SessionLengthCards({ sessions }: Props) {
   const buckets = useMemo(() => {
     const labels = ['Short', 'Medium', 'Long']
+    const criteria = ['Under 15 laps', '15 to 30 laps', 'Over 30 laps']
     const positions: number[][] = [[], [], []]
     const incidents: number[][] = [[], [], []]
 
@@ -48,6 +50,7 @@ export default function SessionLengthCards({ sessions }: Props) {
       const count = Math.max(pos.length, inc.length)
       return {
         label,
+        criteria: criteria[i],
         sessions: count,
         avgPosition: pos.length > 0 ? pos.reduce((a, b) => a + b, 0) / pos.length : null,
         podiumRate: pos.length > 0 ? pos.filter(p => p >= 1 && p <= 3).length / pos.length : 0,
@@ -92,9 +95,14 @@ export default function SessionLengthCards({ sessions }: Props) {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
-                  {bucket.label}
-                </span>
+                <div>
+                  <span className="text-sm font-bold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+                    {bucket.label}
+                  </span>
+                  <span className="ml-1.5" style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--ff)', fontWeight: 300 }}>
+                    {bucket.criteria}
+                  </span>
+                </div>
                 <span className="text-sm text-[var(--text-muted)]">
                   {bucket.sessions} race{bucket.sessions !== 1 ? 's' : ''}
                 </span>

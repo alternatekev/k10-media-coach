@@ -535,17 +535,16 @@ export default function TokenEditor() {
   const [activeTab, setActiveTab] = useState<Tab>('colors')
   const [drafts, setDrafts] = useState<Map<string, string>>(new Map())
   const [expandedPicker, setExpandedPicker] = useState<string | null>(null)
-  const [editingTheme, setEditingTheme] = useState<Theme>('dark')
+  const [editingTheme] = useState<Theme>('dark')
   const [lightOverrides, setLightOverrides] = useState<Map<string, string>>(new Map())
   const [darkOverrides, setDarkOverrides] = useState<Map<string, string>>(new Map())
   const [themeSets, setThemeSets] = useState<ThemeSet[]>([])
   const [activeSetSlug, setActiveSetSlug] = useState<string>('default')
 
-  // Detect and watch for theme changes
+  // Detect and watch for theme changes (dark-only now)
   useEffect(() => {
     const updateTheme = () => {
-      const theme = document.documentElement.getAttribute('data-theme') as Theme | null
-      setEditingTheme(theme || 'dark')
+      // Always dark — light themes removed
     }
 
     updateTheme()

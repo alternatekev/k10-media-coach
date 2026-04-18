@@ -107,34 +107,6 @@
     --corner-r-sm: 6px;
   }
 
-  /* Light theme fallback */
-  [data-theme="light"] {
-    --bg: #f5f5f8;
-    --bg-surface: rgba(255, 255, 255, 0.95);
-    --bg-panel: rgba(240, 240, 245, 0.95);
-    --bg-elevated: rgba(255, 255, 255, 1.0);
-
-    --border: rgba(0, 0, 0, 0.12);
-    --border-subtle: rgba(0, 0, 0, 0.06);
-    --border-accent: rgba(211, 47, 47, 0.35);
-
-    --text: #1a1a1a;
-    --text-secondary: rgba(0, 0, 0, 0.65);
-    --text-dim: rgba(0, 0, 0, 0.50);
-    --text-muted: rgba(0, 0, 0, 0.40);
-
-    --k10-red: #d32f2f;
-    --k10-red-mid: #c62828;
-    --k10-red-dark: #b71c1c;
-
-    --track-stroke: rgba(0, 0, 0, 0.45);
-
-    --green: #2e7d32;
-    --blue: #1565c0;
-    --amber: #f57f17;
-    --purple: #6a1b9a;
-    --cyan: #00838f;
-  }
 }
 
 /* Base typography & color-scheme — inside @layer base so Tailwind
@@ -164,8 +136,6 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); }
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
 
 /* Theme-aware logo switching */
 .logo-dark { display: block; }

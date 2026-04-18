@@ -60,12 +60,15 @@ export default function DriverDNARadar({ sessions, ratingHistory }: Props) {
   return (
     <div className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] p-4 h-full relative flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
-          <Target size={24} className="text-[var(--border-accent)]" />
-          Driver DNA
+      <div className="mb-2">
+        <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)', fontWeight: 300 }}>Driver DNA</span>
+        <div className="flex items-baseline gap-2 mt-0.5">
+          <span className="font-semibold" style={{ fontSize: 16, color: 'var(--text-secondary)', fontFamily: 'var(--ff-display)' }}>{archetype.variant}</span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--ff)', fontWeight: 300 }}>{archetype.major}</span>
         </div>
-        <span className="text-sm text-[var(--text-muted)]">{archetype.name}</span>
+        <p className="whitespace-pre-line leading-relaxed mt-1" style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--ff)', fontWeight: 300, fontStyle: 'italic' }}>
+          {archetype.variantDescription}
+        </p>
       </div>
 
       {/* Radar Chart */}

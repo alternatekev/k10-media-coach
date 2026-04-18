@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth'
 import Discord from 'next-auth/providers/discord'
+import { findOrCreateUser } from '@/lib/plugin-auth'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -14,6 +15,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/drive',
   },
   callbacks: {
+    // Ensure DB user row exists on first sign-in
+    async signIn({ profile }) {
+      if (profile?.id) {
+        try {
+          await findOrCreateUser(
+            profile.id as string,
+            (profile.username as string) || 'unknown',
+            (profile.global_name as string) ?? (profile.username as string) ?? null,
+            (profile.avatar as string) ?? null,
+            (profile.email as string) ?? null,
+          )
+        } catch (err) {
+          console.error('[auth] failed to find/create user:', err)
+          // Don't block sign-in if DB is down
+        }
+      }
+      return true
+    },
     // Expose Discord ID + avatar in the JWT and session
     async jwt({ token, account, profile }) {
       if (account && profile) {

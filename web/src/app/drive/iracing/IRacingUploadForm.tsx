@@ -28,6 +28,8 @@ export default function IRacingUploadForm() {
   const [dedupeResult, setDedupeResult] = useState<DedupeResult | null>(null)
   const [clearStatus, setClearStatus] = useState<'idle' | 'confirm' | 'running' | 'done'>('idle')
   const [clearResult, setClearResult] = useState<string | null>(null)
+  const [demoStatus, setDemoStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [demoMessage, setDemoMessage] = useState<string | null>(null)
 
   const handleDedupe = useCallback(async () => {
     setDedupeStatus('running')
@@ -58,6 +60,45 @@ export default function IRacingUploadForm() {
     }
     setClearStatus('done')
   }, [clearStatus])
+
+  const handleLoadDemo = useCallback(async () => {
+    setDemoStatus('loading')
+    setDemoMessage(null)
+    try {
+      // Fetch both demo files in parallel
+      const [dataRes, seedRes] = await Promise.all([
+        fetch('/demo/demo-data.json'),
+        fetch('/demo/demo-seed.json'),
+      ])
+      if (!dataRes.ok || !seedRes.ok) throw new Error('Failed to fetch demo data files')
+
+      const uploadData = await dataRes.json()
+      const seedData = await seedRes.json()
+
+      // Single call to seed-demo which handles: user creation, clear, import, ratings
+      const res = await fetch('/api/admin/seed-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uploadData,
+          ratingHistory: seedData.ratingHistory,
+        }),
+      })
+
+      const result = await res.json()
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Seed failed')
+      }
+
+      setDemoStatus('done')
+      setDemoMessage(
+        `Loaded ${result.sessionsImported} races, ${result.ratingHistoryInserted} rating points across ${result.categories?.join(', ')}. Refresh to see your dashboard.`
+      )
+    } catch (err: any) {
+      setDemoStatus('error')
+      setDemoMessage(err.message || 'Failed to load demo data')
+    }
+  }, [])
 
   const handleSubmit = useCallback(async () => {
     if (!json.trim()) return
@@ -262,6 +303,41 @@ export default function IRacingUploadForm() {
             <p className="text-sm text-[var(--text-dim)] mt-2">{clearResult}</p>
           )}
         </div>
+      </div>
+
+      {/* Demo Data */}
+      <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+          Demo Data
+        </p>
+        <p className="text-sm text-[var(--text-dim)] mb-3">
+          Load a year of sample race data — 360 races across all categories with a full Rookie → A license progression story. Replaces any existing data.
+        </p>
+        <button
+          onClick={handleLoadDemo}
+          disabled={demoStatus === 'loading'}
+          className="px-5 py-2 rounded-md text-sm font-semibold transition-opacity disabled:opacity-40"
+          style={{
+            background: 'var(--k10-red, #e53935)',
+            color: '#fff',
+          }}
+        >
+          {demoStatus === 'loading' ? 'Loading demo data...' : 'Load Demo Data'}
+        </button>
+        {demoMessage && (
+          <div
+            className="mt-3 p-3 rounded-lg text-sm"
+            style={{
+              background: demoStatus === 'error'
+                ? 'rgba(229, 57, 53, 0.1)'
+                : 'rgba(76, 175, 80, 0.1)',
+              border: `1px solid ${demoStatus === 'error' ? 'rgba(229, 57, 53, 0.3)' : 'rgba(76, 175, 80, 0.3)'}`,
+              color: demoStatus === 'error' ? '#ef5350' : '#66bb6a',
+            }}
+          >
+            {demoMessage}
+          </div>
+        )}
       </div>
     </div>
   )

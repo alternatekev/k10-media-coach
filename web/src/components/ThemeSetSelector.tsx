@@ -19,7 +19,7 @@ export default function ThemeSetSelector() {
     const match = document.cookie.match(new RegExp(`${SET_COOKIE}=([^;]+)`))
     if (match) setActiveSlug(match[1])
 
-    fetch('/api/admin/theme-sets')
+    fetch('/api/theme-sets')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.sets) {

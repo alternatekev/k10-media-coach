@@ -4,74 +4,85 @@ import { useMemo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import {
-  Trophy,
-  Medal,
-  Shield,
-  TrendingUp,
-  Star,
-  MapPin,
-  Car,
-  Clock,
-  Flame,
-  HeartCrack,
-  ArrowUpFromLine,
+  Trophy, Medal, Shield, TrendingUp, Star,
+  MapPin, Car, Clock, Flame, HeartCrack, ArrowUpFromLine,
   X,
 } from 'lucide-react'
+import GameBadge from '@/components/GameBadge'
 import { detectMoments, type Moment, type SessionRecord, type RatingRecord } from '@/lib/moments'
+import type { BrandInfo } from '@/types/brand'
 
-interface MomentsDrawerProps {
+// ── Shared design constants (same as RecentMoments dashboard cards) ──────────
+
+const ICON: Record<string, (size: number) => React.ReactNode> = {
+  win_streak:        (s) => <Trophy size={s} />,
+  podium_streak:     (s) => <Medal size={s} />,
+  clean_streak:      (s) => <Shield size={s} />,
+  milestone_irating: (s) => <TrendingUp size={s} />,
+  license_promotion: (s) => <ArrowUpFromLine size={s} />,
+  comeback:          (s) => <Flame size={s} />,
+  personal_best:     (s) => <Star size={s} />,
+  new_track:         (s) => <MapPin size={s} />,
+  new_car:           (s) => <Car size={s} />,
+  century:           (s) => <Clock size={s} />,
+  iron_man:          (s) => <Flame size={s} />,
+  heartbreak:        (s) => <HeartCrack size={s} />,
+}
+
+const ACCENT: Record<string, string> = {
+  win_streak:        '#ffd700',
+  podium_streak:     '#ffd700',
+  clean_streak:      '#43a047',
+  milestone_irating: '#e53935',
+  license_promotion: '#1e88e5',
+  comeback:          '#ff9800',
+  personal_best:     '#7c6cf0',
+  new_track:         '#00acc1',
+  new_car:           '#00acc1',
+  century:           '#ffb300',
+  iron_man:          '#ff5722',
+  heartbreak:        '#e53935',
+}
+
+const HIGHLIGHT_GRADIENT: Record<string, string> = {
+  win_streak:        'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.05) 100%)',
+  podium_streak:     'linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.05) 100%)',
+  clean_streak:      'linear-gradient(135deg, rgba(67,160,71,0.15) 0%, rgba(67,160,71,0.05) 100%)',
+  milestone_irating: 'linear-gradient(135deg, rgba(229,57,53,0.15) 0%, rgba(229,57,53,0.05) 100%)',
+  license_promotion: 'linear-gradient(135deg, rgba(30,136,229,0.15) 0%, rgba(30,136,229,0.05) 100%)',
+  comeback:          'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(255,152,0,0.05) 100%)',
+  iron_man:          'linear-gradient(135deg, rgba(255,87,34,0.15) 0%, rgba(255,87,34,0.05) 100%)',
+}
+
+interface Lookups {
+  trackMapLookup: Record<string, string>
+  trackLogoLookup: Record<string, string>
+  trackDisplayNameLookup: Record<string, string>
+  brandLogoLookup: Record<string, BrandInfo>
+}
+
+interface MomentsDrawerProps extends Lookups {
   sessions: SessionRecord[]
   ratingHistory: RatingRecord[]
 }
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  win_streak: <Trophy size={16} />,
-  podium_streak: <Medal size={16} />,
-  clean_streak: <Shield size={16} />,
-  milestone_irating: <TrendingUp size={16} />,
-  license_promotion: <ArrowUpFromLine size={16} />,
-  comeback: <Flame size={16} />,
-  personal_best: <Star size={16} />,
-  new_track: <MapPin size={16} />,
-  new_car: <Car size={16} />,
-  century: <Clock size={16} />,
-  iron_man: <Flame size={16} />,
-  heartbreak: <HeartCrack size={16} />,
+const trackKey = (name: string | undefined | null) => (name || '').toLowerCase()
+
+function formatRelative(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const days = Math.floor((now - then) / 86_400_000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  if (days < 30) return `${Math.floor(days / 7)}w ago`
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-const BORDER_COLOR_MAP: Record<string, string> = {
-  win_streak: 'hsl(45, 100%, 51%)',
-  podium_streak: 'hsl(45, 100%, 51%)',
-  clean_streak: 'hsl(120, 35%, 45%)',
-  milestone_irating: 'hsl(0, 80%, 55%)',
-  license_promotion: 'hsl(215, 95%, 52%)',
-  comeback: 'hsl(30, 100%, 50%)',
-  personal_best: 'var(--border)',
-  new_track: 'var(--border)',
-  new_car: 'var(--border)',
-  century: 'var(--border)',
-  iron_man: 'hsl(10, 100%, 55%)',
-  heartbreak: 'var(--border)',
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-function groupMomentsByMonth(moments: Moment[]): Map<string, Moment[]> {
-  const grouped = new Map<string, Moment[]>()
-  moments.forEach((moment) => {
-    const date = new Date(moment.date)
-    const key = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-    if (!grouped.has(key)) {
-      grouped.set(key, [])
-    }
-    grouped.get(key)!.push(moment)
-  })
-  return grouped
+function brandLogoSrc(info: BrandInfo): string | null {
+  if (info.logoSvg) return `data:image/svg+xml,${encodeURIComponent(info.logoSvg)}`
+  if (info.logoPng) return `data:image/png;base64,${info.logoPng}`
+  return null
 }
 
 function hasRecentMoments(moments: Moment[]): boolean {
@@ -80,14 +91,165 @@ function hasRecentMoments(moments: Moment[]): boolean {
   return moments.some((m) => new Date(m.date) > sevenDaysAgo)
 }
 
-export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawerProps) {
+function groupMomentsByMonth(moments: Moment[]): Map<string, Moment[]> {
+  const grouped = new Map<string, Moment[]>()
+  moments.forEach((moment) => {
+    const date = new Date(moment.date)
+    const key = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+    if (!grouped.has(key)) grouped.set(key, [])
+    grouped.get(key)!.push(moment)
+  })
+  return grouped
+}
+
+// ── Badge content (context-aware: track map, brand logo, or icon) ────────────
+
+function BadgeContent({ moment, lookups, size }: { moment: Moment; lookups: Lookups; size: 'sm' | 'lg' }) {
+  const accent = ACCENT[moment.type] || '#888'
+  const icon = ICON[moment.type]
+  const tKey = trackKey(moment.trackName)
+  const trackSvgPath = lookups.trackMapLookup[tKey] || null
+  const trackLogoSvg = lookups.trackLogoLookup[tKey] || null
+  const brandInfo = moment.carModel ? lookups.brandLogoLookup[moment.carModel] ?? null : null
+  const logoSrc = brandInfo ? brandLogoSrc(brandInfo) : null
+
+  const isCarMoment = moment.type === 'new_car'
+  const isTrackMoment = moment.type === 'new_track'
+  const tint = `brightness(0) invert(1) drop-shadow(0 0 2px ${accent})`
+  const iconSize = size === 'lg' ? 18 : 14
+  const svgClass = size === 'lg' ? 'w-7 h-7' : 'w-5 h-5'
+  const imgClass = size === 'lg' ? 'w-6 h-6 object-contain' : 'w-5 h-5 object-contain'
+
+  if (isCarMoment && logoSrc) {
+    return <img src={logoSrc} alt="" className={imgClass} style={{ filter: tint, opacity: 0.8 }} />
+  }
+  if (isTrackMoment && trackSvgPath) {
+    return (
+      <svg viewBox="0 0 100 100" className={svgClass} style={{ opacity: 0.8 }}>
+        <path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (trackSvgPath) {
+    return (
+      <svg viewBox="0 0 100 100" className={svgClass} style={{ opacity: 0.8 }}>
+        <path d={trackSvgPath} fill="none" stroke={accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (trackLogoSvg) {
+    return <img src={`data:image/svg+xml,${encodeURIComponent(trackLogoSvg)}`} alt="" className={imgClass} style={{ filter: tint, opacity: 0.8 }} />
+  }
+  if (logoSrc) {
+    return <img src={logoSrc} alt="" className={imgClass} style={{ filter: tint, opacity: 0.8 }} />
+  }
+  return icon ? icon(iconSize) : <Star size={iconSize} />
+}
+
+// ── Highlight card (top moments — rich design) ──────────────────────────────
+
+function HighlightCard({ moment, lookups }: { moment: Moment; lookups: Lookups }) {
+  const accent = ACCENT[moment.type] || '#888'
+  const icon = ICON[moment.type]
+  const bg = HIGHLIGHT_GRADIENT[moment.type] || 'var(--bg-elevated)'
+
+  return (
+    <div
+      className="rounded-xl border p-4 overflow-hidden"
+      style={{ background: bg, borderColor: `${accent}30` }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center mt-0.5"
+          style={{ background: `${accent}20`, color: accent }}
+        >
+          <BadgeContent moment={moment} lookups={lookups} size="lg" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-sm font-bold leading-tight" style={{ color: accent }}>
+              {moment.title}
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-dim)] leading-snug line-clamp-2 mb-1.5">
+            {moment.description}
+          </p>
+          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <span>{formatRelative(moment.date)}</span>
+            {moment.gameName && (
+              <>
+                <span className="opacity-40">·</span>
+                <GameBadge game={moment.gameName} size={10} />
+              </>
+            )}
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-xl font-bold leading-none" style={{ color: accent }}>
+            {moment.significance}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Timeline row (compact, with track/brand context) ─────────────────────────
+
+function TimelineRow({ moment, lookups }: { moment: Moment; lookups: Lookups }) {
+  const accent = ACCENT[moment.type] || '#888'
+
+  return (
+    <div
+      className="relative flex items-center gap-2.5 px-3 py-2 rounded-lg overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${accent}12 0%, ${accent}04 100%)`,
+        border: `1px solid ${accent}20`,
+      }}
+    >
+      <div
+        className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
+        style={{ background: `${accent}18`, color: accent }}
+      >
+        <BadgeContent moment={moment} lookups={lookups} size="sm" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-bold leading-none truncate" style={{ color: accent }}>
+            {moment.title}
+          </span>
+          <span className="text-xs text-[var(--text-muted)] leading-none shrink-0">
+            {formatRelative(moment.date)}
+          </span>
+        </div>
+        <p className="text-xs text-[var(--text-dim)] leading-tight truncate mt-0.5">
+          {moment.description}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Drawer ───────────────────────────────────────────────────────────────────
+
+export default function MomentsDrawer({
+  sessions,
+  ratingHistory,
+  trackMapLookup,
+  trackLogoLookup,
+  trackDisplayNameLookup,
+  brandLogoLookup,
+}: MomentsDrawerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const moments = useMemo(() => detectMoments(sessions, ratingHistory), [sessions, ratingHistory])
 
-  const highlights = moments.slice(0, 5)
-  const grouped = groupMomentsByMonth(moments)
+  // Reverse chronological: newest first
+  const sorted = useMemo(() => [...moments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [moments])
+  const highlights = sorted.slice(0, 5)
+  const grouped = groupMomentsByMonth(sorted)
   const hasRecent = hasRecentMoments(moments)
+  const lookups: Lookups = { trackMapLookup, trackLogoLookup, trackDisplayNameLookup, brandLogoLookup }
 
   useEffect(() => {
     setMounted(true)
@@ -137,86 +299,41 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
             </div>
           )}
 
-          {/* Highlights Section */}
+          {/* Highlights */}
           {highlights.length > 0 && (
             <section className="px-3 py-4">
-              <h3 id="highlights-section" className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
-                Highlights
-              </h3>
-              <div className="space-y-2" aria-labelledby="highlights-section">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy size={16} className="text-[var(--text-secondary)]" />
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+                  Highlights
+                </h3>
+              </div>
+              <div className="space-y-2">
                 {highlights.map((moment, idx) => (
-                  <article
-                    key={idx}
-                    className="rounded-lg border border-l-4 bg-[var(--bg-panel)] p-3 text-xs"
-                    style={{
-                      borderLeftColor: BORDER_COLOR_MAP[moment.type],
-                    }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="flex-shrink-0 text-[var(--text-secondary)] mt-0.5">
-                        {ICON_MAP[moment.type]}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-[var(--text-secondary)] line-clamp-1">
-                          {moment.title}
-                        </h4>
-                        <p className="text-[var(--text-dim)] mt-0.5 line-clamp-2">{moment.description}</p>
-                        <div className="text-[var(--text-muted)] mt-1.5 flex flex-wrap gap-1">
-                          <span>{formatDate(moment.date)}</span>
-                          {moment.carModel && (
-                            <>
-                              <span>•</span>
-                              <Link
-                                href={`/drive/car/${encodeURIComponent(moment.carModel)}`}
-                                className="hover:text-[var(--text-secondary)] transition-colors truncate"
-                              >
-                                {moment.carModel}
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
+                  <HighlightCard key={`hl-${moment.type}-${moment.date}-${idx}`} moment={moment} lookups={lookups} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* Timeline Section */}
+          {/* Timeline */}
           {moments.length > 0 && (
             <section className="px-3 py-4 border-t border-[var(--border)]">
-              <h3 id="timeline-section" className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-3">
-                Timeline
-              </h3>
-              <div className="space-y-4" aria-labelledby="timeline-section">
+              <div className="flex items-center gap-2 mb-3">
+                <Star size={16} className="text-[var(--text-secondary)]" />
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)]" style={{ fontFamily: 'var(--ff-display)' }}>
+                  Timeline
+                </h3>
+              </div>
+              <div className="space-y-4">
                 {Array.from(grouped.entries()).map(([month, monthMoments]) => (
                   <div key={month}>
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">
                       {month}
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {monthMoments.map((moment, idx) => (
-                        <article
-                          key={idx}
-                          className="rounded-lg border border-l-4 border-[var(--border)] bg-[var(--bg-panel)] p-2.5 flex items-start gap-2 text-xs"
-                          style={{
-                            borderLeftColor: BORDER_COLOR_MAP[moment.type],
-                          }}
-                        >
-                          <div className="flex-shrink-0 text-[var(--text-secondary)] mt-0.5">
-                            {ICON_MAP[moment.type]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h5 className="font-semibold text-[var(--text-secondary)] line-clamp-1">
-                              {moment.title}
-                            </h5>
-                            <p className="text-[var(--text-dim)] mt-0.5 line-clamp-2">{moment.description}</p>
-                          </div>
-                          <div className="flex-shrink-0 text-right text-[var(--text-muted)] whitespace-nowrap text-[10px]">
-                            <div>{formatDate(moment.date)}</div>
-                          </div>
-                        </article>
+                        <TimelineRow key={`${moment.type}-${moment.date}-${idx}`} moment={moment} lookups={lookups} />
                       ))}
                     </div>
                   </div>
@@ -225,7 +342,7 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
             </section>
           )}
 
-          {/* View All Link */}
+          {/* View All */}
           {moments.length > 0 && (
             <div className="px-3 py-4 border-t border-[var(--border)]">
               <Link
@@ -244,7 +361,7 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
 
   return (
     <>
-      {/* Trigger Button */}
+      {/* Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center p-2 rounded-md text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors relative flex-shrink-0"
@@ -258,7 +375,6 @@ export default function MomentsDrawer({ sessions, ratingHistory }: MomentsDrawer
         )}
       </button>
 
-      {/* Portal the drawer to document.body to escape header stacking context */}
       {mounted && createPortal(drawerContent, document.body)}
     </>
   )

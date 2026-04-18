@@ -3,6 +3,7 @@ import { db, schema } from '@/db'
 import { eq, desc } from 'drizzle-orm'
 import MomentsDrawer from '@/components/MomentsDrawer'
 import type { SessionRecord, RatingRecord } from '@/lib/moments'
+import type { BrandInfo } from '@/types/brand'
 
 export default async function MomentsDrawerWrapper() {
   const session = await auth()
@@ -31,6 +32,61 @@ export default async function MomentsDrawerWrapper() {
       .where(eq(schema.ratingHistory.userId, dbUser.id))
       .orderBy(desc(schema.ratingHistory.createdAt))
 
+    // ── Build lookups for dashboard-style moment cards ──────────────────
+    const trackMapLookup: Record<string, string> = {}
+    const trackLogoLookup: Record<string, string> = {}
+    const trackDisplayNameLookup: Record<string, string> = {}
+    const brandLogoLookup: Record<string, BrandInfo> = {}
+
+    // Track maps
+    const maps = await db
+      .select({
+        trackName: schema.trackMaps.trackName,
+        svgPath: schema.trackMaps.svgPath,
+        logoSvg: schema.trackMaps.logoSvg,
+        displayName: schema.trackMaps.displayName,
+      })
+      .from(schema.trackMaps)
+
+    maps.forEach((m) => {
+      const key = m.trackName.toLowerCase()
+      trackMapLookup[key] = m.svgPath
+      if (m.logoSvg) trackLogoLookup[key] = m.logoSvg
+      if (m.displayName) trackDisplayNameLookup[key] = m.displayName
+    })
+
+    // Brand logos
+    const uniqueCarModels = [...new Set(sessions.map((s) => s.carModel).filter(Boolean))]
+    if (uniqueCarModels.length > 0) {
+      const brands = await db
+        .select({
+          brandKey: schema.carLogos.brandKey,
+          brandName: schema.carLogos.brandName,
+          logoSvg: schema.carLogos.logoSvg,
+          logoPng: schema.carLogos.logoPng,
+          brandColorHex: schema.carLogos.brandColorHex,
+        })
+        .from(schema.carLogos)
+
+      for (const carModel of uniqueCarModels) {
+        if (!carModel) continue
+        const ml = carModel.toLowerCase()
+        for (const brand of brands) {
+          const bk = brand.brandKey.toLowerCase()
+          const bn = brand.brandName.toLowerCase()
+          if (ml.includes(bk) || ml.includes(bn)) {
+            brandLogoLookup[carModel] = {
+              logoSvg: brand.logoSvg,
+              logoPng: brand.logoPng,
+              brandColorHex: brand.brandColorHex,
+              manufacturerName: brand.brandName,
+            }
+            break
+          }
+        }
+      }
+    }
+
     // Type the sessions and ratingHistory for the client component
     const typedSessions: SessionRecord[] = sessions.map((s) => ({
       id: s.id,
@@ -52,9 +108,17 @@ export default async function MomentsDrawerWrapper() {
       createdAt: r.createdAt,
     }))
 
-    return <MomentsDrawer sessions={typedSessions} ratingHistory={typedRatingHistory} />
+    return (
+      <MomentsDrawer
+        sessions={typedSessions}
+        ratingHistory={typedRatingHistory}
+        trackMapLookup={trackMapLookup}
+        trackLogoLookup={trackLogoLookup}
+        trackDisplayNameLookup={trackDisplayNameLookup}
+        brandLogoLookup={brandLogoLookup}
+      />
+    )
   } catch {
-    // If there's any error, just return null (no drawer shown)
     return null
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Radio, Sun } from 'lucide-react'
+import { Radio } from 'lucide-react'
 
 interface RatingEntry {
   category: string
@@ -20,11 +20,6 @@ interface RatingHistoryPoint {
   createdAt: string
 }
 
-interface WhenInsight {
-  type: 'positive' | 'negative' | 'neutral'
-  text: string
-}
-
 interface DataStripProps {
   displayName: string
   raceCount: number
@@ -32,7 +27,6 @@ interface DataStripProps {
   iRatingByCategory: RatingEntry[]
   safetyRatingByCategory: SafetyEntry[]
   iRatingHistory: RatingHistoryPoint[]
-  insights: WhenInsight[]
   careerSpan: string | null
   uniqueGames: number
   uniqueTracks: number
@@ -70,7 +64,7 @@ function Separator() {
 function Stat({ label, value, mono = true }: { label: string; value: string | number; mono?: boolean }) {
   return (
     <div className="flex flex-col items-left gap-0.5 px-3" style={{color: 'var(--text-secondary)'}} aria-label={`${label}: ${typeof value === 'number' ? value.toLocaleString() : value}`}>
-      <span className="text-xs uppercase tracking-wider leading-none" style={{color: 'var(--text-muted)'}}>{label}</span>
+      <span className="uppercase tracking-wider leading-none" style={{fontSize: 12, fontWeight: 300, color: 'var(--text-muted)'}}>{label}</span>
       <span
         className="text-xs font-bold leading-none"
         style={mono ? { fontFamily: 'var(--ff-mono)' } : undefined}
@@ -117,10 +111,10 @@ function Sparkline({ points, color, label, current, sr }: {
     : `${pathD} L${(SPARK_W - SPARK_PAD).toFixed(1)},${SPARK_H} L${SPARK_PAD},${SPARK_H} Z`
 
   return (
-    <div className="flex items-center gap-2 px-3 shrink-0" style={{ width: SPARK_W + 100, color: 'var(--text-secondary)' }} aria-label={`${label}: ${current.toLocaleString()}${sr ? ` Safety Rating ${sr.license}${sr.safetyRating}` : ''}`}>
+    <div className="flex items-center gap-2 px-3 min-w-0 flex-1" style={{ color: 'var(--text-secondary)' }} aria-label={`${label}: ${current.toLocaleString()}${sr ? ` Safety Rating ${sr.license}${sr.safetyRating}` : ''}`}>
       {/* Label + value */}
-      <div className="flex flex-col gap-0.5 shrink-0 min-w-[70px]">
-        <span className="text-xs uppercase tracking-wider leading-none"  style={{color: 'var(--text-muted)'}}>
+      <div className="flex flex-col gap-0.5 shrink-0">
+        <span className="uppercase tracking-wider leading-none" style={{fontSize: 12, fontWeight: 300, color: 'var(--text-muted)'}}>
           {label}
         </span>
         <div className="flex items-center gap-1">
@@ -140,10 +134,10 @@ function Sparkline({ points, color, label, current, sr }: {
 
       {/* SVG sparkline */}
       <svg
-        width={SPARK_W}
         height={SPARK_H}
         viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-        className="shrink-0"
+        preserveAspectRatio="none"
+        className="flex-1 min-w-0"
         style={{ opacity: 0.9 }}
         aria-hidden="true"
       >
@@ -170,7 +164,6 @@ export default function DataStrip({
   iRatingByCategory,
   safetyRatingByCategory,
   iRatingHistory,
-  insights,
   careerSpan,
   uniqueGames,
   uniqueTracks,
@@ -193,14 +186,14 @@ export default function DataStrip({
 
   return (
     <div
-      className="border-b absolute left-0 right-0 z-20 backdrop-blur-md"
+      className="border-b absolute left-0 right-0 z-20 backdrop-blur-md transition-all duration-300 opacity-50 grayscale hover:opacity-100 hover:grayscale-0"
       style={{
         background: 'var(--bg-surface)',
         borderColor: 'var(--border-accent)',
         top: 'var(--header-h)',
       }}
     >
-      <div className="max-w-[120rem] mx-auto px-6 flex items-center justify-start gap-0 py-2.5 overflow-x-auto">
+      <div className="max-w-[120rem] mx-auto px-4 flex items-center justify-start gap-0 py-2.5 overflow-x-auto">
         <Stat label="Races" value={raceCount} />
         <Separator />
         <Stat label="Laps" value={totalLaps} />
@@ -259,30 +252,6 @@ export default function DataStrip({
           </>
         )}
 
-        {/* Insights */}
-        {insights.length > 0 && (
-          <>
-            <Separator />
-            <div className="flex items-center gap-2 px-3 shrink-0 color">
-              {insights.map((insight, i) => (
-                <div key={i} className="flex items-center gap-1.5 shrink-0">
-                  <Sun
-                    size={12}
-                    style={{
-                      color: insight.type === 'positive'
-                        ? 'hsl(142, 50%, 45%)'
-                        : insight.type === 'negative'
-                          ? 'hsl(0, 60%, 45%)'
-                          : 'hsl(0, 0%, 45%)',
-                    }}
-                  />
-                  <span className="text-sm whitespace-nowrap">{insight.text}</span>
-                  {i < insights.length - 1 && <span className=" mx-1">·</span>}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
       </div>
     </div>
   )

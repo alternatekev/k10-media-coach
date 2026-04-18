@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { LogOut, ChevronDown, Upload, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react'
-import ThemeToggle from '@/components/ThemeToggle'
 import ThemeSetSelector from '@/components/ThemeSetSelector'
 
 // ── Import Overlay ──────────────────────────────────────────────────────────
@@ -43,7 +42,7 @@ function ImportOverlay({ phase, message, onDismiss }: {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'rgba(0, 0, 0, 0.75)',
+        background: 'var(--bg-panel, #1a1a1a)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
@@ -52,8 +51,9 @@ function ImportOverlay({ phase, message, onDismiss }: {
     >
       <div
         style={{
-          background: 'var(--bg-elevated, #1a1a1a)',
+          background: 'var(--bg-panel, #1a1a1a)',
           border: '1px solid var(--border)',
+          backdropFilter: 'blur(8px)',
           borderRadius: 16,
           padding: '40px 48px',
           minWidth: 400,
@@ -270,7 +270,8 @@ export default function UserMenu({ user, signOutAction }: UserMenuProps) {
             top: 'calc(100% + 4px)',
             right: 0,
             minWidth: 220,
-            background: 'var(--bg-elevated, var(--bg-panel))',
+            background: 'var(--bg-surface)',
+            backdropFilter: 'blur(8px)',
             border: '1px solid var(--border)',
             borderRadius: 8,
             boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2)',
@@ -285,7 +286,6 @@ export default function UserMenu({ user, signOutAction }: UserMenuProps) {
             </div>
             <div className="flex flex-col gap-2">
               <ThemeSetSelector />
-              <ThemeToggle />
             </div>
           </div>
 

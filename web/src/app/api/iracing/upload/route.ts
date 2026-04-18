@@ -45,6 +45,12 @@ function jsonWithCors(request: NextRequest, data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: corsHeaders(request) })
 }
 
+/** Time attacks / time trials report license_level as 1 (Rookie) regardless of actual license. */
+function isTimeTrialEvent(race: Record<string, unknown>): boolean {
+  const t = String(race.event_type_name || race.event_type || race.sessionType || '').toLowerCase()
+  return t.includes('time trial') || t.includes('time_trial') || t.includes('timetrial') || t.includes('lone qual')
+}
+
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session?.user) {
@@ -243,6 +249,9 @@ export async function POST(request: NextRequest) {
     if (Array.isArray(recentRaces)) {
       for (const race of recentRaces) {
         try {
+          // Time trials report license_level as 1 regardless of actual license — skip entirely
+          if (isTimeTrialEvent(race as Record<string, unknown>)) continue
+
           const postIR = race.newi_rating ?? race.new_irating ?? 0
           if (postIR <= 0) continue
 
@@ -350,6 +359,7 @@ export async function POST(request: NextRequest) {
         return tb - ta
       })
       for (const race of sorted) {
+        if (isTimeTrialEvent(race as Record<string, unknown>)) continue // time trials report bogus license data
         const category = detectCategoryFromRace(race)
         if (categoryRatings.has(category)) continue // career summary takes precedence
         const postIR = race.newi_rating ?? race.new_irating ?? 0

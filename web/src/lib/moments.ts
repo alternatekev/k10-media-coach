@@ -48,6 +48,7 @@ export interface RatingRecord {
   prevIRating: number
   prevLicense?: string
   license: string
+  sessionType?: string
   createdAt: Date
 }
 
@@ -79,8 +80,11 @@ export function detectMoments(
     })
   })
 
-  // license_promotion
+  // license_promotion (skip time trials — they report bogus license data)
   ratingHistory.forEach((record) => {
+    const st = (record.sessionType || '').toLowerCase()
+    const isTT = st.includes('time trial') || st.includes('time_trial') || st.includes('timetrial') || st.includes('lone qual')
+    if (isTT) return
     if (record.prevLicense && record.prevLicense !== record.license) {
       const prevIdx = LICENSE_ORDER.indexOf(record.prevLicense)
       const currIdx = LICENSE_ORDER.indexOf(record.license)
