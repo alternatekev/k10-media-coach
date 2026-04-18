@@ -1171,6 +1171,18 @@ namespace RaceCorProDrive.Plugin
                         continue;
                     }
 
+                    if (action == "listSerialPortDiagnostic" && _mozaSerial != null)
+                    {
+                        string json = _mozaSerial.GetSerialPortDiagnosticJson();
+                        byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(json);
+                        ctx.Response.ContentType = "application/json";
+                        ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                        ctx.Response.StatusCode = 200;
+                        ctx.Response.OutputStream.Write(resultBytes, 0, resultBytes.Length);
+                        ctx.Response.OutputStream.Close();
+                        continue;
+                    }
+
                     // ── iRacing Data API — career history import ─────────────
                     if (action == "iracingImport")
                     {

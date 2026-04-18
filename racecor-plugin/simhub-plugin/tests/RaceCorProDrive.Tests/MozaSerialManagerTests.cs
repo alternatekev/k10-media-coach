@@ -460,5 +460,73 @@ namespace RaceCorProDrive.Tests
                 _manager.Dispose();
             }, "Multiple Stop/Dispose calls should be safe");
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 11: GetSerialPortDiagnosticJson — System with no Moza hardware
+        //  Verify that diagnostic returns valid JSON without throwing.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Test]
+        public void GetSerialPortDiagnosticJson_NoMozaHardware_ReturnsValidJson()
+        {
+            // Call diagnostic on a system that likely has no Moza hardware
+            // (or may have real ports, but we just verify the JSON is valid and not null)
+            string diagnosticJson = _manager.GetSerialPortDiagnosticJson();
+
+            // Should return non-empty JSON string
+            Assert.That(diagnosticJson, Is.Not.Null.And.Not.Empty,
+                "GetSerialPortDiagnosticJson should return a non-empty JSON string");
+
+            // Parse as JSON to verify it's valid
+            var parsed = Newtonsoft.Json.Linq.JObject.Parse(diagnosticJson);
+
+            // Top-level keys should exist
+            Assert.That(parsed["timestamp"], Is.Not.Null, "JSON should have 'timestamp' field");
+            Assert.That(parsed["ports"], Is.Not.Null, "JSON should have 'ports' field");
+
+            // Ports should be an array (possibly empty)
+            var ports = parsed["ports"] as Newtonsoft.Json.Linq.JArray;
+            Assert.That(ports, Is.Not.Null, "'ports' should be a JSON array");
+
+            // Each port entry should have expected fields (even if values are null)
+            foreach (var portEntry in ports)
+            {
+                Assert.That(portEntry["portName"], Is.Not.Null, "Each port should have 'portName'");
+                Assert.That(portEntry["usbDescription"], Is.Not.Null, "Each port should have 'usbDescription'");
+                Assert.That(portEntry["classification"], Is.Not.Null, "Each port should have 'classification'");
+                Assert.That(portEntry["portOpenStatus"], Is.Not.Null, "Each port should have 'portOpenStatus'");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 12: GetSerialPortDiagnosticJson — Comprehensive field validation
+        //  Verify that each port diagnostic includes all expected fields.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Test]
+        public void GetSerialPortDiagnosticJson_FieldsPresent()
+        {
+            string diagnosticJson = _manager.GetSerialPortDiagnosticJson();
+            var parsed = Newtonsoft.Json.Linq.JObject.Parse(diagnosticJson);
+
+            // Check summary-level fields
+            Assert.That(parsed["timestamp"], Is.Not.Null, "Should have timestamp");
+            Assert.That(parsed["totalPorts"], Is.Not.Null, "Should have totalPorts count");
+            Assert.That(parsed["matchedDevices"], Is.Not.Null, "Should have matchedDevices dictionary");
+            Assert.That(parsed["ports"], Is.Not.Null, "Should have ports array");
+
+            // If there are ports, check their structure
+            var ports = parsed["ports"] as Newtonsoft.Json.Linq.JArray;
+            if (ports != null && ports.Count > 0)
+            {
+                var firstPort = ports[0];
+                Assert.That(firstPort["portName"], Is.Not.Null, "Port should have portName");
+                Assert.That(firstPort["usbDescription"], Is.Not.Null, "Port should have usbDescription");
+                Assert.That(firstPort["classification"], Is.Not.Null, "Port should have classification");
+                Assert.That(firstPort["matchedViaFallback"], Is.Not.Null, "Port should have matchedViaFallback boolean");
+                Assert.That(firstPort["portOpenStatus"], Is.Not.Null, "Port should have portOpenStatus");
+                Assert.That(firstPort["pollStatus"], Is.Not.Null, "Port should have pollStatus");
+            }
+        }
     }
 }

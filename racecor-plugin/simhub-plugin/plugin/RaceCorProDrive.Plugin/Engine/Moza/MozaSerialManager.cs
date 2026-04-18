@@ -270,6 +270,182 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
             return JsonConvert.SerializeObject(w);
         }
 
+        /// <summary>
+        /// Diagnostic endpoint: returns detailed information about all COM ports detected on the system,
+        /// their USB descriptions, regex matches, and classification attempts.
+        /// Useful for debugging device detection when hardware is connected but not recognized.
+        /// </summary>
+        public string GetSerialPortDiagnosticJson()
+        {
+            var portDiagnostics = new List<object>();
+            var portDescriptions = GetUsbSerialDescriptions();
+            var allPortNames = SerialPort.GetPortNames() ?? new string[0];
+
+            foreach (var portName in allPortNames)
+            {
+                string usbDescription = "";
+                if (portDescriptions.TryGetValue(portName, out string desc))
+                    usbDescription = desc;
+
+                // Perform classification — mirroring ClassifyDevice behavior
+                var classification = ClassifyDevice(usbDescription);
+                string classificationResult = "NoMatch";
+                bool matchedViaFallback = false;
+
+                if (classification != null)
+                {
+                    classificationResult = classification.Value.type.ToString();
+                    if (classification.Value.type == MozaDeviceRegistry.MozaDeviceType.Unknown)
+                    {
+                        matchedViaFallback = true;
+                    }
+                }
+
+                // Determine regex match details
+                object regexMatch = null;
+                int patternIndex = 0;
+                foreach (var pattern in MozaDeviceRegistry.UsbPatterns)
+                {
+                    if (pattern.Pattern.IsMatch(usbDescription))
+                    {
+                        // Report the pattern index and type (including which pass it matched on)
+                        if (pattern.DeviceType != MozaDeviceRegistry.MozaDeviceType.Unknown)
+                        {
+                            regexMatch = new
+                            {
+                                deviceType = pattern.DeviceType.ToString(),
+                                subType = pattern.SubType ?? "",
+                                patternIndex = patternIndex,
+                                matchedViaFallback = false
+                            };
+                            break;
+                        }
+                        // Don't assign Unknown match yet — check if other patterns match first
+                    }
+                    patternIndex++;
+                }
+
+                // If nothing matched specific patterns, check the fallback
+                if (regexMatch == null)
+                {
+                    var fallbackPattern = MozaDeviceRegistry.UsbPatterns
+                        .FirstOrDefault(p => p.DeviceType == MozaDeviceRegistry.MozaDeviceType.Unknown);
+                    if (fallbackPattern != null && fallbackPattern.Pattern.IsMatch(usbDescription))
+                    {
+                        regexMatch = new
+                        {
+                            deviceType = "Unknown",
+                            subType = "",
+                            patternIndex = System.Array.IndexOf(MozaDeviceRegistry.UsbPatterns, fallbackPattern),
+                            matchedViaFallback = true
+                        };
+                    }
+                }
+
+                // Check port open status
+                string portOpenStatus = "NotAttempted";
+                string portOpenError = "";
+                if (_ports.TryGetValue(portName, out var existingPort))
+                {
+                    portOpenStatus = "AlreadyOpen";
+                }
+                else
+                {
+                    // Attempt to open the port briefly to test access
+                    try
+                    {
+                        var testPort = new SerialPort(portName, BaudRate, SerialParity, DataBits, SerialStopBits)
+                        {
+                            ReadTimeout = ReadTimeoutMs,
+                            WriteTimeout = WriteTimeoutMs,
+                            Handshake = Handshake.None
+                        };
+                        testPort.Open();
+                        testPort.Close();
+                        testPort.Dispose();
+                        portOpenStatus = "Open";
+                    }
+                    catch (System.IO.IOException ex)
+                    {
+                        portOpenStatus = "AccessDenied";
+                        portOpenError = ex.Message;
+                    }
+                    catch (System.IO.FileNotFoundException)
+                    {
+                        portOpenStatus = "NotFound";
+                    }
+                    catch (Exception ex)
+                    {
+                        portOpenStatus = "OtherError";
+                        portOpenError = ex.Message;
+                    }
+                }
+
+                // Check poll status for already-known devices
+                string pollStatus = "Unknown";
+                if (_devices.TryGetValue(portName, out var device))
+                {
+                    if (device.IsConnected)
+                    {
+                        pollStatus = device.FailureCount > 0 ? "ConnectedNoResponse" : "ConnectedPolling";
+                    }
+                    else
+                    {
+                        pollStatus = "Disconnected";
+                    }
+                }
+
+                var diagnostic = new
+                {
+                    portName = portName,
+                    usbDescription = usbDescription,
+                    regexMatch = regexMatch,
+                    classification = classificationResult,
+                    matchedViaFallback = matchedViaFallback,
+                    portOpenStatus = portOpenStatus,
+                    portOpenError = string.IsNullOrEmpty(portOpenError) ? null : portOpenError,
+                    pollStatus = pollStatus
+                };
+
+                portDiagnostics.Add(diagnostic);
+            }
+
+            // Count matched devices by type
+            var matchedCount = new Dictionary<string, int>();
+            var unmatchedMozaDescriptors = new List<string>();
+
+            foreach (var diag in portDiagnostics)
+            {
+                var diagObj = (dynamic)diag;
+                string classif = diagObj.classification;
+
+                if (classif != "NoMatch")
+                {
+                    if (!matchedCount.ContainsKey(classif))
+                        matchedCount[classif] = 0;
+                    matchedCount[classif]++;
+
+                    if (diagObj.matchedViaFallback)
+                    {
+                        unmatchedMozaDescriptors.Add($"{diagObj.portName} ({diagObj.usbDescription})");
+                    }
+                }
+            }
+
+            // Build summary
+            var summary = new
+            {
+                timestamp = DateTime.UtcNow.ToString("o"),
+                totalPorts = allPortNames.Length,
+                matchedDevices = matchedCount,
+                unmatchedMozaDevices = unmatchedMozaDescriptors,
+                pitHouseWarning = string.IsNullOrEmpty(PitHouseWarning) ? null : PitHouseWarning,
+                ports = portDiagnostics
+            };
+
+            return JsonConvert.SerializeObject(summary, Formatting.Indented);
+        }
+
         // ═══════════════════════════════════════════════════════════════
         //  MAIN POLL LOOP (background thread)
         // ═══════════════════════════════════════════════════════════════
@@ -349,6 +525,10 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                 // Query WMI for USB serial device descriptions
                 var portDescriptions = GetUsbSerialDescriptions();
 
+                int discoveryMatchedCount = 0;
+                var discoveryMatchesByType = new Dictionary<string, int>();
+                var discoveryUnmatchedMozaDescriptors = new List<string>();
+
                 foreach (var portName in portNames)
                 {
                     // Skip already-known connected ports
@@ -362,8 +542,15 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                     var match = ClassifyDevice(description);
                     if (match == null) continue;
 
+                    discoveryMatchedCount++;
+                    string typeStr = match.Value.type.ToString();
+                    if (!discoveryMatchesByType.ContainsKey(typeStr))
+                        discoveryMatchesByType[typeStr] = 0;
+                    discoveryMatchesByType[typeStr]++;
+
                     if (match.Value.type == MozaDeviceRegistry.MozaDeviceType.Unknown)
                     {
+                        discoveryUnmatchedMozaDescriptors.Add($"{portName} ({description})");
                         _logWarn($"[MozaSerial] Detected Moza device on {portName} but could not determine specific type — USB descriptor: \"{description}\". Device will be tracked but not polled for settings.");
                     }
 
@@ -384,6 +571,31 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                             _logInfo($"[MozaSerial] Discovered: {device.DisplayName} ({description})");
                         }
                     }
+                }
+
+                // Emit diagnostic summary if any Moza-like devices were detected
+                if (discoveryMatchedCount > 0)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("[MozaSerial] DIAGNOSTIC:");
+                    sb.AppendLine($"  Total ports: {portNames.Length}, Matched Moza devices: {discoveryMatchedCount}");
+                    foreach (var kvp in discoveryMatchesByType)
+                    {
+                        sb.AppendLine($"    {kvp.Key}: {kvp.Value}");
+                    }
+                    if (discoveryUnmatchedMozaDescriptors.Count > 0)
+                    {
+                        sb.AppendLine("  Unmatched Moza-looking (fallback only):");
+                        foreach (var desc in discoveryUnmatchedMozaDescriptors)
+                        {
+                            sb.AppendLine($"    {desc}");
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(PitHouseWarning))
+                    {
+                        sb.AppendLine($"  Pit House Warning: {PitHouseWarning}");
+                    }
+                    _logInfo(sb.ToString());
                 }
             }
             catch (Exception ex)
