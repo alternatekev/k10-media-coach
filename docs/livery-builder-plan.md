@@ -45,7 +45,7 @@ Two mitigations:
 
 Two surfaces, shared code where it makes sense, split along what touches local iRacing files.
 
-### Web app (`web/`) — 2D-only by design
+### Web app (closed repo `racecor-prodrive-server`, `apps/web/`) — 2D-only by design
 
 Pure 2D paint editor. Works standalone without the overlay installed. Handles:
 
@@ -118,10 +118,10 @@ Do not pursue server-hosted extracted meshes. Ever. Regardless of source visibil
 
 From the scoping pass:
 
-- **Auth & session** — Discord OAuth in `web/` is already wired up.
+- **Auth & session** — Discord OAuth in the closed `racecor-prodrive-server` repo's `apps/web/` is already wired up.
 - **Persistence patterns** — Drizzle + Neon for project metadata follows existing patterns.
-- **TokenEditor admin UI** — the existing theme/token editor in `web/` is a decent reference for the kind of visual editor we'd build. Same React 19 + Tailwind 4 stack.
-- **Vercel Blob storage** — already used for image uploads elsewhere in `web/`.
+- **TokenEditor admin UI** — the existing theme/token editor in the closed `racecor-prodrive-server` repo's `apps/web/` is a decent reference for the kind of visual editor we'd build. Same React 19 + Tailwind 4 stack.
+- **Vercel Blob storage** — already used for image uploads elsewhere in the closed `racecor-prodrive-server` repo's `apps/web/`.
 - **Electron IPC & path detection** — the overlay already has main/renderer IPC, preload context bridge, settings persistence, and path detection logic for SimHub and Pit House. The `MeshReader` module slots into this existing pattern.
 
 What we don't have (greenfield):
@@ -144,7 +144,7 @@ What we don't have (greenfield):
 Sketch Phase 1 in more detail:
 
 1. Data model (Drizzle schema for projects, layers, decals).
-2. Route layout in `web/src/app/` for the editor.
+2. Route layout in `apps/web/src/app/` (closed `racecor-prodrive-server` repo) for the editor.
 3. Canvas rendering approach for the template overlay.
 4. Mirror-logo math — pin down the coordinate transform for UV-space mirroring with order reversal.
 5. TGA export — validate the format against a known-good iRacing paint to make sure byte layout matches.
