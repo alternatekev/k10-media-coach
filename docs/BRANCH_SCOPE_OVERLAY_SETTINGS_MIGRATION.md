@@ -40,16 +40,17 @@ Both repos get a matching `feat/overlay-settings-migration` branch.
 - [x] **isInRace signal** — compute in `poll-engine.js`, emit via preload, consume in main
 - [x] **preload.js** — `notifyInRaceState` / `onInRaceState` / `getInRaceState`
 - [x] **main.js** — web-app window is the default; overlay created hidden; `notify-in-race-state` toggles visibility; green-screen mode bypasses inversion
-- [x] **Web types** — `src/types/overlay-settings.ts` (all ~45 keys + literal-union types)
-- [x] **Web hooks** — `useElectronBridge.ts` checks `window.k10`; `useOverlaySettings.ts` loads + saves with optimistic apply and rollback
-- [x] **Web route skeleton** — `/drive/admin/overlay-settings/page.tsx` + `OverlaySettingsForm` container
-- [x] **AdminNav** — conditional "Overlay" tab when `hasBridge`
+- [x] **Web types** — `src/types/overlay-settings.ts` (closed repo, merged via PR #1)
+- [x] **Web hooks** — `useElectronBridge.ts` + `useOverlaySettings.ts` (closed repo)
+- [x] **Web route skeleton** — `/drive/admin/overlay-settings/page.tsx` + `OverlaySettingsForm` container (closed repo)
+- [x] **AdminNav** — conditional "Overlay" tab when `hasBridge` (closed repo)
+- [x] **Dashboard-window preload + UA tag** — `main.js` dashboard BrowserWindow now loads `preload.js` and tags its UA with `RaceCor/<version>` so `useElectronBridge` flips `hasBridge` true. Without this the tab was hidden even when Phase B was fully shipped.
 
 ### Phase B — Section components ✅
 
 All nine sections wired against the shared form primitives
 (`fields/Toggle`, `NumberField`, `TextField`, `SelectField`, `RadioGroup`,
-`SliderField`, `FieldRow`):
+`SliderField`, `FieldRow`) — closed repo, merged via PR #1:
 
 - [x] DashboardModules (13 toggles)
 - [x] VisualEffects (preset + theme + ambient + 8 effect toggles)
@@ -61,23 +62,51 @@ All nine sections wired against the shared form primitives
 - [x] RaceRules (incident thresholds, flag override)
 - [x] Modes (rally, drive)
 
+### Phase B′ — Remaining web-side sections (scope expansion)
+
+Post-beta decision (Apr 2026): move **all** settings to the web admin. The
+overlay becomes a pure race view with zero configuration UI. Sections previously
+scoped to stay in the overlay (Connections/Moza/Recording/Keys) now move too —
+see "Architecture notes → Electron-only sections" for why this works.
+
+New sections to land in the closed repo (`racecor-prodrive-server`):
+
+- [ ] **SimHub** — URL field + live connection status indicator (replaces the Connections card's SimHub row). Electron-only.
+- [ ] **Moza** — full hardware control UI (ported from `settingsTabMozaHardware` in `dashboard.html`). Talks to SimHub HTTP action endpoints, so no extra preload plumbing needed — just bridge-gated. Electron-only.
+- [ ] **Recording** — capture/mic/game-audio/facecam/output/smart-recording/replay-buffer/replay-director/hotkeys (ported from `settingsTabRecording`). Requires exposing ffmpeg + `enumerateDevices` via the web app's preload. Electron-only.
+- [ ] **Keys** — reference card for global hotkeys (ported from `settingsTabKeys`). No bridge needed; display-only.
+- [ ] **Commentary** — prompt duration, show-topic-title, event-only mode, four category toggles, driver first/last name, commentary demo mode (ported from `settingsTabCommentary`).
+- [ ] **System** — Green Screen Mode toggle (applied on next launch). Force-Flag is already covered by `RaceRules.flagOverride`.
+
+Connections that are **removed outright** (not migrated):
+
+- [ ] **Discord** card — sign-in lives in the regular web browser flow; no in-app card needed.
+- [ ] **Remote Dashboard** — dropped; the web app itself replaces the remote-view use case.
+- [ ] **Network Debug Console** (in the Connections panel) — dropped or moved to a dev-only System sub-section.
+
 ### Phase C — Beta cycle (run both UIs side-by-side)
 
 Decision: keep the legacy overlay settings panel in place for one beta cycle so
 users can fall back if the web admin surface has rough edges. Migration of the
-actual cleanup is deferred to a follow-up branch after beta feedback lands.
+actual cleanup is deferred to Phase C′.
 
 - [x] Add "Settings have moved" banner at the top of the overlay settings panel
 - [x] Banner "Open web admin" button calls `k10.openDashboard('/drive/admin/overlay-settings')`
 - [x] `openDashboard(path)` accepts an optional route so we can deep-link into the new settings page
 - [ ] Collect beta feedback on web admin UX (naming, grouping, missing fields)
 
-### Phase C′ — Overlay cleanup (after beta)
+### Phase C′ — Overlay cleanup (after Phase B′ and beta)
 
-- [ ] Remove settings sections from `dashboard.html` (keep Connections / Moza / Recording)
-- [ ] Gut `settings.js` (keep quick-settings strip only)
-- [ ] Build quick-settings strip (visualPreset, zoom, webGL, leaderboard/commentary quick toggles)
-- [ ] Replace overlay "Settings" button with a direct `k10.openDashboard('/drive/admin/overlay-settings')` call
+Revised scope: remove **all** settings UI from the overlay. The overlay becomes
+read-only in-race view only — no tabs, no sidebar, no settings panel at all.
+
+- [ ] Remove `#settingsOverlay` / `#settingsPanel` block entirely from `dashboard.html` (lines ~939–1770)
+- [ ] Delete `modules/js/settings.js` (replace with a tiny stub that no-ops the `toggleSettings()` global if anything still calls it)
+- [ ] Remove `Ctrl+Shift+S` hotkey or repurpose it to focus the web admin window
+- [ ] Remove the overlay Settings icon/button from the HUD chrome (whatever invokes `toggleSettings()`)
+- [ ] Decide: keep a tiny in-race quick-settings strip (visualPreset, zoom, webGL) or drop entirely. Default: **drop entirely** — user alt-tabs to the web admin window.
+- [ ] Remove the "Settings have moved" banner (no longer needed; no settings panel to show it in)
+- [ ] Remove `preload.js` / `main.js` IPC that exclusively served the old settings panel (audit for dead channels)
 
 ### Phase D — Verification
 
