@@ -278,14 +278,22 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
         public string GetSerialPortDiagnosticJson()
         {
             var portDiagnostics = new List<object>();
-            var portDescriptions = GetUsbSerialDescriptions();
+            var portWmiInfo = GetUsbPortWmiInfo();
             var allPortNames = SerialPort.GetPortNames() ?? new string[0];
 
             foreach (var portName in allPortNames)
             {
                 string usbDescription = "";
-                if (portDescriptions.TryGetValue(portName, out string desc))
-                    usbDescription = desc;
+                string hardwareId = "";
+                string vid = "";
+                string pid = "";
+                if (portWmiInfo.TryGetValue(portName, out PortWmiInfo wmi))
+                {
+                    usbDescription = wmi.Description;
+                    hardwareId = wmi.HardwareId;
+                    vid = wmi.Vid;
+                    pid = wmi.Pid;
+                }
 
                 // Perform classification — mirroring ClassifyDevice behavior
                 var classification = ClassifyDevice(usbDescription);
@@ -399,6 +407,9 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                 {
                     portName = portName,
                     usbDescription = usbDescription,
+                    hardwareId = hardwareId,
+                    vid = vid,
+                    pid = pid,
                     regexMatch = regexMatch,
                     classification = classificationResult,
                     matchedViaFallback = matchedViaFallback,
@@ -610,12 +621,44 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
         /// </summary>
         private Dictionary<string, string> GetUsbSerialDescriptions()
         {
+            var rich = GetUsbPortWmiInfo();
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in rich)
+            {
+                result[kvp.Key] = kvp.Value.Description;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Per-port WMI data. Richer than GetUsbSerialDescriptions — includes
+        /// the raw HardwareID plus extracted USB VID/PID, which the diagnostic
+        /// surfaces so users whose devices come back with generic/empty
+        /// descriptions (no "Gudsen"/"MOZA" substring) can still be identified
+        /// by vendor/product ID.
+        /// </summary>
+        private class PortWmiInfo
+        {
+            public string Description { get; set; } = "";
+            public string HardwareId { get; set; } = "";
+            public string Vid { get; set; } = "";  // 4-char hex, no prefix (e.g. "346E")
+            public string Pid { get; set; } = "";  // 4-char hex, no prefix
+        }
+
+        /// <summary>
+        /// Like GetUsbSerialDescriptions but also pulls HardwareID/VID/PID. The
+        /// discovery path (ClassifyDevice) still uses the plain description
+        /// dictionary to keep the string-match classifier untouched; only the
+        /// diagnostic JSON reads the richer data.
+        /// </summary>
+        private Dictionary<string, PortWmiInfo> GetUsbPortWmiInfo()
+        {
+            var result = new Dictionary<string, PortWmiInfo>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
                 using (var searcher = new ManagementObjectSearcher(
-                    "SELECT Name, Description, Manufacturer FROM Win32_PnPEntity WHERE Name LIKE '%(COM%'"))
+                    "SELECT Name, Description, Manufacturer, HardwareID FROM Win32_PnPEntity WHERE Name LIKE '%(COM%'"))
                 {
                     foreach (ManagementObject obj in searcher.Get())
                     {
@@ -623,15 +666,36 @@ namespace RaceCorProDrive.Plugin.Engine.Moza
                         string desc = obj["Description"]?.ToString() ?? "";
                         string manufacturer = obj["Manufacturer"]?.ToString() ?? "";
 
+                        // HardwareID in WMI is typically a string[] — the first entry
+                        // holds the VID/PID token (e.g. "USB\VID_346E&PID_0005&REV_0100").
+                        // Join all entries so downstream matching never loses data.
+                        string hardwareId = "";
+                        if (obj["HardwareID"] is string[] hids && hids.Length > 0)
+                        {
+                            hardwareId = string.Join(";", hids);
+                        }
+                        else
+                        {
+                            hardwareId = obj["HardwareID"]?.ToString() ?? "";
+                        }
+
                         // Extract COM port number from name like "Gudsen MOZA R9 Base (COM3)"
                         var comMatch = Regex.Match(name, @"\(COM(\d+)\)");
-                        if (comMatch.Success)
+                        if (!comMatch.Success) continue;
+
+                        string portName = "COM" + comMatch.Groups[1].Value;
+                        string fullDesc = $"{manufacturer} {name} {desc}".Trim();
+
+                        var vidMatch = Regex.Match(hardwareId, @"VID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
+                        var pidMatch = Regex.Match(hardwareId, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
+
+                        result[portName] = new PortWmiInfo
                         {
-                            string portName = "COM" + comMatch.Groups[1].Value;
-                            // Combine all available info for pattern matching
-                            string fullDesc = $"{manufacturer} {name} {desc}".Trim();
-                            result[portName] = fullDesc;
-                        }
+                            Description = fullDesc,
+                            HardwareId = hardwareId,
+                            Vid = vidMatch.Success ? vidMatch.Groups[1].Value.ToUpperInvariant() : "",
+                            Pid = pidMatch.Success ? pidMatch.Groups[1].Value.ToUpperInvariant() : "",
+                        };
                     }
                 }
             }
