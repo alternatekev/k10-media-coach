@@ -27,7 +27,7 @@ dist/
 racecor-plugin/build/
 
 # ── Claude / MCP config (may contain API tokens) ─────────────────
-.claude/
+.claude/*
 # Project-wide plugin enablement is committed; local overrides stay ignored.
 !.claude/settings.json
 .vercel
