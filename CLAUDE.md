@@ -6,7 +6,7 @@ Common entry points:
 - Repo overview: [`agents/prodrive-plugin/CLAUDE.md`](agents/prodrive-plugin/CLAUDE.md)
 - Cross-repo context: [`agents/prodrive-context/`](agents/prodrive-context/)
 - SimHub plugin context: [`agents/prodrive-plugin/racecor-plugin/CLAUDE.md`](agents/prodrive-plugin/racecor-plugin/CLAUDE.md)
-- Skills: [`agents/prodrive-plugin/.skills/`](agents/prodrive-plugin/.skills/)
+- Skills: installed via the `prodrive-knowledge` plugin (run `/plugin` to inspect). Source lives under [`agents/skills/`](agents/skills/) — `plugin-*` skills are scoped to this repo.
 
 To pull updates:
 ```bash
