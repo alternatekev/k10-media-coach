@@ -61,8 +61,6 @@
     <Reference Include="Microsoft.CSharp" />
     <!-- WMI — needed for Moza USB device discovery via Win32_PnPEntity -->
     <Reference Include="System.Management" />
-    <!-- HttpClient — net48 framework assembly, used by Calc.CalcClient -->
-    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
   <!--
